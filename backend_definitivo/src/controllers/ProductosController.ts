@@ -228,6 +228,35 @@ export const updateProducto = async (req: Request, res: Response) => {
   }
 };
 
+// Actualizar stock de producto
+export const updateProductoStock = async (req: Request, res: Response) => {
+  try {
+    const { cantidad_vendida } = req.body;
+    const producto = await Productos.findByPk(req.params.id);
+
+    if (producto) {
+      const nuevoStock = Math.max(0, producto.stock - parseInt(cantidad_vendida));
+      await producto.update({ stock: nuevoStock });
+
+      console.log(`📊 Stock actualizado para producto ${producto.id_producto}: ${producto.stock} -> ${nuevoStock}`);
+
+      res.status(200).json({
+        message: "Stock actualizado exitosamente",
+        producto: {
+          id_producto: producto.id_producto,
+          stock_anterior: producto.stock,
+          stock_actual: nuevoStock
+        }
+      });
+    } else {
+      res.status(404).json({ error: "Producto no encontrado" });
+    }
+  } catch (error: any) {
+    console.error("Error al actualizar stock del producto", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Eliminar producto por ID
 export const deleteProducto = async (req: Request, res: Response) => {
   try {

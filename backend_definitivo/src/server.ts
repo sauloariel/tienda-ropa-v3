@@ -17,6 +17,7 @@ import routerRoles from './router/RouterRoles';
 import routerTallas from './router/RouterTalla';
 import routerTipoTalle from './router/RouterTalle';
 import routerEstadisticas from './router/RouterEstadisticas';
+import routerVentas from './router/RouterVentas';
 
 const server = Express();
 
@@ -45,6 +46,7 @@ server.use('/api/roles', routerRoles);
 server.use('/api/tallas', routerTallas);
 server.use('/api/tipo-talle', routerTipoTalle);
 server.use('/api/estadisticas', routerEstadisticas);
+server.use('/api/ventas', routerVentas);
 
 // Conexión a la base de datos
 async function connectDB() {

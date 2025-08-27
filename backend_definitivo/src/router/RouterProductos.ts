@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import {createProducto,getProductos, getProductoById, updateProducto, deleteProducto
+import {
+  createProducto, getProductos, getProductoById, updateProducto, deleteProducto, updateProductoStock
 } from '../controllers/ProductosController';
 
 import { body, param } from 'express-validator';
@@ -40,6 +41,14 @@ router.put('/:id',
   body('stock_seguridad').optional().isInt().withMessage('Stock de seguridad inválido'),
   inputErrors,
   updateProducto
+);
+
+// Actualizar stock de producto
+router.put('/:id/stock',
+  param('id').isInt().withMessage('ID inválido'),
+  body('cantidad_vendida').isInt({ min: 1 }).withMessage('Cantidad vendida debe ser mayor a 0'),
+  inputErrors,
+  updateProductoStock
 );
 
 // Eliminar producto
