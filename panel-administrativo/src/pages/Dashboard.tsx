@@ -38,8 +38,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Debug Component - Solo en desarrollo */}
-      {process.env.NODE_ENV === 'development' && <DebugAuth />}
+      {/* Debug Info - Solo en desarrollo */}
+      {false && <DebugAuth />}
       
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>

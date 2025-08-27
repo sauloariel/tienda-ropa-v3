@@ -9,7 +9,10 @@ import {
   CreditCard,
   Menu,
   X,
-  LogOut
+  LogOut,
+  BarChart3,
+  Megaphone,
+  DollarSign
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -21,9 +24,17 @@ const Layout: React.FC = () => {
 
   // Build navigation based on user permissions
   const getNavigation = () => {
-    const baseNav = [
-      { name: 'Dashboard', href: '/', icon: Home, module: 'dashboard' }
-    ]
+    const baseNav = []
+
+    // POS primero - Admin y Vendedor
+    if (canAccessModule('pos')) {
+      baseNav.push({ name: 'POS', href: '/pos', icon: CreditCard, module: 'pos' })
+    }
+
+    // Ventas - Admin y Vendedor
+    if (canAccessModule('ventas')) {
+      baseNav.push({ name: 'Ventas', href: '/ventas', icon: DollarSign, module: 'ventas' })
+    }
 
     // Add modules based on permissions
     if (canAccessModule('productos')) {
@@ -42,8 +53,12 @@ const Layout: React.FC = () => {
       baseNav.push({ name: 'Empleados', href: '/empleados', icon: UserCheck, module: 'empleados' })
     }
     
-    if (canAccessModule('pos')) {
-      baseNav.push({ name: 'POS', href: '/pos', icon: CreditCard, module: 'pos' })
+    if (canAccessModule('estadisticas')) {
+      baseNav.push({ name: 'Estadísticas', href: '/estadisticas', icon: BarChart3, module: 'estadisticas' })
+    }
+    
+    if (canAccessModule('marketing')) {
+      baseNav.push({ name: 'Marketing', href: '/marketing', icon: Megaphone, module: 'marketing' })
     }
 
     return baseNav

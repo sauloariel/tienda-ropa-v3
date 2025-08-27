@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { createPedido, getPedidos,  getPedidoById, anularPedido
+import {
+  createPedido, getPedidos, getPedidoById, anularPedido, cambiarEstadoPedido
 } from '../controllers/PedidosController';
 
 import { body, param } from 'express-validator';
@@ -35,6 +36,14 @@ router.put('/anular/:id',
   param('id').isInt().withMessage('ID del pedido inválido'),
   inputErrors,
   anularPedido
+);
+
+// Cambiar estado del pedido
+router.put('/:id/estado',
+  param('id').isInt().withMessage('ID del pedido inválido'),
+  body('estado').isIn(['pendiente', 'procesando', 'completado', 'cancelado', 'anulado']).withMessage('Estado inválido'),
+  inputErrors,
+  cambiarEstadoPedido
 );
 
 export default router;

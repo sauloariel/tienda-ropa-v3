@@ -1,225 +1,229 @@
-# 🏢 Sistema de Gestión Empresarial - Backend + Panel Administrativo
+# 🛍️ Tienda de Ropa - Sistema Completo
 
-Sistema completo de gestión empresarial con backend en Node.js/TypeScript y panel administrativo en Tauri + React.
+Sistema completo de gestión para tienda de ropa con panel administrativo, API backend y frontend de ventas.
 
-## 🚀 **Características Principales**
+## 🚀 Características Principales
 
-### **Backend (Node.js + TypeScript)**
-- API RESTful completa
-- Base de datos MySQL/MariaDB
-- Autenticación y autorización por roles
-- CRUD completo para todas las entidades
-- Validación de datos
-- Middleware de seguridad
+### 📊 Panel Administrativo
+- **Dashboard** con estadísticas en tiempo real
+- **Gestión de Productos** con variantes (colores, tallas, imágenes)
+- **Gestión de Clientes** con sistema de contraseñas hasheadas
+- **Gestión de Empleados** y roles de usuario
+- **Sistema de Ventas** (POS) completo
+- **Módulo de Marketing** para promociones y descuentos
+- **Estadísticas empresariales** para toma de decisiones
 
-### **Panel Administrativo (Tauri + React)**
-- Aplicación de escritorio multiplataforma
-- Interfaz moderna con Tailwind CSS
-- Sistema de roles y permisos
-- Módulos: Dashboard, Empleados, Productos, Clientes, Pedidos, POS
-- Funcionalidad offline cuando el backend no está disponible
-- Formularios validados con react-hook-form
+### 🔧 Backend API
+- **Node.js + Express + TypeScript**
+- **Base de datos SQLite** con Sequelize ORM
+- **Autenticación JWT** con roles y permisos
+- **Validaciones** con express-validator
+- **Hashing de contraseñas** con bcrypt
 
-## 🏗️ **Arquitectura del Sistema**
+### 🎨 Frontend
+- **React + TypeScript**
+- **Tailwind CSS** para diseño responsivo
+- **Hooks personalizados** para lógica reutilizable
+- **Componentes modulares** y bien organizados
+- **Integración completa** con backend
+
+## 🏗️ Estructura del Proyecto
 
 ```
-backend_definitivo-2.0/
-├── backend_definitivo/          # Backend en Node.js
+├── backend_definitivo/          # API Backend
 │   ├── src/
-│   │   ├── controllers/         # Controladores de la API
-│   │   ├── models/             # Modelos de datos
-│   │   ├── router/             # Rutas de la API
-│   │   ├── middleware/         # Middleware personalizado
-│   │   └── config/             # Configuración de BD
-│   └── package.json
-└── panel-administrativo/        # Frontend en Tauri + React
-    ├── src/
-    │   ├── components/          # Componentes reutilizables
-    │   ├── pages/              # Páginas de la aplicación
-    │   ├── contexts/           # Contextos de React
-    │   ├── services/           # Servicios de API
-    │   └── config/             # Configuración
-    └── package.json
+│   │   ├── controllers/        # Controladores de API
+│   │   ├── models/            # Modelos de base de datos
+│   │   ├── router/            # Rutas de API
+│   │   └── middleware/        # Middleware de autenticación
+│   └── dist/                  # Código compilado
+├── panel-administrativo/       # Panel de administración
+│   ├── src/
+│   │   ├── components/        # Componentes React
+│   │   ├── pages/            # Páginas principales
+│   │   ├── hooks/            # Hooks personalizados
+│   │   ├── services/         # Servicios de API
+│   │   └── types/            # Tipos TypeScript
+│   └── dist/                  # Build de producción
+└── tienda-ropa/               # Frontend de tienda (en desarrollo)
 ```
 
-## 🎯 **Sistema de Roles**
+## 🛠️ Tecnologías Utilizadas
 
-### **Admin (Rol 1)**
-- ✅ Acceso completo a todos los módulos
-- ✅ Gestión de empleados
-- ✅ Gestión de productos
-- ✅ Gestión de clientes y pedidos
-- ✅ Sistema POS
+### Backend
+- **Node.js** - Runtime de JavaScript
+- **Express.js** - Framework web
+- **TypeScript** - Superset de JavaScript
+- **Sequelize** - ORM para base de datos
+- **SQLite** - Base de datos local
+- **JWT** - Autenticación
+- **bcrypt** - Hashing de contraseñas
 
-### **Vendedor (Rol 2)**
-- ✅ Dashboard
-- ✅ Sistema POS
-- ✅ Gestión de pedidos
-- ✅ Gestión de clientes
-- ❌ Gestión de empleados
-- ❌ Gestión de productos
+### Frontend
+- **React 18** - Biblioteca de UI
+- **TypeScript** - Tipado estático
+- **Tailwind CSS** - Framework de CSS
+- **Vite** - Build tool
+- **Axios** - Cliente HTTP
+- **React Router** - Enrutamiento
+- **Lucide React** - Iconos
 
-### **Inventario (Rol 3)**
-- ✅ Dashboard
-- ✅ Gestión de productos
-- ❌ Gestión de empleados
-- ❌ Sistema POS
-- ❌ Gestión de clientes y pedidos
+## 📋 Módulos Implementados
 
-## 🛠️ **Tecnologías Utilizadas**
+### 1. **Dashboard**
+- Estadísticas de ventas, productos y clientes
+- Gráficos y métricas en tiempo real
+- Resumen ejecutivo para toma de decisiones
 
-### **Backend**
-- **Runtime**: Node.js
-- **Language**: TypeScript
-- **Framework**: Express.js
-- **Database**: MySQL/MariaDB
-- **ORM**: Sequelize
-- **Validation**: Joi/Yup
-
-### **Frontend (Panel Administrativo)**
-- **Framework**: Tauri (Rust + Web Technologies)
-- **UI Library**: React 18 + TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Forms**: react-hook-form + valibot
-- **Routing**: React Router DOM
-- **State Management**: React Context API
-- **HTTP Client**: Axios
-
-## 📋 **Módulos del Sistema**
-
-### **1. Dashboard**
-- Estadísticas en tiempo real
-- Acciones rápidas por rol
-- Actividad reciente
-- Estado del sistema
-
-### **2. Empleados**
-- Crear, leer, actualizar, eliminar empleados
-- Validación de datos (CUIL, email, teléfono)
-- Gestión de roles y permisos
-- Modo offline cuando el backend no está disponible
-
-### **3. Productos**
-- Catálogo completo de productos
-- Gestión de variantes (talla, color)
+### 2. **Productos**
+- CRUD completo de productos
+- Gestión de variantes (colores, tallas)
+- Subida y gestión de imágenes
 - Control de inventario
-- Categorización
 
-### **4. Clientes**
-- Base de datos de clientes
+### 3. **Clientes**
+- Gestión completa de clientes
+- Sistema de contraseñas seguras
 - Historial de compras
 - Información de contacto
-- Gestión de direcciones
 
-### **5. Pedidos**
-- Sistema de órdenes
-- Estado de pedidos
-- Historial de transacciones
-- Facturación
+### 4. **Ventas (POS)**
+- Sistema de punto de venta
+- Selección de productos y variantes
+- Carrito de compras
+- Validación de stock
+- Confirmación de ventas
 
-### **6. Sistema POS**
-- Interfaz de punto de venta
-- Búsqueda rápida de productos
-- Cálculo automático de totales
-- Gestión de pagos
+### 5. **Marketing**
+- Gestión de promociones
+- Tipos de descuento (porcentaje, monto fijo, 2x1)
+- Códigos de descuento
+- Fechas de vigencia
+- Estadísticas de uso
 
-## 🚀 **Instalación y Configuración**
+### 6. **Empleados**
+- Gestión de usuarios del sistema
+- Roles y permisos
+- Control de acceso por módulos
 
-### **Prerrequisitos**
+## 🚀 Instalación y Configuración
+
+### Prerrequisitos
 - Node.js 18+ 
 - npm o yarn
-- Rust (para Tauri)
-- MySQL/MariaDB
 
-### **Backend**
+### 1. Clonar el repositorio
+```bash
+git clone https://github.com/sauloariel/Tienda_ropa.git
+cd Tienda_ropa
+```
+
+### 2. Configurar Backend
 ```bash
 cd backend_definitivo
+npm install
+npm run build
+npm start
+```
+
+### 3. Configurar Panel Administrativo
+```bash
+cd panel-administrativo
 npm install
 npm run dev
 ```
 
-### **Panel Administrativo**
+### 4. Configurar Tienda (opcional)
 ```bash
-cd panel-administrativo
+cd tienda-ropa
 npm install
-npm run tauri dev
+npm run dev
 ```
 
-## 🔧 **Configuración de Base de Datos**
+## 🔐 Configuración de Base de Datos
 
-1. Crear base de datos MySQL
-2. Configurar variables de entorno en `backend_definitivo/src/config/db.ts`
-3. Ejecutar migraciones si están disponibles
+El sistema utiliza SQLite por defecto. La base de datos se crea automáticamente al iniciar el backend.
 
-## 📱 **Funcionalidad Offline**
+### Variables de Entorno
+```env
+PORT=4000
+JWT_SECRET=tu_secreto_jwt
+DB_PATH=./database.sqlite
+```
 
-El panel administrativo incluye funcionalidad offline que permite:
-- Crear y gestionar empleados sin conexión al backend
-- Almacenamiento local de datos
-- Sincronización automática cuando el backend esté disponible
-- Exportación de datos offline
+## 📱 Características del Sistema
 
-## 🧪 **Testing**
-
-### **Credenciales de Prueba**
-- **Admin**: `admin` / `admin`
-- **Vendedor**: `vendedor` / `vendedor`
-- **Inventario**: `inventario` / `inventario`
-
-## 📁 **Estructura de Archivos Clave**
-
-### **Backend**
-- `src/controllers/`: Lógica de negocio
-- `src/models/`: Modelos de datos
-- `src/router/`: Definición de rutas API
-- `src/middleware/`: Middleware personalizado
-
-### **Frontend**
-- `src/contexts/AuthContext.tsx`: Gestión de autenticación
-- `src/services/api.ts`: Configuración de API
-- `src/services/empleados.ts`: Servicios de empleados con fallback offline
-- `src/components/Layout.tsx`: Layout principal con navegación
-- `src/pages/`: Páginas de la aplicación
-
-## 🔒 **Seguridad**
-
-- Autenticación basada en sesiones
-- Autorización por roles
+### 🔒 Seguridad
+- Autenticación JWT
+- Hashing de contraseñas con bcrypt
+- Control de acceso por roles
 - Validación de datos en frontend y backend
-- Sanitización de inputs
-- Middleware de seguridad
 
-## 🚀 **Despliegue**
+### 📊 Rendimiento
+- Lazy loading de componentes
+- Optimización de consultas de base de datos
+- Caché de datos frecuentes
+- Compresión de imágenes
 
-### **Backend**
-- Configurar variables de entorno de producción
-- Usar PM2 o similar para gestión de procesos
-- Configurar reverse proxy (Nginx/Apache)
+### 🎯 UX/UI
+- Diseño responsivo para todos los dispositivos
+- Interfaz intuitiva y moderna
+- Feedback visual inmediato
+- Navegación clara y consistente
 
-### **Panel Administrativo**
-- Build de producción: `npm run tauri build`
-- Distribuir ejecutables generados
-- Actualizaciones automáticas (opcional)
+## 🧪 Testing
 
-## 🤝 **Contribución**
+```bash
+# Backend
+cd backend_definitivo
+npm test
 
-1. Fork del repositorio
-2. Crear rama para feature (`git checkout -b feature/AmazingFeature`)
-3. Commit de cambios (`git commit -m 'Add some AmazingFeature'`)
+# Frontend
+cd panel-administrativo
+npm test
+```
+
+## 📈 Roadmap
+
+### Versión 1.1
+- [ ] Sistema de notificaciones
+- [ ] Reportes avanzados
+- [ ] Integración con pasarelas de pago
+
+### Versión 1.2
+- [ ] App móvil nativa
+- [ ] Sistema de fidelización
+- [ ] Analytics avanzado
+
+### Versión 2.0
+- [ ] Multi-tienda
+- [ ] Sistema de inventario distribuido
+- [ ] API pública para desarrolladores
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
 4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
+5. Abre un Pull Request
 
-## 📄 **Licencia**
+## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## 📞 **Soporte**
+## 👨‍💻 Autor
 
-Para soporte técnico o preguntas:
-- Crear un issue en GitHub
-- Contactar al equipo de desarrollo
+**Saulo Ariel**
+- GitHub: [@sauloariel](https://github.com/sauloariel)
+
+## 🙏 Agradecimientos
+
+- Comunidad de React y Node.js
+- Tailwind CSS por el framework de diseño
+- Lucide por los iconos hermosos
+- Sequelize por el ORM robusto
 
 ---
 
-**Desarrollado con ❤️ usando las mejores tecnologías modernas**
+⭐ **Si te gusta este proyecto, dale una estrella en GitHub!**

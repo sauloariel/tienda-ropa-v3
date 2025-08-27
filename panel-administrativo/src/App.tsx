@@ -6,8 +6,11 @@ import Productos from './pages/Productos'
 import Clientes from './pages/Clientes'
 import Pedidos from './pages/Pedidos'
 import Empleados from './pages/Empleados'
-import EmpleadosNuevo from './pages/EmpleadosNuevo'
+
 import POS from './pages/POS'
+import Ventas from './pages/Ventas'
+import Estadisticas from './pages/Estadisticas'
+import Marketing from './pages/Marketing'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
@@ -53,7 +56,7 @@ function AppRoutes() {
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Navigate to="/pos" replace />} />
         
         {/* Productos - Admin e Inventario */}
         <Route path="productos" element={
@@ -83,17 +86,33 @@ function AppRoutes() {
           </RoleProtectedRoute>
         } />
         
-        {/* Nuevo Empleado - Solo Admin */}
-        <Route path="empleados/nuevo" element={
-          <RoleProtectedRoute requiredModules={['empleados']}>
-            <EmpleadosNuevo />
-          </RoleProtectedRoute>
-        } />
+
         
         {/* POS - Admin y Vendedor */}
         <Route path="pos" element={
           <RoleProtectedRoute requiredModules={['pos']}>
             <POS />
+          </RoleProtectedRoute>
+        } />
+        
+        {/* Ventas - Admin y Vendedor */}
+        <Route path="ventas" element={
+          <RoleProtectedRoute requiredModules={['ventas']}>
+            <Ventas />
+          </RoleProtectedRoute>
+        } />
+        
+        {/* Estadísticas - Admin */}
+        <Route path="estadisticas" element={
+          <RoleProtectedRoute requiredModules={['estadisticas']}>
+            <Estadisticas />
+          </RoleProtectedRoute>
+        } />
+        
+        {/* Marketing - Admin */}
+        <Route path="marketing" element={
+          <RoleProtectedRoute requiredModules={['marketing']}>
+            <Marketing />
           </RoleProtectedRoute>
         } />
       </Route>

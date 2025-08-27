@@ -18,6 +18,15 @@ export const empleadosAPI = {
     delete: (id: number) => api.delete(`/empleados/${id}`),
 }
 
+// Pedidos API
+export const pedidosAPI = {
+    getAll: () => api.get('/pedidos'),
+    getById: (id: number) => api.get(`/pedidos/${id}`),
+    create: (data: any) => api.post('/pedidos', data),
+    anular: (id: number) => api.put(`/pedidos/anular/${id}`),
+    cambiarEstado: (id: number, estado: string) => api.put(`/pedidos/${id}/estado`, { estado }),
+}
+
 // Login API
 export const authAPI = {
     login: async (credentials: { usuario: string; passwd: string }) => {

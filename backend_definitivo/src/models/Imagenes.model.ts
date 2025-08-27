@@ -19,7 +19,7 @@ export class Imagenes extends Model {
   @Column(DataType.STRING(255))
   nombre_archivo?: string;
 
-  @Column(DataType.STRING(255))
+  @Column(DataType.TEXT)
   ruta?: string;
 
   @Column(DataType.TEXT)

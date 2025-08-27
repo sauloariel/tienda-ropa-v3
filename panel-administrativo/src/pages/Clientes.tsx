@@ -1,80 +1,184 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
-  Plus, 
+  Plus,
   Edit, 
   Trash2, 
   Search,
   Users,
   UserPlus,
-  Mail
+  Mail,
+  AlertCircle,
+  CheckCircle,
+  XCircle
 } from 'lucide-react'
-
-interface Client {
-  id: number
-  name: string
-  email: string
-  phone: string
-  status: 'active' | 'inactive'
-  totalOrders: number
-  totalSpent: number
-  lastOrder: string
-}
+import { clientesAPI, type Cliente, type ClienteCreate, type ClienteUpdate } from '../services/clientes'
 
 const Clientes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  // Mock clients data
-  const [clients, setClients] = useState<Client[]>([
-    { id: 1, name: 'Juan Pérez', email: 'juan@email.com', phone: '+1234567890', status: 'active', totalOrders: 15, totalSpent: 1250.50, lastOrder: '2024-01-15' },
-    { id: 2, name: 'María García', email: 'maria@email.com', phone: '+1234567891', status: 'active', totalOrders: 8, totalSpent: 890.25, lastOrder: '2024-01-14' },
-    { id: 3, name: 'Carlos López', email: 'carlos@email.com', phone: '+1234567892', status: 'inactive', totalOrders: 3, totalSpent: 234.00, lastOrder: '2024-01-10' },
-    { id: 4, name: 'Ana Martínez', email: 'ana@email.com', phone: '+1234567893', status: 'active', totalOrders: 22, totalSpent: 2100.75, lastOrder: '2024-01-13' },
-    { id: 5, name: 'Luis Rodríguez', email: 'luis@email.com', phone: '+1234567894', status: 'active', totalOrders: 12, totalSpent: 1567.80, lastOrder: '2024-01-12' },
-  ])
+  // Cargar clientes al montar el componente
+  useEffect(() => {
+    cargarClientes()
+  }, [])
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const cargarClientes = async () => {
+    try {
+      setLoading(true)
+      const data = await clientesAPI.getClientes()
+      setClientes(data)
+    } catch (error) {
+      setError('Error al cargar los clientes')
+      console.error('Error cargando clientes:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredClientes = clientes.filter(cliente =>
+    cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.mail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.dni.includes(searchTerm)
   )
 
-  const getStatusColor = (status: string) => {
-    return status === 'active' 
+  const getStatusColor = (estado: string | undefined) => {
+    if (!estado) return 'bg-gray-100 text-gray-800'
+    return estado === 'ACTIVO' 
       ? 'bg-green-100 text-green-800' 
       : 'bg-red-100 text-red-800'
   }
 
-  const getStatusText = (status: string) => {
-    return status === 'active' ? 'Activo' : 'Inactivo'
+  const getStatusText = (estado: string | undefined) => {
+    if (!estado) return 'Sin estado'
+    return estado === 'ACTIVO' ? 'Activo' : 'Inactivo'
   }
 
-  const handleDelete = (id: number) => {
+  const handleAdd = () => {
+    setShowAddModal(true)
+    setError(null)
+    setSuccess(null)
+  }
+
+  const handleCreate = async (clienteData: ClienteCreate) => {
+    try {
+      await clientesAPI.createCliente(clienteData)
+      setSuccess('Cliente creado correctamente')
+      setShowAddModal(false)
+      cargarClientes() // Recargar la lista
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Error al crear el cliente')
+    }
+  }
+
+  const handleEdit = (cliente: Cliente) => {
+    setEditingCliente(cliente)
+    setShowEditModal(true)
+    setError(null)
+    setSuccess(null)
+  }
+
+  const handleUpdate = async (clienteData: ClienteUpdate) => {
+    if (!editingCliente) return
+
+    try {
+      await clientesAPI.updateCliente(editingCliente.id_cliente, clienteData)
+      setSuccess('Cliente actualizado correctamente')
+      setShowEditModal(false)
+      setEditingCliente(null)
+      cargarClientes() // Recargar la lista
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Error al actualizar el cliente')
+    }
+  }
+
+  const handleDelete = async (id: number) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
-      setClients(clients.filter(client => client.id !== id))
+      try {
+        await clientesAPI.deleteCliente(id)
+        setSuccess('Cliente eliminado correctamente')
+        cargarClientes() // Recargar la lista
+      } catch (error: any) {
+        setError(error.response?.data?.error || 'Error al eliminar el cliente')
+      }
     }
   }
 
   const stats = [
-    { name: 'Total Clientes', value: clients.length, icon: Users, color: 'text-blue-600' },
-    { name: 'Clientes Activos', value: clients.filter(c => c.status === 'active').length, icon: UserPlus, color: 'text-green-600' },
-    { name: 'Valor Total', value: `$${clients.reduce((sum, c) => sum + c.totalSpent, 0).toFixed(2)}`, icon: Mail, color: 'text-purple-600' },
+    { name: 'Total Clientes', value: clientes.length, icon: Users, color: 'text-blue-600' },
+    { name: 'Clientes Activos', value: clientes.filter(c => c.estado === 'ACTIVO').length, icon: UserPlus, color: 'text-green-600' },
+    { name: 'Clientes Inactivos', value: clientes.filter(c => c.estado !== 'ACTIVO').length, icon: Mail, color: 'text-purple-600' },
   ]
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
           <p className="text-gray-600">Administra la base de datos de clientes</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={handleAdd}
           className="btn-primary"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Cliente
         </button>
       </div>
+
+      {/* Alertas */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <XCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+          <div className="flex">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <div className="ml-3">
+              <p className="text-sm text-green-800">{success}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setSuccess(null)}
+                className="text-green-400 hover:text-green-600"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -99,7 +203,7 @@ const Clientes: React.FC = () => {
         ))}
       </div>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <div className="card">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
@@ -107,7 +211,7 @@ const Clientes: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="Buscar clientes..."
+                placeholder="Buscar clientes por nombre, apellido, email o DNI..."
                 className="input-field pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -117,7 +221,7 @@ const Clientes: React.FC = () => {
         </div>
       </div>
 
-      {/* Clients Table */}
+      {/* Clientes Table */}
       <div className="card">
         <div className="overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
@@ -127,19 +231,16 @@ const Clientes: React.FC = () => {
                   Cliente
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Documento
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contacto
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Domicilio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pedidos
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Gastado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Último Pedido
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
@@ -147,53 +248,59 @@ const Clientes: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50">
+              {filteredClientes.map((cliente) => (
+                <tr key={cliente.id_cliente} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {client.name}
+                        {cliente.nombre} {cliente.apellido}
                       </div>
                       <div className="text-sm text-gray-500">
-                        ID: {client.id}
+                        ID: {cliente.id_cliente}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm text-gray-900">
-                        {client.email}
+                        DNI: {cliente.dni}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {client.phone}
+                        CUIT: {cliente.cuit_cuil}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(client.status)}`}>
-                      {getStatusText(client.status)}
+                    <div>
+                      <div className="text-sm text-gray-900">
+                        {cliente.mail}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {cliente.telefono}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {cliente.domicilio}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(cliente.estado)}`}>
+                      {getStatusText(cliente.estado)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.totalOrders}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${client.totalSpent.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.lastOrder}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => {/* Edit functionality */}}
+                        onClick={() => handleEdit(cliente)}
                         className="text-primary-600 hover:text-primary-900"
+                        title="Editar cliente"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(client.id)}
+                        onClick={() => handleDelete(cliente.id_cliente)}
                         className="text-red-600 hover:text-red-900"
+                        title="Eliminar cliente"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -210,15 +317,305 @@ const Clientes: React.FC = () => {
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3 text-center">
+            <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Nuevo Cliente</h3>
-              <p className="text-sm text-gray-500">Funcionalidad en desarrollo</p>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="btn-primary mt-4"
-              >
-                Cerrar
-              </button>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
+                const clienteData: ClienteCreate = {
+                  dni: formData.get('dni') as string,
+                  cuit_cuil: formData.get('cuit_cuil') as string,
+                  nombre: formData.get('nombre') as string,
+                  apellido: formData.get('apellido') as string,
+                  domicilio: formData.get('domicilio') as string,
+                  telefono: formData.get('telefono') as string,
+                  mail: formData.get('mail') as string,
+                  estado: formData.get('estado') as string || 'ACTIVO',
+                  password: formData.get('password') as string || undefined
+                }
+                handleCreate(clienteData)
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">DNI *</label>
+                    <input
+                      type="text"
+                      name="dni"
+                      className="input-field"
+                      required
+                      minLength={7}
+                      placeholder="12345678"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">CUIT/CUIL *</label>
+                    <input
+                      type="text"
+                      name="cuit_cuil"
+                      className="input-field"
+                      required
+                      placeholder="20-12345678-9"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nombre *</label>
+                    <input
+                      type="text"
+                      name="nombre"
+                      className="input-field"
+                      required
+                      placeholder="Juan"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Apellido *</label>
+                    <input
+                      type="text"
+                      name="apellido"
+                      className="input-field"
+                      required
+                      placeholder="Pérez"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Domicilio *</label>
+                    <input
+                      type="text"
+                      name="domicilio"
+                      className="input-field"
+                      required
+                      placeholder="Av. San Martín 123"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Teléfono *</label>
+                    <input
+                      type="text"
+                      name="telefono"
+                      className="input-field"
+                      required
+                      placeholder="+54 11 1234-5678"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email *</label>
+                    <input
+                      type="email"
+                      name="mail"
+                      className="input-field"
+                      required
+                      placeholder="juan.perez@email.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Estado</label>
+                    <select
+                      name="estado"
+                      defaultValue="ACTIVO"
+                      className="input-field"
+                    >
+                      <option value="ACTIVO">Activo</option>
+                      <option value="INACTIVO">Inactivo</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input
+                      type="password"
+                      name="password"
+                      className="input-field"
+                      minLength={6}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Opcional. Si se deja vacío, el cliente no tendrá acceso al sistema.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="btn-secondary"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                  >
+                    Crear Cliente
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingCliente && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Cliente</h3>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
+                const clienteData: ClienteUpdate = {
+                  dni: formData.get('dni') as string,
+                  cuit_cuil: formData.get('cuit_cuil') as string,
+                  nombre: formData.get('nombre') as string,
+                  apellido: formData.get('apellido') as string,
+                  domicilio: formData.get('domicilio') as string,
+                  telefono: formData.get('telefono') as string,
+                  mail: formData.get('mail') as string,
+                  estado: formData.get('estado') as string
+                }
+                
+                // Solo incluir contraseña si se proporciona una nueva
+                const password = formData.get('password') as string
+                if (password && password.trim() !== '') {
+                  clienteData.password = password
+                }
+                
+                handleUpdate(clienteData)
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">DNI</label>
+                    <input
+                      type="text"
+                      name="dni"
+                      defaultValue={editingCliente.dni}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">CUIT/CUIL</label>
+                    <input
+                      type="text"
+                      name="cuit_cuil"
+                      defaultValue={editingCliente.cuit_cuil}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                    <input
+                      type="text"
+                      name="nombre"
+                      defaultValue={editingCliente.nombre}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Apellido</label>
+                    <input
+                      type="text"
+                      name="apellido"
+                      defaultValue={editingCliente.apellido}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Domicilio</label>
+                    <input
+                      type="text"
+                      name="domicilio"
+                      defaultValue={editingCliente.domicilio}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                    <input
+                      type="text"
+                      name="telefono"
+                      defaultValue={editingCliente.telefono}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      name="mail"
+                      defaultValue={editingCliente.mail}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Estado</label>
+                    <select
+                      name="estado"
+                      defaultValue={editingCliente.estado || 'ACTIVO'}
+                      className="input-field"
+                    >
+                      <option value="ACTIVO">Activo</option>
+                      <option value="INACTIVO">Inactivo</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
+                    <input
+                      type="password"
+                      name="password"
+                      className="input-field"
+                      minLength={6}
+                      placeholder="Dejar vacío para mantener la actual"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Solo completar si se desea cambiar la contraseña.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false)
+                      setEditingCliente(null)
+                    }}
+                    className="btn-secondary"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

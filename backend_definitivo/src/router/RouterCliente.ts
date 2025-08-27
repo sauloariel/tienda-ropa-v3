@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { createCliente, getClientes, getClienteById, updateCliente, deleteCliente
+import {
+  createCliente, getClientes, getClienteById, updateCliente, deleteCliente
 } from '../controllers/ClienteController';
 
 import { body, param } from 'express-validator';
@@ -15,6 +16,7 @@ router.post('/',
   body('domicilio').isString().notEmpty().withMessage('Domicilio requerido'),
   body('telefono').isString().notEmpty().withMessage('Teléfono requerido'),
   body('mail').isEmail().withMessage('Email inválido'),
+  body('password').optional().isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
   inputErrors,
   createCliente
 );
@@ -34,6 +36,7 @@ router.put('/:id',
   body('domicilio').isString().notEmpty().withMessage('Domicilio requerido'),
   body('telefono').isString().notEmpty().withMessage('Teléfono requerido'),
   body('mail').isEmail().withMessage('Email inválido'),
+  body('password').optional().isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
   inputErrors,
   updateCliente
 );

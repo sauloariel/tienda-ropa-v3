@@ -264,6 +264,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       case 'pos':
         hasAccess = isAdmin || isVendedor // Admin and sellers can access POS
         break
+      case 'estadisticas':
+        hasAccess = isAdmin // Only admin can access statistics
+        break
+      case 'marketing':
+        hasAccess = isAdmin // Only admin can access marketing
+        break
       default:
         hasAccess = false
     }

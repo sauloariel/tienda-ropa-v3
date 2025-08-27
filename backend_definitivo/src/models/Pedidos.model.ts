@@ -4,10 +4,14 @@ import { Clientes } from './Clientes.model';
 import { Empleados } from './Empleados.model';
 import { DetallePedidos } from './DetallePedidos.model';
 
-@Table({ tableName: 'pedidos', timestamps: false })
+@Table({
+  tableName: 'pedidos',
+  timestamps: false,
+  freezeTableName: true
+})
 export class Pedidos extends Model {
   @PrimaryKey
-  @Column(DataType.INTEGER({ length: 7, unsigned: true }))
+  @Column(DataType.INTEGER)
   id_pedido!: number;
 
   @ForeignKey(() => Clientes)
@@ -27,17 +31,17 @@ export class Pedidos extends Model {
   @Column(DataType.DATE)
   fecha_pedido!: Date;
 
-  @Column(DataType.DECIMAL(10,2))
+  @Column(DataType.DECIMAL(10, 2))
   importe!: number;
 
-@Column(DataType.STRING(20))
-estado!: string;
+  @Column(DataType.STRING(20))
+  estado!: string;
 
-@Column(DataType.BOOLEAN)
-anulacion!: boolean;
+  @Column(DataType.BOOLEAN)
+  anulacion!: boolean;
 
-@Column(DataType.BOOLEAN)
-venta_web!: boolean;
+  @Column(DataType.BOOLEAN)
+  venta_web!: boolean;
 
   @Column(DataType.STRING(255))
   payment_id?: string;
@@ -45,4 +49,5 @@ venta_web!: boolean;
   @HasMany(() => DetallePedidos)
   detalle!: DetallePedidos[];
 }
+
 export default Pedidos;

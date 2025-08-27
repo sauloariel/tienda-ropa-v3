@@ -9,11 +9,15 @@ import {
   Mail,
   Phone,
   Save,
-  X
+  X,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react'
 import { empleadosAPI } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
+import { toast, ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 interface Employee {
   id_empleado: number
@@ -42,13 +46,13 @@ interface EmployeeFormData {
 
 const Empleados: React.FC = () => {
   const { isAdmin } = useAuth()
-  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -60,7 +64,7 @@ const Empleados: React.FC = () => {
     mail: '',
     sueldo: '',
     puesto: '',
-    estado: 'Activo'
+    estado: 'activo'
   })
 
   // Redirect if not admin
@@ -75,41 +79,118 @@ const Empleados: React.FC = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true)
+      setError('')
+      console.log('🔄 Cargando empleados desde la base de datos...')
       const response = await empleadosAPI.getAll()
+      console.log('✅ Empleados cargados:', response.data)
       setEmployees(response.data)
     } catch (err: any) {
-      setError('Error al cargar empleados: ' + (err.response?.data?.error || err.message))
+      console.error('❌ Error al cargar empleados:', err)
+      const errorMsg = err.response?.data?.error || err.message || 'Error desconocido'
+      setError(`Error al cargar empleados: ${errorMsg}`)
+      
       // Fallback to mock data for development
       setEmployees([
-        { id_empleado: 1, cuil: '20123456789', nombre: 'Ana', apellido: 'García', domicilio: 'Calle 123', telefono: '+1234567890', mail: 'ana@empresa.com', sueldo: 4500, puesto: 'Gerente', estado: 'Activo' },
-        { id_empleado: 2, cuil: '20123456790', nombre: 'Carlos', apellido: 'López', domicilio: 'Av. Principal 456', telefono: '+1234567891', mail: 'carlos@empresa.com', sueldo: 2800, puesto: 'Vendedor', estado: 'Activo' },
+        { id_empleado: 1, cuil: '20123456789', nombre: 'Ana', apellido: 'García', domicilio: 'Calle 123', telefono: '+1234567890', mail: 'ana@empresa.com', sueldo: 4500, puesto: 'Gerente', estado: 'activo' },
+        { id_empleado: 2, cuil: '20123456790', nombre: 'Carlos', apellido: 'López', domicilio: 'Av. Principal 456', telefono: '+1234567891', mail: 'carlos@empresa.com', sueldo: 2800, puesto: 'Vendedor', estado: 'activo' },
       ])
+      toast.warning('Usando datos de ejemplo - Backend no disponible')
     } finally {
       setLoading(false)
     }
   }
 
+  const resetForm = () => {
+    setFormData({
+      cuil: '',
+      nombre: '',
+      apellido: '',
+      domicilio: '',
+      telefono: '',
+      mail: '',
+      sueldo: '',
+      puesto: '',
+      estado: 'activo'
+    })
+    setEditingEmployee(null)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const validateForm = (): boolean => {
+    if (!formData.cuil || formData.cuil.length !== 11) {
+      toast.error('CUIL debe tener exactamente 11 dígitos')
+      return false
+    }
+    if (!formData.nombre.trim()) {
+      toast.error('Nombre es requerido')
+      return false
+    }
+    if (!formData.apellido.trim()) {
+      toast.error('Apellido es requerido')
+      return false
+    }
+    if (!formData.domicilio.trim()) {
+      toast.error('Domicilio es requerido')
+      return false
+    }
+    if (!formData.telefono.trim()) {
+      toast.error('Teléfono es requerido')
+      return false
+    }
+    if (!formData.mail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.mail)) {
+      toast.error('Email válido es requerido')
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    if (!validateForm()) return
+    
     try {
+      setIsSubmitting(true)
+      
       const employeeData = {
         ...formData,
-        sueldo: parseFloat(formData.sueldo) || 0
+        cuil: formData.cuil.replace(/\D+/g, ''),
+        telefono: formData.telefono.replace(/[^0-9()+\- ]+/g, '').trim(),
+        sueldo: formData.sueldo ? parseFloat(formData.sueldo) : undefined,
+        nombre: formData.nombre.trim(),
+        apellido: formData.apellido.trim(),
+        domicilio: formData.domicilio.trim(),
+        mail: formData.mail.trim(),
+        puesto: formData.puesto?.trim() || undefined,
+        estado: formData.estado || undefined,
       }
 
       if (editingEmployee) {
+        console.log('🔄 Actualizando empleado:', editingEmployee.id_empleado)
         await empleadosAPI.update(editingEmployee.id_empleado, employeeData)
-        setEditingEmployee(null)
+        toast.success('Empleado actualizado exitosamente')
       } else {
+        console.log('🔄 Creando nuevo empleado')
         await empleadosAPI.create(employeeData)
+        toast.success('Empleado creado exitosamente')
       }
 
       setShowAddModal(false)
       resetForm()
       loadEmployees()
     } catch (err: any) {
-      setError('Error al guardar empleado: ' + (err.response?.data?.error || err.message))
+      console.error('❌ Error al guardar empleado:', err)
+      const errorMsg = err.response?.data?.error || err.message || 'Error desconocido'
+      toast.error(`Error al guardar empleado: ${errorMsg}`)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -124,226 +205,175 @@ const Empleados: React.FC = () => {
       mail: employee.mail,
       sueldo: employee.sueldo?.toString() || '',
       puesto: employee.puesto || '',
-      estado: employee.estado || 'Activo'
+      estado: employee.estado || 'activo'
     })
     setShowAddModal(true)
   }
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este empleado?')) {
-      try {
-        await empleadosAPI.delete(id)
-        loadEmployees()
-      } catch (err: any) {
-        setError('Error al eliminar empleado: ' + (err.response?.data?.error || err.message))
-      }
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este empleado?')) {
+      return
     }
-  }
 
-  const resetForm = () => {
-    setFormData({
-      cuil: '',
-      nombre: '',
-      apellido: '',
-      domicilio: '',
-      telefono: '',
-      mail: '',
-      sueldo: '',
-      puesto: '',
-      estado: 'Activo'
-    })
-    setEditingEmployee(null)
-  }
-
-  const handleNuevoEmpleado = () => {
-    navigate('/empleados/nuevo')
+    try {
+      console.log('🗑️ Eliminando empleado:', id)
+      await empleadosAPI.delete(id)
+      toast.success('Empleado eliminado exitosamente')
+      loadEmployees()
+    } catch (err: any) {
+      console.error('❌ Error al eliminar empleado:', err)
+      const errorMsg = err.response?.data?.error || err.message || 'Error desconocido'
+      toast.error(`Error al eliminar empleado: ${errorMsg}`)
+    }
   }
 
   const filteredEmployees = employees.filter(employee =>
     employee.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.mail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.puesto?.toLowerCase().includes(searchTerm.toLowerCase())
+    employee.cuil.includes(searchTerm) ||
+    employee.mail.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const stats = [
-    { name: 'Total Empleados', value: employees.length, icon: Users, color: 'text-blue-600' },
-    { name: 'Empleados Activos', value: employees.filter(e => e.estado === 'Activo').length, icon: UserCheck, color: 'text-green-600' },
-    { name: 'Salario Promedio', value: `$${employees.length > 0 ? (employees.reduce((sum, e) => sum + (e.sueldo || 0), 0) / employees.length).toFixed(0) : 0}`, icon: Mail, color: 'text-purple-600' },
-  ]
+  const getStatusColor = (estado: string) => {
+    switch (estado?.toLowerCase()) {
+      case 'activo': return 'text-green-600 bg-green-100'
+      case 'inactivo': return 'text-yellow-600 bg-yellow-100'
+      case 'baja': return 'text-red-600 bg-red-100'
+      default: return 'text-gray-600 bg-gray-100'
+    }
+  }
 
-  const departments = [...new Set(employees.map(e => e.puesto).filter(Boolean))]
-  const positions = [...new Set(employees.map(e => e.puesto).filter(Boolean))]
+  const getStatusIcon = (estado: string) => {
+    switch (estado?.toLowerCase()) {
+      case 'activo': return <CheckCircle className="h-4 w-4" />
+      case 'inactivo': return <AlertCircle className="h-4 w-4" />
+      case 'baja': return <X className="h-4 w-4" />
+      default: return <AlertCircle className="h-4 w-4" />
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-6">
+      <ToastContainer position="top-right" autoClose={3000} />
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Empleados</h1>
-          <p className="text-gray-600">Administra el personal de la empresa (Solo Administradores)</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Empleados</h1>
+          <p className="text-gray-600 mt-2">Administra la información de todos los empleados</p>
         </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handleNuevoEmpleado}
-            className="btn-primary"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Empleado
-          </button>
-          <button
-            onClick={() => {
-              resetForm()
-              setShowAddModal(true)
-            }}
-            className="btn-secondary"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar (Modal)
-          </button>
-        </div>
+        <button 
+          onClick={() => { resetForm(); setShowAddModal(true); }} 
+          className="btn-primary flex items-center gap-2"
+        >
+          <Plus className="h-5 w-5" />
+          Nuevo Empleado
+        </button>
       </div>
 
+      {/* Status Info */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-          <button onClick={() => setError('')} className="float-right">
-            <X className="h-4 w-4" />
-          </button>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800">Error de Conexión</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        {stats.map((stat) => (
-          <div key={stat.name} className="card">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <stat.icon className={`h-8 w-8 ${stat.color}`} />
-              </div>
-              <div className="ml-4 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    {stat.name}
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {stat.value}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Search and Filters */}
-      <div className="card">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                placeholder="Buscar empleados..."
-                className="input-field pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <input
+            type="text"
+            placeholder="Buscar empleados por nombre, apellido, CUIL o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
       </div>
 
       {/* Employees Table */}
-      <div className="card">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Cargando empleados...</p>
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Cargando empleados...</p>
           </div>
         ) : (
-          <div className="overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Empleado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    CUIL
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contacto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Posición
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Salario
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CUIL</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puesto</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredEmployees.map((employee) => (
                   <tr key={employee.id_empleado} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {employee.nombre} {employee.apellido}
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <UserCheck className="h-6 w-6 text-blue-600" />
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {employee.id_empleado}
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {employee.nombre} {employee.apellido}
+                          </div>
+                          <div className="text-sm text-gray-500">{employee.domicilio}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
                       {employee.cuil}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
+                      <div className="flex flex-col space-y-1">
                         <div className="flex items-center text-sm text-gray-900">
-                          <Mail className="h-4 w-4 mr-1" />
+                          <Mail className="h-4 w-4 text-gray-400 mr-2" />
                           {employee.mail}
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
-                          <Phone className="h-4 w-4 mr-1" />
+                          <Phone className="h-4 w-4 text-gray-400 mr-2" />
                           {employee.telefono}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.puesto || 'N/A'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{employee.puesto || '-'}</div>
+                      {employee.sueldo && (
+                        <div className="text-sm text-gray-500">${employee.sueldo.toLocaleString()}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        employee.estado === 'Activo' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {employee.estado || 'N/A'}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(employee.estado || '')}`}>
+                        {getStatusIcon(employee.estado || '')}
+                        <span className="ml-1 capitalize">{employee.estado || 'N/A'}</span>
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${employee.sueldo?.toFixed(2) || '0.00'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEdit(employee)}
-                          className="text-primary-600 hover:text-primary-900"
-                          title="Editar"
+                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(employee.id_empleado)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Eliminar"
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -355,165 +385,166 @@ const Empleados: React.FC = () => {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Department Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Empleados por Departamento</h3>
-          <div className="space-y-3">
-            {departments.map(dept => (
-              <div key={dept} className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">{dept}</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {employees.filter(e => e.puesto === dept).length}
-                </span>
-              </div>
-            ))}
+        
+        {!loading && filteredEmployees.length === 0 && (
+          <div className="p-8 text-center">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">No se encontraron empleados</p>
+            {searchTerm && (
+              <p className="text-sm text-gray-500 mt-2">
+                Intenta con otros términos de búsqueda
+              </p>
+            )}
           </div>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Empleados por Posición</h3>
-          <div className="space-y-3">
-            {positions.map(pos => (
-              <div key={pos} className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">{pos}</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {employees.filter(e => e.puesto === pos).length}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
                 {editingEmployee ? 'Editar Empleado' : 'Nuevo Empleado'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowAddModal(false)
-                  resetForm()
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
+              </h2>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CUIL</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    CUIL *
+                  </label>
                   <input
                     type="text"
-                    required
-                    className="input-field"
+                    name="cuil"
                     value={formData.cuil}
-                    onChange={(e) => setFormData({...formData, cuil: e.target.value})}
+                    onChange={handleInputChange}
                     maxLength={11}
+                    placeholder="12345678901"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre *
+                  </label>
                   <input
                     type="text"
-                    required
-                    className="input-field"
+                    name="nombre"
                     value={formData.nombre}
-                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                    maxLength={25}
+                    onChange={handleInputChange}
+                    placeholder="Nombre del empleado"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Apellido *
+                  </label>
                   <input
                     type="text"
-                    required
-                    className="input-field"
+                    name="apellido"
                     value={formData.apellido}
-                    onChange={(e) => setFormData({...formData, apellido: e.target.value})}
-                    maxLength={30}
+                    onChange={handleInputChange}
+                    placeholder="Apellido del empleado"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Domicilio</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Domicilio *
+                  </label>
                   <input
                     type="text"
-                    required
-                    className="input-field"
+                    name="domicilio"
                     value={formData.domicilio}
-                    onChange={(e) => setFormData({...formData, domicilio: e.target.value})}
-                    maxLength={35}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                  <input
-                    type="text"
+                    onChange={handleInputChange}
+                    placeholder="Dirección completa"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
-                    className="input-field"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({...formData, telefono: e.target.value})}
-                    maxLength={13}
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono *
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleInputChange}
+                    placeholder="+54 11 1234-5678"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
                   <input
                     type="email"
-                    required
-                    className="input-field"
+                    name="mail"
                     value={formData.mail}
-                    onChange={(e) => setFormData({...formData, mail: e.target.value})}
-                    maxLength={45}
+                    onChange={handleInputChange}
+                    placeholder="empleado@empresa.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sueldo</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sueldo
+                  </label>
                   <input
                     type="number"
-                    step="0.01"
-                    className="input-field"
+                    name="sueldo"
                     value={formData.sueldo}
-                    onChange={(e) => setFormData({...formData, sueldo: e.target.value})}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Puesto</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Puesto
+                  </label>
                   <input
                     type="text"
-                    className="input-field"
+                    name="puesto"
                     value={formData.puesto}
-                    onChange={(e) => setFormData({...formData, puesto: e.target.value})}
-                    maxLength={20}
+                    onChange={handleInputChange}
+                    placeholder="Cargo o función"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estado
+                  </label>
                   <select
-                    className="input-field"
+                    name="estado"
                     value={formData.estado}
-                    onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                    <option value="Vacaciones">Vacaciones</option>
-                    <option value="Licencia">Licencia</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                    <option value="baja">Baja</option>
                   </select>
                 </div>
               </div>
@@ -521,20 +552,27 @@ const Empleados: React.FC = () => {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    resetForm()
-                  }}
-                  className="btn-secondary"
+                  onClick={() => { setShowAddModal(false); resetForm(); }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  disabled={isSubmitting}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4 mr-2 inline" />
-                  {editingEmployee ? 'Actualizar' : 'Crear'}
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Guardando...
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <Save className="h-4 w-4 mr-2" />
+                      {editingEmployee ? 'Actualizar' : 'Crear'} Empleado
+                    </div>
+                  )}
                 </button>
               </div>
             </form>
