@@ -4,8 +4,11 @@ import Cart from './Cart';
 import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import PaymentModal from './PaymentModal';
+import FacturaModal from './FacturaModal';
 import { productosAPI, categoriasAPI } from '../services/api';
+import { crearFactura } from '../services/facturaService';
 import type { Producto, Categoria } from '../types/productos.types';
+import type { Factura, FacturaRequest } from '../types/factura.types';
 
 interface CartItem {
   producto: Producto;
@@ -21,6 +24,9 @@ const POSSystem: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showFacturaModal, setShowFacturaModal] = useState(false);
+  const [facturaGenerada, setFacturaGenerada] = useState<Factura | null>(null);
+  const [processingFactura, setProcessingFactura] = useState(false);
 
   // Cargar productos y categorías
   useEffect(() => {
@@ -107,6 +113,53 @@ const POSSystem: React.FC = () => {
     setShowPaymentModal(true);
   };
 
+  // Procesar factura después del pago
+  const handlePaymentComplete = async (paymentMethod: string) => {
+    try {
+      setProcessingFactura(true);
+      
+      // Preparar datos para la factura
+      const facturaData: FacturaRequest = {
+        productos: cart.map(item => ({
+          id_producto: item.producto.id_producto,
+          cantidad: item.cantidad,
+          precio_unitario: item.precioUnitario,
+          subtotal: item.precioUnitario * item.cantidad
+        })),
+        total: cartTotal * 1.21, // Incluir IVA
+        metodo_pago: paymentMethod,
+        cliente_id: undefined // Por ahora sin cliente específico
+      };
+
+      // Crear factura en el backend
+      const response = await crearFactura(facturaData);
+      
+      if (response.success) {
+        setFacturaGenerada(response.factura);
+        setShowFacturaModal(true);
+        clearCart();
+      }
+    } catch (error) {
+      console.error('Error al crear factura:', error);
+      alert('Error al generar la factura. Por favor, intente nuevamente.');
+    } finally {
+      setProcessingFactura(false);
+    }
+  };
+
+  // Cerrar modal de factura
+  const handleFacturaClose = () => {
+    setShowFacturaModal(false);
+    setFacturaGenerada(null);
+  };
+
+  // Factura completada
+  const handleFacturaCompletada = () => {
+    setShowFacturaModal(false);
+    setFacturaGenerada(null);
+    setShowPaymentModal(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -171,11 +224,18 @@ const POSSystem: React.FC = () => {
           cart={cart}
           total={cartTotal}
           onClose={() => setShowPaymentModal(false)}
-          onComplete={(paymentMethod) => {
-            console.log('Venta completada con:', paymentMethod);
-            clearCart();
-            setShowPaymentModal(false);
-          }}
+          onComplete={handlePaymentComplete}
+          processing={processingFactura}
+        />
+      )}
+
+      {/* Modal de factura */}
+      {showFacturaModal && facturaGenerada && (
+        <FacturaModal
+          isOpen={showFacturaModal}
+          onClose={handleFacturaClose}
+          factura={facturaGenerada}
+          onFacturaCompletada={handleFacturaCompletada}
         />
       )}
     </div>

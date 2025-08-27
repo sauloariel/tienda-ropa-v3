@@ -18,6 +18,7 @@ import routerTallas from './router/RouterTalla';
 import routerTipoTalle from './router/RouterTalle';
 import routerEstadisticas from './router/RouterEstadisticas';
 import routerVentas from './router/RouterVentas';
+import routerFacturas from './router/RouterFacturas';
 
 const server = Express();
 
@@ -47,6 +48,7 @@ server.use('/api/tallas', routerTallas);
 server.use('/api/tipo-talle', routerTipoTalle);
 server.use('/api/estadisticas', routerEstadisticas);
 server.use('/api/ventas', routerVentas);
+server.use('/api/facturas', routerFacturas);
 
 // Conexión a la base de datos
 async function connectDB() {

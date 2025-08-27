@@ -13,13 +13,15 @@ interface PaymentModalProps {
   total: number;
   onClose: () => void;
   onComplete: (paymentMethod: string) => void;
+  processing?: boolean;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
   cart,
   total,
   onClose,
-  onComplete
+  onComplete,
+  processing = false
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<string>('efectivo');
   const [amountReceived, setAmountReceived] = useState<string>('');
@@ -39,39 +41,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setError(null);
     
     try {
-      // Crear objeto de venta
-      const venta: Venta = {
-        fecha_venta: new Date(),
-        total: total,
-        metodo_pago: paymentMethod,
-        items: cart.map(item => ({
-          id_producto: item.producto.id_producto,
-          cantidad: item.cantidad,
-          precio_unitario: item.precioUnitario,
-          subtotal: item.precioUnitario * item.cantidad
-        }))
-      };
-
-      // Registrar venta en el backend
-      const resultado = await posService.registrarVenta(venta);
-      
-      if (resultado.success) {
-        console.log('✅ Venta registrada exitosamente:', resultado);
-        
-        // Actualizar stock de productos
-        for (const item of cart) {
-          await posService.actualizarStock(item.producto.id_producto, item.cantidad);
-        }
-        
-        // Generar y mostrar ticket
-        const ticket = posService.generarTicket(venta);
-        console.log('🎫 Ticket generado:', ticket);
-        
-        // Completar venta
-        onComplete(paymentMethod);
-      } else {
-        setError(resultado.error || 'Error al registrar la venta');
-      }
+      // Completar venta directamente (la factura se maneja en el componente padre)
+      onComplete(paymentMethod);
     } catch (error: any) {
       console.error('❌ Error en el proceso de pago:', error);
       setError('Error al procesar el pago. Por favor, inténtalo de nuevo.');
@@ -211,10 +182,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           
           <button
             onClick={handlePayment}
-            disabled={!isPaymentValid() || isProcessing}
+            disabled={!isPaymentValid() || isProcessing || processing}
             className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
-            {isProcessing ? (
+            {isProcessing || processing ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Procesando...

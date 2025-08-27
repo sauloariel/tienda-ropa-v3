@@ -81,16 +81,18 @@ const Cart: React.FC<CartProps> = ({
           <div className="space-y-2">
             <button
               onClick={onCheckout}
-              className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 active:bg-green-800 transition-colors duration-200"
+              className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 active:bg-green-800 transition-colors duration-200 flex items-center justify-center space-x-2"
             >
-              💳 Finalizar Venta
+              <span>💳</span>
+              <span>Finalizar Venta</span>
             </button>
             
             <button
               onClick={onClearCart}
-              className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 active:bg-gray-700 transition-colors duration-200"
+              className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 active:bg-gray-700 transition-colors duration-200 flex items-center justify-center space-x-2"
             >
-              🗑️ Limpiar Carrito
+              <span>🗑️</span>
+              <span>Limpiar Carrito</span>
             </button>
           </div>
         </div>
