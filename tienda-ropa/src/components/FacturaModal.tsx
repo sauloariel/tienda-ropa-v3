@@ -127,7 +127,7 @@ const FacturaModal: React.FC<FacturaModalProps> = ({
                                     {factura.detalles.map((detalle, index) => (
                                         <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                             <td className="border border-gray-300 px-4 py-3 text-gray-800">
-                                                {detalle.producto?.nombre || 'Producto'}
+                                                {detalle.producto?.descripcion || 'Producto'}
                                             </td>
                                             <td className="border border-gray-300 px-4 py-3 text-center text-gray-800">
                                                 {detalle.cantidad}

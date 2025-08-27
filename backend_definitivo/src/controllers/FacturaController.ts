@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import { Op } from 'sequelize';
 import Factura from '../models/Factura.model';
 import DetalleFactura from '../models/DetalleFactura.model';
 import Productos from '../models/Productos.model';
@@ -22,12 +23,12 @@ const generarNumeroFactura = async (): Promise<string> => {
     const fecha = new Date();
     const año = fecha.getFullYear();
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-    
+
     // Obtener el último número de factura del mes
     const ultimaFactura = await Factura.findOne({
         where: {
             numeroFactura: {
-                [db.Sequelize.Op.like]: `F${año}${mes}%`
+                [Op.like]: `F${año}${mes}%`
             }
         },
         order: [['numeroFactura', 'DESC']]
@@ -48,9 +49,9 @@ export const createFactura = async (req: Request, res: Response) => {
         // Validar datos de entrada
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ 
-                error: 'Datos de entrada inválidos', 
-                details: errors.array() 
+            return res.status(400).json({
+                error: 'Datos de entrada inválidos',
+                details: errors.array()
             });
         }
 
@@ -67,14 +68,14 @@ export const createFactura = async (req: Request, res: Response) => {
         for (const producto of productos) {
             const productoDB = await Productos.findByPk(producto.id_producto);
             if (!productoDB) {
-                return res.status(404).json({ 
-                    error: `Producto con ID ${producto.id_producto} no encontrado` 
+                return res.status(404).json({
+                    error: `Producto con ID ${producto.id_producto} no encontrado`
                 });
             }
 
             if (productoDB.stock < producto.cantidad) {
-                return res.status(400).json({ 
-                    error: `Stock insuficiente para ${productoDB.nombre}. Disponible: ${productoDB.stock}, Solicitado: ${producto.cantidad}` 
+                return res.status(400).json({
+                    error: `Stock insuficiente para ${productoDB.descripcion}. Disponible: ${productoDB.stock}, Solicitado: ${producto.cantidad}`
                 });
             }
         }
@@ -154,9 +155,9 @@ export const createFactura = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("❌ Error al crear factura", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error interno del servidor',
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -170,7 +171,7 @@ export const getFacturas = async (req: Request, res: Response) => {
 
         if (fecha_inicio && fecha_fin) {
             whereClause.fecha = {
-                [db.Sequelize.Op.between]: [new Date(fecha_inicio as string), new Date(fecha_fin as string)]
+                [Op.between]: [new Date(fecha_inicio as string), new Date(fecha_fin as string)]
             };
         }
 
@@ -206,9 +207,9 @@ export const getFacturas = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("Error al obtener facturas", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error interno del servidor',
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -236,8 +237,8 @@ export const getFacturaById = async (req: Request, res: Response) => {
         });
 
         if (!factura) {
-            return res.status(404).json({ 
-                error: 'Factura no encontrada' 
+            return res.status(404).json({
+                error: 'Factura no encontrada'
             });
         }
 
@@ -248,9 +249,9 @@ export const getFacturaById = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("Error al obtener factura", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error interno del servidor',
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -261,14 +262,14 @@ export const anularFactura = async (req: Request, res: Response) => {
         const factura = await Factura.findByPk(req.params.id);
 
         if (!factura) {
-            return res.status(404).json({ 
-                error: 'Factura no encontrada' 
+            return res.status(404).json({
+                error: 'Factura no encontrada'
             });
         }
 
         if (factura.estado === 'anulada') {
-            return res.status(400).json({ 
-                error: 'La factura ya está anulada' 
+            return res.status(400).json({
+                error: 'La factura ya está anulada'
             });
         }
 
@@ -291,16 +292,16 @@ export const anularFactura = async (req: Request, res: Response) => {
         await factura.update({ estado: 'anulada' });
 
         console.log('✅ Factura anulada exitosamente:', factura.id);
-        res.json({ 
+        res.json({
             success: true,
-            message: 'Factura anulada exitosamente' 
+            message: 'Factura anulada exitosamente'
         });
 
     } catch (error: any) {
         console.error("Error al anular factura", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error interno del servidor',
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -314,7 +315,7 @@ export const getEstadisticasFacturas = async (req: Request, res: Response) => {
 
         if (fecha_inicio && fecha_fin) {
             whereClause.fecha = {
-                [db.Sequelize.Op.between]: [new Date(fecha_inicio as string), new Date(fecha_fin as string)]
+                [Op.between]: [new Date(fecha_inicio as string), new Date(fecha_fin as string)]
             };
         }
 
@@ -331,20 +332,20 @@ export const getEstadisticasFacturas = async (req: Request, res: Response) => {
         const metodosPago = await Factura.findAll({
             attributes: [
                 'metodo_pago',
-                [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'cantidad'],
-                [db.Sequelize.fn('SUM', db.Sequelize.col('total')), 'total']
+                [db.fn('COUNT', db.col('id')), 'cantidad'],
+                [db.fn('SUM', db.col('total')), 'total']
             ],
             where: whereClause,
             group: ['metodo_pago'],
-            order: [[db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'DESC']]
+            order: [[db.fn('COUNT', db.col('id')), 'DESC']]
         });
 
         // Productos más facturados
         const productosMasFacturados = await DetalleFactura.findAll({
             attributes: [
                 'producto_id',
-                [db.Sequelize.fn('SUM', db.Sequelize.col('cantidad')), 'cantidad_facturada'],
-                [db.Sequelize.fn('SUM', db.Sequelize.col('subtotal')), 'total_facturado']
+                [db.fn('SUM', db.col('cantidad')), 'cantidad_facturada'],
+                [db.fn('SUM', db.col('subtotal')), 'total_facturado']
             ],
             include: [
                 {
@@ -355,7 +356,7 @@ export const getEstadisticasFacturas = async (req: Request, res: Response) => {
                 }
             ],
             group: ['producto_id'],
-            order: [[db.Sequelize.fn('SUM', db.Sequelize.col('cantidad')), 'DESC']],
+            order: [[db.fn('SUM', db.col('cantidad')), 'DESC']],
             limit: 10
         });
 
@@ -374,9 +375,9 @@ export const getEstadisticasFacturas = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("Error al obtener estadísticas de facturas", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error interno del servidor',
-            message: error.message 
+            message: error.message
         });
     }
 };
