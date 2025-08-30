@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Conexión Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .test {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔌 Test de Conexión Backend</h1>
+
+    <div class="test">
+        <h3>Estado de la conexión:</h3>
+        <p><strong>Backend URL:</strong> http://localhost:4000</p>
+        <p><strong>Estado:</strong> <span id="connection-status">No verificado</span></p>
+    </div>
+
+    <div class="test">
+        <h3>Acciones de prueba:</h3>
+        <button class="btn-primary" onclick="testConnection()">🔌 Probar Conexión</button>
+        <button class="btn-success" onclick="testLogin()">🔑 Probar Login</button>
+        <button onclick="clearResults()">🧹 Limpiar Resultados</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        async function testConnection() {
+            const results = document.getElementById('results');
+            const status = document.getElementById('connection-status');
+
+            try {
+                const response = await fetch('http://localhost:4000/api/login/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    status.textContent = '✅ Conectado';
+                    status.style.color = '#2e7d32';
+                    results.innerHTML = '<div class="success">✅ Backend funcionando correctamente</div>';
+                } else {
+                    status.textContent = '❌ Error de respuesta';
+                    status.style.color = '#c62828';
+                    results.innerHTML = '<div class="error">❌ Backend responde pero con error: ' + response.status + '</div>';
+                }
+            } catch (error) {
+                status.textContent = '❌ Sin conexión';
+                status.style.color = '#c62828';
+                results.innerHTML = '<div class="error">❌ No se puede conectar al backend: ' + error.message + '</div>';
+            }
+        }
+
+        async function testLogin() {
+            const results = document.getElementById('results');
+
+            try {
+                const response = await fetch('http://localhost:4000/api/login/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        usuario: 'lucia',
+                        password: 'lucia123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    results.innerHTML = '<div class="success">✅ Login exitoso para usuario: ' + data.usuario.usuario + '</div>';
+                    results.innerHTML += '<div>Token: ' + data.token.substring(0, 20) + '...</div>';
+                } else {
+                    results.innerHTML = '<div class="error">❌ Login falló: ' + (data.message || 'Error desconocido') + '</div>';
+                }
+            } catch (error) {
+                results.innerHTML = '<div class="error">❌ Error en login: ' + error.message + '</div>';
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('connection-status').textContent = 'No verificado';
+            document.getElementById('connection-status').style.color = 'inherit';
+        }
+
+        // Probar conexión al cargar la página
+        testConnection();
+    </script>
+</body>
+
+</html>

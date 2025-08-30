@@ -3,8 +3,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const db = new Sequelize(process.env.DATABASE_URL, {
-    models: [__dirname + '/../models/**/*.ts']
+// Configuración directa para SQLite
+const db = new Sequelize({
+    dialect: 'sqlite',
+    storage: './database.sqlite',
+    models: [__dirname + '/../models/**/*.ts'],
+    logging: false
 });
 
 export default db;

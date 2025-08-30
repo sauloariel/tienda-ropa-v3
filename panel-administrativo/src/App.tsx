@@ -1,123 +1,136 @@
-import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
-import Productos from './pages/Productos'
-import Clientes from './pages/Clientes'
-import Pedidos from './pages/Pedidos'
-import Empleados from './pages/Empleados'
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Productos from './pages/Productos';
+import Clientes from './pages/Clientes';
+import Pedidos from './pages/Pedidos';
+import Empleados from './pages/Empleados';
+import POS from './pages/POS';
+import Ventas from './pages/Ventas';
+import Estadisticas from './pages/Estadisticas';
+import Marketing from './pages/Marketing';
+import Login from './pages/Login';
+import Unauthorized from './pages/Unauthorized';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import RoleGuard from './components/RoleGuard';
+import { Rol } from './types/auth.types';
 
-import POS from './pages/POS'
-import Ventas from './pages/Ventas'
-import Estadisticas from './pages/Estadisticas'
-import Marketing from './pages/Marketing'
-import Login from './pages/Login'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-
+// Componente para rutas protegidas por autenticación
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
   }
 
-  return <>{children}</>
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
 }
 
+// Componente para rutas protegidas por rol específico
 function RoleProtectedRoute({ 
   children, 
-  requiredModules 
+  roles 
 }: { 
-  children: React.ReactNode
-  requiredModules: string[]
+  children: React.ReactNode;
+  roles: Rol[];
 }) {
-  const { isAuthenticated, canAccessModule } = useAuth()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  // Check if user can access any of the required modules
-  const hasAccess = requiredModules.some(module => canAccessModule(module))
-  
-  if (!hasAccess) {
-    return <Navigate to="/" replace />
-  }
-
-  return <>{children}</>
+  return (
+    <RoleGuard roles={roles}>
+      {children}
+    </RoleGuard>
+  );
 }
 
 function AppRoutes() {
   return (
     <Routes>
+      {/* Ruta pública */}
       <Route path="/login" element={<Login />} />
+      
+      {/* Ruta de acceso no autorizado */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      
+      {/* Rutas protegidas */}
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/pos" replace />} />
+        {/* Ruta por defecto - redirigir según rol */}
+        <Route index element={<Navigate to="/dashboard" replace />} />
         
-        {/* Productos - Admin e Inventario */}
-        <Route path="productos" element={
-          <RoleProtectedRoute requiredModules={['productos']}>
-            <Productos />
+        {/* Dashboard - Todos los roles */}
+        <Route path="dashboard" element={<Dashboard />} />
+        
+        {/* POS - Admin y Vendedor */}
+        <Route path="pos" element={
+          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
+            <POS />
           </RoleProtectedRoute>
         } />
         
-        {/* Clientes - Admin y Vendedor */}
-        <Route path="clientes" element={
-          <RoleProtectedRoute requiredModules={['clientes']}>
-            <Clientes />
+        {/* Productos - Admin e Inventario */}
+        <Route path="productos" element={
+          <RoleProtectedRoute roles={['Admin', 'Inventario']}>
+            <Productos />
           </RoleProtectedRoute>
         } />
         
         {/* Pedidos - Admin y Vendedor */}
         <Route path="pedidos" element={
-          <RoleProtectedRoute requiredModules={['pedidos']}>
+          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
             <Pedidos />
+          </RoleProtectedRoute>
+        } />
+        
+        {/* Clientes - Admin y Vendedor */}
+        <Route path="clientes" element={
+          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
+            <Clientes />
           </RoleProtectedRoute>
         } />
         
         {/* Empleados - Solo Admin */}
         <Route path="empleados" element={
-          <RoleProtectedRoute requiredModules={['empleados']}>
+          <RoleProtectedRoute roles={['Admin']}>
             <Empleados />
-          </RoleProtectedRoute>
-        } />
-        
-
-        
-        {/* POS - Admin y Vendedor */}
-        <Route path="pos" element={
-          <RoleProtectedRoute requiredModules={['pos']}>
-            <POS />
           </RoleProtectedRoute>
         } />
         
         {/* Ventas - Admin y Vendedor */}
         <Route path="ventas" element={
-          <RoleProtectedRoute requiredModules={['ventas']}>
+          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
             <Ventas />
           </RoleProtectedRoute>
         } />
         
-        {/* Estadísticas - Admin */}
-        <Route path="estadisticas" element={
-          <RoleProtectedRoute requiredModules={['estadisticas']}>
-            <Estadisticas />
-          </RoleProtectedRoute>
-        } />
+        {/* Estadísticas - Todos los roles */}
+        <Route path="estadisticas" element={<Estadisticas />} />
         
-        {/* Marketing - Admin */}
+        {/* Marketing - Admin y Marketing */}
         <Route path="marketing" element={
-          <RoleProtectedRoute requiredModules={['marketing']}>
+          <RoleProtectedRoute roles={['Admin', 'Marketing']}>
             <Marketing />
           </RoleProtectedRoute>
         } />
+        
+        {/* Ruta catch-all - redirigir a dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
-  )
+  );
 }
 
 function App() {
@@ -125,7 +138,7 @@ function App() {
     <AuthProvider>
       <AppRoutes />
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,302 +1,244 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { authAPI } from '../services/api'
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+    AuthContextType, 
+    AuthState, 
+    LoginRequest, 
+    Usuario, 
+    Rol,
+    obtenerPermisosRol,
+    tieneAccesoModulo
+} from '../types/auth.types';
+import { login as loginService, logout as logoutService, verificarToken } from '../services/auth';
 
-interface User {
-  id: number
-  username: string
-  role: number
-  name: string
-  empleado?: {
-    nombre: string
-    apellido: string
-  }
+// Estado inicial
+const initialState: AuthState = {
+    usuario: null,
+    token: localStorage.getItem('authToken'),
+    isAuthenticated: false,
+    isLoading: true,
+    error: null,
+};
+
+// Tipos de acciones
+type AuthAction =
+    | { type: 'LOGIN_START' }
+    | { type: 'LOGIN_SUCCESS'; payload: { usuario: Usuario; token: string } }
+    | { type: 'LOGIN_FAILURE'; payload: string }
+    | { type: 'LOGOUT' }
+    | { type: 'CLEAR_ERROR' }
+    | { type: 'SET_LOADING'; payload: boolean }
+    | { type: 'SET_USER'; payload: Usuario };
+
+// Reducer para manejar el estado
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+    switch (action.type) {
+        case 'LOGIN_START':
+            return {
+                ...state,
+                isLoading: true,
+                error: null,
+            };
+        case 'LOGIN_SUCCESS':
+            return {
+                ...state,
+                usuario: action.payload.usuario,
+                token: action.payload.token,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+            };
+        case 'LOGIN_FAILURE':
+            return {
+                ...state,
+                isLoading: false,
+                error: action.payload,
+                isAuthenticated: false,
+            };
+        case 'LOGOUT':
+            return {
+                ...state,
+                usuario: null,
+                token: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+            };
+        case 'CLEAR_ERROR':
+            return {
+                ...state,
+                error: null,
+            };
+        case 'SET_LOADING':
+            return {
+                ...state,
+                isLoading: action.payload,
+            };
+        case 'SET_USER':
+            return {
+                ...state,
+                usuario: action.payload,
+                isAuthenticated: true,
+                isLoading: false,
+            };
+        default:
+            return state;
+    }
+};
+
+// Crear el contexto
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Hook personalizado para usar el contexto
+export const useAuth = (): AuthContextType => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+    }
+    return context;
+};
+
+// Props del provider
+interface AuthProviderProps {
+    children: ReactNode;
 }
 
-interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  isAdmin: boolean
-  isVendedor: boolean
-  isInventario: boolean
-  canAccessModule: (module: string) => boolean
-  login: (username: string, password: string) => Promise<boolean>
-  logout: () => void
-}
+// Provider del contexto
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+    const [state, dispatch] = useReducer(authReducer, initialState);
+    const navigate = useNavigate();
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+    // Verificar token al cargar la aplicación
+    useEffect(() => {
+        const checkAuth = async () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const { valid, usuario } = await verificarToken();
+                    if (valid && usuario) {
+                        dispatch({ type: 'SET_USER', payload: usuario });
+                        // NO redirigir automáticamente aquí para evitar bucles
+                    } else {
+                        // Token inválido, limpiar estado
+                        dispatch({ type: 'LOGOUT' });
+                        // NO navegar aquí, dejar que el ProtectedRoute maneje la redirección
+                    }
+                } catch (error) {
+                    console.error('Error verificando token:', error);
+                    dispatch({ type: 'LOGOUT' });
+                    // NO navegar aquí, dejar que el ProtectedRoute maneje la redirección
+                }
+            } else {
+                dispatch({ type: 'SET_LOADING', payload: false });
+            }
+        };
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+        checkAuth();
+    }, []); // Removido navigate de las dependencias
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
-
-  useEffect(() => {
-    // Check if user is already logged in (from localStorage)
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser)
-        // Validar que los datos del usuario sean válidos
-        if (userData && userData.id && userData.username && userData.role) {
-          console.log('Restoring user session from localStorage:', userData)
-          setUser(userData)
-          setIsAuthenticated(true)
+    // Función para redirigir según el rol (solo después del login exitoso)
+    const redirigirSegunRol = (rol: Rol) => {
+        const permisos = obtenerPermisosRol(rol);
+        if (permisos.length > 0) {
+            // Redirigir a la primera ruta disponible para el rol
+            navigate(permisos[0].ruta);
         } else {
-          console.log('Invalid user data in localStorage, clearing...')
-          localStorage.removeItem('user')
+            navigate('/unauthorized');
         }
-      } catch (error) {
-        console.error('Error parsing saved user:', error)
-        localStorage.removeItem('user')
-      }
-    }
-    setIsInitialized(true)
-  }, [])
+    };
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      console.log('Attempting to login with backend...')
-      
-      // Try to connect with real backend first
-      const response = await authAPI.login({ usuario: username, passwd: password })
-      console.log('Backend response:', response)
-      
-      // Check different possible response structures
-      if (response.data) {
-        let userData: User | null = null
-        
-        // Structure 1: response.data.success with user object
-        if (response.data.success && response.data.user) {
-          userData = {
-            id: response.data.user.id_loguin || response.data.user.id,
-            username: response.data.user.usuario || response.data.user.username,
-            role: response.data.user.id_rol || response.data.user.role,
-            name: response.data.user.empleado ? 
-              `${response.data.user.empleado.nombre || ''} ${response.data.user.empleado.apellido || ''}`.trim() :
-              response.data.user.nombre || username,
-            empleado: response.data.user.empleado
-          }
-        }
-        // Structure 2: direct user object in response.data
-        else if (response.data.id_loguin || response.data.id) {
-          userData = {
-            id: response.data.id_loguin || response.data.id,
-            username: response.data.usuario || response.data.username,
-            role: response.data.id_rol || response.data.role,
-            name: response.data.empleado ? 
-              `${response.data.empleado.nombre || ''} ${response.data.empleado.apellido || ''}`.trim() :
-              response.data.nombre || username,
-            empleado: response.data.empleado
-          }
-        }
-        // Structure 3: array with user object
-        else if (Array.isArray(response.data) && response.data.length > 0) {
-          const userObj = response.data[0]
-          userData = {
-            id: userObj.id_loguin || userObj.id,
-            username: userObj.usuario || userObj.username,
-            role: userObj.id_rol || userObj.role,
-            name: userObj.empleado ? 
-              `${userObj.empleado.nombre || ''} ${userObj.empleado.apellido || ''}`.trim() :
-              userObj.nombre || username,
-            empleado: userObj.empleado
-          }
-        }
-        
-        if (userData && userData.id && userData.username && userData.role) {
-          console.log('Login successful with backend:', userData)
-          setUser(userData)
-          setIsAuthenticated(true)
-          localStorage.setItem('user', JSON.stringify(userData))
-          return true
-        }
-      }
-      
-      console.log('Backend login failed, trying mock login...')
-      
-      // Fallback to mock login for development
-      if (username === 'admin' && password === 'admin') {
-        const mockUser: User = {
-          id: 1,
-          username: username,
-          role: 1, // Admin role
-          name: 'Administrador'
-        }
-        
-        setUser(mockUser)
-        setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        console.log('Mock admin login successful')
-        return true
-      }
-      
-      // Mock login for vendedor
-      if (username === 'vendedor' && password === 'vendedor') {
-        const mockUser: User = {
-          id: 2,
-          username: username,
-          role: 2, // Vendedor role
-          name: 'Vendedor'
-        }
-        
-        setUser(mockUser)
-        setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        console.log('Mock vendedor login successful')
-        return true
-      }
-      
-      // Mock login for inventario
-      if (username === 'inventario' && password === 'inventario') {
-        const mockUser: User = {
-          id: 3,
-          username: username,
-          role: 3, // Inventario role
-          name: 'Inventario'
-        }
-        
-        setUser(mockUser)
-        setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        console.log('Mock inventario login successful')
-        return true
-      }
-      
-      console.log('All login attempts failed')
-      return false
-      
-    } catch (error) {
-      console.error('Login error:', error)
-      
-      // Fallback to mock login for development when backend is not available
-      if (username === 'admin' && password === 'admin') {
-        const mockUser: User = {
-          id: 1,
-          username: username,
-          role: 1, // Admin role
-          name: 'Administrador'
-        }
-        
-        setUser(mockUser)
-        setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        console.log('Mock admin login successful (backend error)')
-        return true
-      }
-      
-      if (username === 'vendedor' && password === 'vendedor') {
-        const mockUser: User = {
-          id: 2,
-          username: username,
-          role: 2, // Vendedor role
-          name: 'Vendedor'
-        }
-        
-        setUser(mockUser)
-        setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        console.log('Mock vendedor login successful (backend error)')
-        return true
-      }
-      
-      if (username === 'inventario' && password === 'inventario') {
-        const mockUser: User = {
-          id: 3,
-          username: username,
-          role: 3, // Inventario role
-          name: 'Inventario'
-        }
-        
-        setUser(mockUser)
-        setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        console.log('Mock inventario login successful (backend error)')
-        return true
-      }
-      
-      return false
-    }
-  }
+    // Función para verificar acceso a módulos
+    const canAccessModule = (moduleName: string): boolean => {
+        if (!state.usuario) return false;
+        return tieneAccesoModulo(state.usuario.rol, moduleName);
+    };
 
-  const logout = () => {
-    console.log('Logging out user...')
-    setUser(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem('user')
-  }
+    // Función de login
+    const login = async (credentials: LoginRequest): Promise<void> => {
+        try {
+            dispatch({ type: 'LOGIN_START' });
+            
+            const response = await loginService(credentials);
+            
+            if (response.success) {
+                // Guardar en localStorage
+                localStorage.setItem('authToken', response.token);
+                localStorage.setItem('authUser', JSON.stringify(response.usuario));
+                
+                dispatch({ 
+                    type: 'LOGIN_SUCCESS', 
+                    payload: { 
+                        usuario: response.usuario, 
+                        token: response.token 
+                    } 
+                });
 
-  const isAdmin = user?.role === 1
-  const isVendedor = user?.role === 2
-  const isInventario = user?.role === 3
+                // Redirigir según el rol
+                redirigirSegunRol(response.usuario.rol);
+            } else {
+                dispatch({ 
+                    type: 'LOGIN_FAILURE', 
+                    payload: response.message || 'Error en el login' 
+                });
+            }
+        } catch (error: any) {
+            dispatch({ 
+                type: 'LOGIN_FAILURE', 
+                payload: error.message || 'Error al conectar con el servidor' 
+            });
+        }
+    };
 
-  // Function to check if user can access a specific module
-  const canAccessModule = (module: string): boolean => {
-    if (!user || !isAuthenticated) {
-      console.log(`Access denied to module '${module}': User not authenticated`)
-      return false
-    }
-    
-    let hasAccess = false
-    switch (module) {
-      case 'dashboard':
-        hasAccess = true // All authenticated users can access dashboard
-        break
-      case 'empleados':
-        hasAccess = isAdmin // Only admin can access employees
-        break
-      case 'productos':
-        hasAccess = isAdmin || isInventario // Admin and inventory can access products
-        break
-      case 'clientes':
-        hasAccess = isAdmin || isVendedor // Admin and sellers can access clients
-        break
-      case 'pedidos':
-        hasAccess = isAdmin || isVendedor // Admin and sellers can access orders
-        break
-      case 'pos':
-        hasAccess = isAdmin || isVendedor // Admin and sellers can access POS
-        break
-      case 'estadisticas':
-        hasAccess = isAdmin // Only admin can access statistics
-        break
-      case 'marketing':
-        hasAccess = isAdmin // Only admin can access marketing
-        break
-      default:
-        hasAccess = false
-    }
-    
-    console.log(`Module access check for '${module}': User role ${user.role}, hasAccess: ${hasAccess}`)
-    return hasAccess
-  }
+    // Función de logout
+    const logout = async (): Promise<void> => {
+        try {
+            await logoutService();
+        } catch (error) {
+            console.error('Error en logout:', error);
+        } finally {
+            dispatch({ type: 'LOGOUT' });
+            navigate('/login');
+        }
+    };
 
-  // No renderizar hasta que se haya inicializado
-  if (!isInitialized) {
-    return null
-  }
+    // Función para limpiar errores
+    const clearError = (): void => {
+        dispatch({ type: 'CLEAR_ERROR' });
+    };
 
-  const value: AuthContextType = {
-    user,
-    isAuthenticated,
-    isAdmin,
-    isVendedor,
-    isInventario,
-    canAccessModule,
-    login,
-    logout
-  }
+    // Función para verificar autenticación
+    const checkAuth = async (): Promise<void> => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            const { valid, usuario } = await verificarToken();
+            
+            if (valid && usuario) {
+                dispatch({ type: 'SET_USER', payload: usuario });
+            } else {
+                dispatch({ type: 'LOGOUT' });
+                navigate('/login');
+            }
+        } catch (error) {
+            dispatch({ type: 'LOGOUT' });
+            navigate('/login');
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
+    };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
+    // Valor del contexto
+    const contextValue: AuthContextType = {
+        ...state,
+        login,
+        logout,
+        clearError,
+        checkAuth,
+        canAccessModule,
+    };
+
+    return (
+        <AuthContext.Provider value={contextValue}>
+            {children}
+        </AuthContext.Provider>
+    );
+};

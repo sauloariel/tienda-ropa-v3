@@ -6,8 +6,15 @@ import {
   Trash2, 
   CreditCard, 
   Receipt,
-  Calculator
+  Calculator,
+  CheckCircle,
+  DollarSign,
+  Banknote,
+  QrCode
 } from 'lucide-react'
+import { crearFactura } from '../services/factura'
+import { FacturaRequest, Factura } from '../types/factura.types'
+import FacturaModal from '../components/FacturaModal'
 
 interface Product {
   id: number
@@ -25,7 +32,10 @@ interface CartItem {
 const POS: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('efectivo')
+  const [showFacturaModal, setShowFacturaModal] = useState(false)
+  const [facturaGenerada, setFacturaGenerada] = useState<Factura | null>(null)
+  const [processingFactura, setProcessingFactura] = useState(false)
 
   // Mock products data
   const products: Product[] = [
@@ -78,19 +88,59 @@ const POS: React.FC = () => {
     return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0)
   }
 
-  const handleCheckout = () => {
+  const getIVA = () => {
+    return getTotal() * 0.21
+  }
+
+  const getTotalConIVA = () => {
+    return getTotal() + getIVA()
+  }
+
+  const handleCheckout = async () => {
     if (cart.length === 0) return
     
-    // Here you would typically send the order to your backend
-    alert(`Orden procesada por $${getTotal().toFixed(2)}`)
-    setCart([])
+    try {
+      setProcessingFactura(true)
+      
+      // Preparar datos para la factura
+      const facturaData: FacturaRequest = {
+        productos: cart.map(item => ({
+          id_producto: item.product.id,
+          cantidad: Number(item.quantity),
+          precio_unitario: Number(item.product.price),
+          subtotal: Number(item.product.price * item.quantity)
+        })),
+        total: Number(getTotalConIVA()),
+        metodo_pago: selectedPaymentMethod,
+        cliente_id: undefined
+      }
+
+      // Crear factura en el backend
+      const response = await crearFactura(facturaData)
+      
+      if (response.success) {
+        setFacturaGenerada(response.factura)
+        setShowFacturaModal(true)
+        setCart([])
+      }
+    } catch (error) {
+      console.error('Error al crear factura:', error)
+      alert('Error al generar la factura. Por favor, intente nuevamente.')
+    } finally {
+      setProcessingFactura(false)
+    }
+  }
+
+  const handleFacturaClose = () => {
+    setShowFacturaModal(false)
+    setFacturaGenerada(null)
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Punto de Venta (POS)</h1>
-        <p className="text-gray-600">Gestiona las ventas y transacciones</p>
+        <p className="text-gray-600">Gestiona las ventas y transacciones con facturación integrada</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -202,11 +252,20 @@ const POS: React.FC = () => {
                 </div>
 
                 <div className="border-t pt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg font-medium text-gray-900">Total:</span>
-                    <span className="text-2xl font-bold text-primary-600">
-                      ${getTotal().toFixed(2)}
-                    </span>
+                  {/* Resumen de totales */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-medium">${getTotal().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">IVA (21%):</span>
+                      <span className="font-medium">${getIVA().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                      <span>Total:</span>
+                      <span className="text-primary-600">${getTotalConIVA().toFixed(2)}</span>
+                    </div>
                   </div>
 
                   <div className="mb-4">
@@ -218,19 +277,29 @@ const POS: React.FC = () => {
                       onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                       className="input-field"
                     >
-                      <option value="cash">Efectivo</option>
-                      <option value="card">Tarjeta</option>
-                      <option value="transfer">Transferencia</option>
+                      <option value="efectivo">💵 Efectivo</option>
+                      <option value="tarjeta">💳 Tarjeta</option>
+                      <option value="transferencia">🏦 Transferencia</option>
+                      <option value="qr">📱 QR/Pago Móvil</option>
                     </select>
                   </div>
 
                   <button
                     onClick={handleCheckout}
-                    className="btn-primary w-full py-3 text-lg"
-                    disabled={cart.length === 0}
+                    className="btn-primary w-full py-3 text-lg flex items-center justify-center"
+                    disabled={cart.length === 0 || processingFactura}
                   >
-                    <CreditCard className="h-5 w-5 inline mr-2" />
-                    Procesar Venta
+                    {processingFactura ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Finalizar Venta y Facturar
+                      </>
+                    )}
                   </button>
                 </div>
               </>
@@ -238,6 +307,15 @@ const POS: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Factura */}
+      {showFacturaModal && facturaGenerada && (
+        <FacturaModal
+          isOpen={showFacturaModal}
+          onClose={handleFacturaClose}
+          factura={facturaGenerada}
+        />
+      )}
     </div>
   )
 }

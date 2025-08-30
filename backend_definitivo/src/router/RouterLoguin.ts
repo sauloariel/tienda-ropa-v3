@@ -1,50 +1,64 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { inputErrors } from '../middleware';
-import { createLoguin, getLoguines, getLoguinById, updateLoguin, deleteLoguin } from '../controllers/LoguinController';
+import {
+  loginEmpleado,
+  verifyToken,
+  logoutEmpleado,
+  getCurrentUser,
+  changePassword,
+  solicitarRecuperacionPassword,
+  verificarTokenRecuperacion,
+  cambiarPasswordConToken
+} from '../controllers/LoguinController';
 
 const router = Router();
 
-// Crear loguin
-router.post('/',
-  body('id_empleado').isInt().withMessage('ID de empleado inválido'),
-  body('id_rol').isInt().withMessage('ID de rol inválido'),
-  body('usuario').isString().notEmpty().withMessage('Usuario es obligatorio').isLength({ max: 20 }).withMessage('Usuario máximo 20 caracteres'),
-  body('passwd').optional().isString().withMessage('Contraseña debe ser texto').isLength({ max: 500 }),
-  body('password_provisoria').optional().isBoolean().withMessage('password_provisoria debe ser booleano'),
-  body('fecha_cambio_pass').optional().isISO8601().toDate().withMessage('Fecha de cambio de contraseña inválida'),
+// ===== RUTAS DE AUTENTICACIÓN =====
+
+// Login de empleado
+router.post('/auth/login',
+  body('usuario').isString().notEmpty().withMessage('Usuario es obligatorio'),
+  body('password').isString().notEmpty().withMessage('Contraseña es obligatoria'),
   inputErrors,
-  createLoguin
+  loginEmpleado
 );
 
-// Obtener todos los loguines
-router.get('/', getLoguines);
+// Verificar token
+router.get('/auth/verify', verifyToken);
 
-// Obtener loguin por ID
-router.get('/:id',
-  param('id').isInt().withMessage('ID de loguin inválido'),
+// Logout
+router.post('/auth/logout', logoutEmpleado);
+
+// Obtener usuario actual
+router.get('/auth/me', getCurrentUser);
+
+// Cambiar contraseña (usuario autenticado)
+router.put('/auth/change-password',
+  body('password_actual').isString().notEmpty().withMessage('Contraseña actual es obligatoria'),
+  body('password_nuevo').isString().notEmpty().withMessage('Nueva contraseña es obligatoria'),
   inputErrors,
-  getLoguinById
+  changePassword
 );
 
-// Actualizar loguin por ID
-router.put('/:id',
-  param('id').isInt().withMessage('ID de loguin inválido'),
-  body('id_empleado').optional().isInt().withMessage('ID de empleado inválido'),
-  body('id_rol').optional().isInt().withMessage('ID de rol inválido'),
-  body('usuario').optional().isString().isLength({ max: 20 }),
-  body('passwd').optional().isString().isLength({ max: 500 }),
-  body('password_provisoria').optional().isBoolean(),
-  body('fecha_cambio_pass').optional().isISO8601().toDate(),
+// ===== RUTAS DE RECUPERACIÓN DE CONTRASEÑA =====
+
+// Solicitar recuperación de contraseña
+router.post('/auth/forgot-password',
+  body('usuario').isString().notEmpty().withMessage('Usuario es obligatorio'),
   inputErrors,
-  updateLoguin
+  solicitarRecuperacionPassword
 );
 
-// Eliminar loguin por ID
-router.delete('/:id',
-  param('id').isInt().withMessage('ID de loguin inválido'),
+// Verificar token de recuperación
+router.get('/auth/reset-password/:resetToken', verificarTokenRecuperacion);
+
+// Cambiar contraseña con token de recuperación
+router.post('/auth/reset-password',
+  body('resetToken').isString().notEmpty().withMessage('Token de recuperación es obligatorio'),
+  body('nuevaPassword').isString().notEmpty().withMessage('Nueva contraseña es obligatoria'),
   inputErrors,
-  deleteLoguin
+  cambiarPasswordConToken
 );
 
 export default router;

@@ -3,13 +3,14 @@ import cors from 'cors';
 import db from './config/db';
 
 // Importación de routers
+import routerAuth from './router/RouterAuth';
 import routerCliente from './router/RouterCliente';
 import routerCategorias from './router/RouterCategorias';
 import routerColores from './router/RouterColor';
 import routerDetallePedidos from './router/RouterDetallePedidos';
 import routerEmpleados from './router/RouterEmpleados';
 import routerImagenes from './router/RouterImagenes';
-import routerLogin from './router/RouterLoguin';
+import routerLoguin from './router/RouterLoguin';
 import routerPedidos from './router/RouterPedidos';
 import routerProductos from './router/RouterProductos';
 import routerProveedores from './router/RouterProveedores';
@@ -33,13 +34,14 @@ server.use(Express.json());
 server.use(Express.urlencoded({ extended: true }));
 
 // Rutas base organizadas por recurso
+server.use('/api/auth', routerAuth); // Nuevo router de autenticación
 server.use('/api/clientes', routerCliente);
 server.use('/api/categorias', routerCategorias);
 server.use('/api/colores', routerColores);
 server.use('/api/detalle-pedidos', routerDetallePedidos);
 server.use('/api/empleados', routerEmpleados);
 server.use('/api/imagenes', routerImagenes);
-server.use('/api/login', routerLogin);
+server.use('/api/login', routerLoguin);
 server.use('/api/pedidos', routerPedidos);
 server.use('/api/productos', routerProductos);
 server.use('/api/proveedores', routerProveedores);

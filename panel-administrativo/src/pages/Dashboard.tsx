@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext'
 import DebugAuth from '../components/DebugAuth'
 
 const Dashboard: React.FC = () => {
-  const { user, canAccessModule } = useAuth()
+  const { usuario, canAccessModule } = useAuth()
 
   const stats = [
     { name: 'Total Empleados', value: '24', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
@@ -38,12 +38,12 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info - Solo en desarrollo */}
+      {/* Debug Info - Deshabilitado temporalmente */}
       {false && <DebugAuth />}
       
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Bienvenido, {user?.name || 'Usuario'}</p>
+        <p className="text-gray-600">Bienvenido, {usuario?.nombre || 'Usuario'}</p>
       </div>
 
       {/* Stats Grid */}

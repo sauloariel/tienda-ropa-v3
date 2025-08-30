@@ -30,6 +30,25 @@ const Login: React.FC = () => {
     }
   }
 
+  const handleDemoLogin = async (role: 'Admin' | 'Vendedor' | 'Inventario' | 'Marketing') => {
+      setIsLoading(true);
+      
+      const demoCredentials = {
+          Admin: { usuario: 'admin', password: 'admin123' },
+          Vendedor: { usuario: 'lucia', password: 'lucia123' },
+          Inventario: { usuario: 'inventario', password: 'inventario123' },
+          Marketing: { usuario: 'marketing', password: 'marketing123' }
+      };
+
+      try {
+          await login(demoCredentials[role]);
+      } catch (error) {
+          console.error('Error en demo login:', error);
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -149,8 +168,8 @@ const Login: React.FC = () => {
                     <p className="text-xs text-blue-600">POS, Pedidos y Clientes</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-blue-600">Usuario: <span className="font-mono">vendedor</span></p>
-                    <p className="text-xs text-blue-600">Contraseña: <span className="font-mono">vendedor</span></p>
+                    <p className="text-xs text-blue-600">Usuario: <span className="font-mono">lucia</span></p>
+                    <p className="text-xs text-blue-600">Contraseña: <span className="font-mono">lucia123</span></p>
                   </div>
                 </div>
               </div>
@@ -164,7 +183,7 @@ const Login: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-green-600">Usuario: <span className="font-mono">inventario</span></p>
-                    <p className="text-xs text-green-600">Contraseña: <span className="font-mono">inventario</span></p>
+                    <p className="text-xs text-green-600">Contraseña: <span className="font-mono">inventario123</span></p>
                   </div>
                 </div>
               </div>
