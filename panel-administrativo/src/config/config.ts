@@ -2,7 +2,7 @@
 export const config = {
     // API Configuration
     api: {
-        baseURL: 'http://localhost:4000/api',
+        baseURL: 'http://localhost:4000',
         timeout: 10000,
     },
 

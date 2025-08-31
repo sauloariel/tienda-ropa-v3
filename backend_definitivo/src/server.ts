@@ -34,7 +34,7 @@ server.use(Express.json());
 server.use(Express.urlencoded({ extended: true }));
 
 // Rutas base organizadas por recurso
-server.use('/api/auth', routerAuth); // Nuevo router de autenticación
+server.use('/auth', routerAuth); // Router de autenticación
 server.use('/api/clientes', routerCliente);
 server.use('/api/categorias', routerCategorias);
 server.use('/api/colores', routerColores);

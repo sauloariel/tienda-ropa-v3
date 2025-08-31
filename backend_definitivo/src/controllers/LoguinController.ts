@@ -71,10 +71,11 @@ export const loginEmpleado = async (req: Request, res: Response) => {
       usuario: loguinData.usuario,
       empleado_id: loguinData.empleado?.id_empleado,
       rol_id: loguinData.rol?.id_rol,
-      rol_nombre: loguinData.rol?.descripcion
+      rol: loguinData.rol?.descripcion,
+      nombre: `${loguinData.empleado?.nombre || ''} ${loguinData.empleado?.apellido || ''}`.trim()
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
 
     // Actualizar último acceso
     await Loguin.update(
@@ -95,11 +96,8 @@ export const loginEmpleado = async (req: Request, res: Response) => {
     };
 
     res.json({
-      success: true,
-      message: 'Login exitoso',
       token,
-      usuario: usuarioResponse,
-      expires_in: 24 * 60 * 60
+      user: usuarioResponse
     });
 
   } catch (error) {

@@ -7,16 +7,19 @@ import { Roles } from '../models/Roles.model';
 const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_jwt_super_seguro_2024_tienda_ropa';
 
 // Extender la interfaz Request para incluir el usuario
+export interface AuthUser {
+    id: number;
+    rol: string;
+    nombre: string;
+    usuario: string;
+    empleado_id: number;
+    rol_id: number;
+}
+
 declare global {
     namespace Express {
         interface Request {
-            user?: {
-                id: number;
-                usuario: string;
-                empleado_id: number;
-                rol_id: number;
-                rol_nombre: string;
-            };
+            user?: AuthUser;
         }
     }
 }
@@ -116,3 +119,22 @@ export const requireEmployee = requireRole(['ADMIN', 'EMPLEADO', 'VENDEDOR']);
 
 // Middleware para verificar si es vendedor o admin
 export const requireVendor = requireRole(['ADMIN', 'VENDEDOR']);
+
+// Middlewares simplificados para el nuevo sistema
+export const authRequired = (req: Request, res: Response, next: NextFunction) => {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) return res.status(401).json({ message: 'No autenticado' });
+    try {
+        const payload = jwt.verify(header.slice(7), JWT_SECRET) as AuthUser;
+        req.user = payload;
+        next();
+    } catch {
+        return res.status(401).json({ message: 'Token inválido' });
+    }
+};
+
+export const authorizeRoles = (...roles: string[]) => (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) return res.status(401).json({ message: 'No autenticado' });
+    if (!roles.includes(req.user.rol)) return res.status(403).json({ message: 'Sin permiso' });
+    next();
+};

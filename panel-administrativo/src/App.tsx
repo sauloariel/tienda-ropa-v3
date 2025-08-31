@@ -12,123 +12,22 @@ import Estadisticas from './pages/Estadisticas';
 import Marketing from './pages/Marketing';
 import Login from './pages/Login';
 import Unauthorized from './pages/Unauthorized';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import RoleGuard from './components/RoleGuard';
-import { Rol } from './types/auth.types';
-
-// Componente para rutas protegidas por autenticación
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando autenticación...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-}
-
-// Componente para rutas protegidas por rol específico
-function RoleProtectedRoute({ 
-  children, 
-  roles 
-}: { 
-  children: React.ReactNode;
-  roles: Rol[];
-}) {
-  return (
-    <RoleGuard roles={roles}>
-      {children}
-    </RoleGuard>
-  );
-}
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute, RequireRole } from './routes/guards';
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Ruta pública */}
       <Route path="/login" element={<Login />} />
-      
-      {/* Ruta de acceso no autorizado */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
-      
-      {/* Rutas protegidas */}
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
-      }>
-        {/* Ruta por defecto - redirigir según rol */}
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        
-        {/* Dashboard - Todos los roles */}
-        <Route path="dashboard" element={<Dashboard />} />
-        
-        {/* POS - Admin y Vendedor */}
-        <Route path="pos" element={
-          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
-            <POS />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Productos - Admin e Inventario */}
-        <Route path="productos" element={
-          <RoleProtectedRoute roles={['Admin', 'Inventario']}>
-            <Productos />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Pedidos - Admin y Vendedor */}
-        <Route path="pedidos" element={
-          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
-            <Pedidos />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Clientes - Admin y Vendedor */}
-        <Route path="clientes" element={
-          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
-            <Clientes />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Empleados - Solo Admin */}
-        <Route path="empleados" element={
-          <RoleProtectedRoute roles={['Admin']}>
-            <Empleados />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Ventas - Admin y Vendedor */}
-        <Route path="ventas" element={
-          <RoleProtectedRoute roles={['Admin', 'Vendedor']}>
-            <Ventas />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Estadísticas - Todos los roles */}
-        <Route path="estadisticas" element={<Estadisticas />} />
-        
-        {/* Marketing - Admin y Marketing */}
-        <Route path="marketing" element={
-          <RoleProtectedRoute roles={['Admin', 'Marketing']}>
-            <Marketing />
-          </RoleProtectedRoute>
-        } />
-        
-        {/* Ruta catch-all - redirigir a dashboard */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Route>
+      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/ventas" element={<ProtectedRoute><RequireRole roles={['Administrador', 'Vendedor']}><Ventas /></RequireRole></ProtectedRoute>} />
+      <Route path="/inventario" element={<ProtectedRoute><RequireRole roles={['Administrador', 'Inventario']}><Productos /></RequireRole></ProtectedRoute>} />
+      <Route path="/marketing" element={<ProtectedRoute><RequireRole roles={['Administrador', 'Marketing']}><Marketing /></RequireRole></ProtectedRoute>} />
+      <Route path="/empleados" element={<ProtectedRoute><RequireRole roles={['Administrador']}><Empleados /></RequireRole></ProtectedRoute>} />
+      <Route path="/pos" element={<ProtectedRoute><RequireRole roles={['Administrador', 'Vendedor']}><POS /></RequireRole></ProtectedRoute>} />
+      <Route path="/pedidos" element={<ProtectedRoute><RequireRole roles={['Administrador', 'Vendedor']}><Pedidos /></RequireRole></ProtectedRoute>} />
+      <Route path="/clientes" element={<ProtectedRoute><RequireRole roles={['Administrador', 'Vendedor']}><Clientes /></RequireRole></ProtectedRoute>} />
+      <Route path="/estadisticas" element={<ProtectedRoute><Estadisticas /></ProtectedRoute>} />
     </Routes>
   );
 }
