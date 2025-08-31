@@ -45,50 +45,54 @@ export interface AuthContextType extends AuthState {
 }
 
 // Configuración de permisos por rol
+export interface ModuloPermiso {
+    id: string;
+    nombre: string;
+    icono: string;
+    ruta: string;
+    descripcion: string;
+    color: string;
+    bgColor: string;
+}
+
 export interface RolPermisos {
-    [key: string]: {
-        nombre: string;
-        icono: string;
-        ruta: string;
-        descripcion: string;
-    }[];
+    [key: string]: ModuloPermiso[];
 }
 
 export const PERMISOS_POR_ROL: RolPermisos = {
     Admin: [
-        { nombre: 'Dashboard', icono: '📊', ruta: '/dashboard', descripcion: 'Vista general del sistema' },
-        { nombre: 'POS', icono: '🛒', ruta: '/pos', descripcion: 'Punto de venta' },
-        { nombre: 'Productos', icono: '📦', ruta: '/productos', descripcion: 'Gestión de productos' },
-        { nombre: 'Pedidos', icono: '📋', ruta: '/pedidos', descripcion: 'Gestión de pedidos' },
-        { nombre: 'Clientes', icono: '👥', ruta: '/clientes', descripcion: 'Gestión de clientes' },
-        { nombre: 'Empleados', icono: '👨‍💼', ruta: '/empleados', descripcion: 'Gestión de empleados' },
-        { nombre: 'Ventas', icono: '💰', ruta: '/ventas', descripcion: 'Historial de ventas' },
-        { nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes y métricas' },
-        { nombre: 'Marketing', icono: '🎯', ruta: '/marketing', descripcion: 'Campañas y promociones' },
-        { nombre: 'Roles', icono: '🔐', ruta: '/roles', descripcion: 'Gestión de roles y permisos' }
+        { id: 'pos', nombre: 'POS', icono: '🛒', ruta: '/pos', descripcion: 'Punto de venta', color: 'text-green-600', bgColor: 'bg-green-100' },
+        { id: 'productos', nombre: 'Productos', icono: '📦', ruta: '/productos', descripcion: 'Gestión de productos', color: 'text-purple-600', bgColor: 'bg-purple-100' },
+        { id: 'pedidos', nombre: 'Pedidos', icono: '📋', ruta: '/pedidos', descripcion: 'Gestión de pedidos', color: 'text-orange-600', bgColor: 'bg-orange-100' },
+        { id: 'clientes', nombre: 'Clientes', icono: '👥', ruta: '/clientes', descripcion: 'Gestión de clientes', color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
+        { id: 'empleados', nombre: 'Empleados', icono: '👨‍💼', ruta: '/empleados', descripcion: 'Gestión de empleados', color: 'text-red-600', bgColor: 'bg-red-100' },
+        { id: 'ventas', nombre: 'Ventas', icono: '💰', ruta: '/ventas', descripcion: 'Historial de ventas', color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
+        { id: 'estadisticas', nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes y métricas', color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
+        { id: 'marketing', nombre: 'Marketing', icono: '🎯', ruta: '/marketing', descripcion: 'Campañas y promociones', color: 'text-pink-600', bgColor: 'bg-pink-100' }
     ],
     Vendedor: [
-        { nombre: 'Dashboard', icono: '📊', ruta: '/dashboard', descripcion: 'Vista general del sistema' },
-        { nombre: 'POS', icono: '🛒', ruta: '/pos', descripcion: 'Punto de venta' },
-        { nombre: 'Pedidos', icono: '📋', ruta: '/pedidos', descripcion: 'Gestión de pedidos' },
-        { nombre: 'Clientes', icono: '👥', ruta: '/clientes', descripcion: 'Gestión de clientes' },
-        { nombre: 'Ventas', icono: '💰', ruta: '/ventas', descripcion: 'Historial de ventas' },
-        { nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes de ventas' }
+        { id: 'pos', nombre: 'POS', icono: '🛒', ruta: '/pos', descripcion: 'Punto de venta', color: 'text-green-600', bgColor: 'bg-green-100' },
+        { id: 'pedidos', nombre: 'Pedidos', icono: '📋', ruta: '/pedidos', descripcion: 'Gestión de pedidos', color: 'text-orange-600', bgColor: 'bg-orange-100' },
+        { id: 'clientes', nombre: 'Clientes', icono: '👥', ruta: '/clientes', descripcion: 'Gestión de clientes', color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
+        { id: 'ventas', nombre: 'Ventas', icono: '💰', ruta: '/ventas', descripcion: 'Historial de ventas', color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
+        { id: 'estadisticas', nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes de ventas', color: 'text-cyan-600', bgColor: 'bg-cyan-100' }
     ],
     Inventario: [
-        { nombre: 'Dashboard', icono: '📊', ruta: '/dashboard', descripcion: 'Vista general del sistema' },
-        { nombre: 'Productos', icono: '📦', ruta: '/productos', descripcion: 'Gestión de productos' },
-        { nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes de inventario' }
+        { id: 'productos', nombre: 'Productos', icono: '📦', ruta: '/productos', descripcion: 'Gestión de productos', color: 'text-purple-600', bgColor: 'bg-purple-100' },
+        { id: 'estadisticas', nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes de inventario', color: 'text-cyan-600', bgColor: 'bg-cyan-100' }
     ],
     Marketing: [
-        { nombre: 'Dashboard', icono: '📊', ruta: '/dashboard', descripcion: 'Vista general del sistema' },
-        { nombre: 'Marketing', icono: '🎯', ruta: '/marketing', descripcion: 'Campañas y promociones' },
-        { nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Métricas de marketing' }
+        { id: 'marketing', nombre: 'Marketing', icono: '🎯', ruta: '/marketing', descripcion: 'Campañas y promociones', color: 'text-pink-600', bgColor: 'bg-pink-100' },
+        { id: 'estadisticas', nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Métricas de marketing', color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
+        { id: 'pedidos', nombre: 'Pedidos', icono: '📋', ruta: '/pedidos', descripcion: 'Análisis de pedidos', color: 'text-orange-600', bgColor: 'bg-orange-100' }
     ]
 };
 
 // Función helper para obtener permisos de un rol
 export const obtenerPermisosRol = (rol: Rol) => {
+    console.log('🔍 Buscando permisos para rol:', rol);
+    console.log('📚 Roles disponibles:', Object.keys(PERMISOS_POR_ROL));
+    console.log('🎯 Permisos encontrados:', PERMISOS_POR_ROL[rol]);
     return PERMISOS_POR_ROL[rol] || [];
 };
 

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { LoginRequest, LoginResponse } from '../types/auth.types';
+import { config } from '../config/config';
 
-const API_BASE_URL = 'http://localhost:4000/api';
+const API_BASE_URL = config.api.baseURL;
 
 // Configurar axios para autenticación usando el LoguinController
 const authAPI = axios.create({
@@ -42,10 +43,16 @@ authAPI.interceptors.response.use(
 // Login de usuario usando LoguinController
 export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
     try {
+        console.log('🔐 Intentando login con:', credentials);
+        console.log('🌐 URL de la API:', `${API_BASE_URL}/login/auth/login`);
+
         const response = await authAPI.post('/auth/login', credentials);
+        console.log('✅ Login exitoso:', response.data);
         return response.data;
     } catch (error: any) {
-        console.error('Error en login:', error);
+        console.error('❌ Error en login:', error);
+        console.error('📡 Response del servidor:', error.response?.data);
+        console.error('🔢 Status code:', error.response?.status);
         throw new Error(
             error.response?.data?.message ||
             'Error al iniciar sesión. Verifica tus credenciales.'
@@ -62,6 +69,28 @@ export const verificarToken = async (): Promise<{ valid: boolean; usuario?: any 
         }
 
         const response = await authAPI.get('/auth/verify');
+
+        // Normalizar el rol del usuario
+        if (response.data.usuario) {
+            const normalizarRol = (rol: string) => {
+                const rolUpper = rol.toUpperCase();
+                switch (rolUpper) {
+                    case 'ADMIN':
+                        return 'Admin';
+                    case 'VENDEDOR':
+                        return 'Vendedor';
+                    case 'INVENTARIO':
+                        return 'Inventario';
+                    case 'MARKETING':
+                        return 'Marketing';
+                    default:
+                        return 'Admin';
+                }
+            };
+
+            response.data.usuario.rol = normalizarRol(response.data.usuario.rol);
+        }
+
         return { valid: true, usuario: response.data.usuario };
     } catch (error) {
         return { valid: false };
@@ -85,6 +114,28 @@ export const logout = async (): Promise<void> => {
 export const obtenerUsuarioActual = async (): Promise<any> => {
     try {
         const response = await authAPI.get('/auth/me');
+
+        // Normalizar el rol del usuario
+        if (response.data.usuario) {
+            const normalizarRol = (rol: string) => {
+                const rolUpper = rol.toUpperCase();
+                switch (rolUpper) {
+                    case 'ADMIN':
+                        return 'Admin';
+                    case 'VENDEDOR':
+                        return 'Vendedor';
+                    case 'INVENTARIO':
+                        return 'Inventario';
+                    case 'MARKETING':
+                        return 'Marketing';
+                    default:
+                        return 'Admin';
+                }
+            };
+
+            response.data.usuario.rol = normalizarRol(response.data.usuario.rol);
+        }
+
         return response.data.usuario;
     } catch (error: any) {
         console.error('Error al obtener usuario:', error);

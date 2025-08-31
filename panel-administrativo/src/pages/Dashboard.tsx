@@ -7,34 +7,120 @@ import {
   CreditCard,
   TrendingUp,
   DollarSign,
-  Activity
+  Activity,
+  ArrowRight
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { obtenerPermisosRol, ModuloPermiso } from '../types/auth.types'
 import DebugAuth from '../components/DebugAuth'
 
 const Dashboard: React.FC = () => {
   const { usuario, canAccessModule } = useAuth()
 
-  const stats = [
-    { name: 'Total Empleados', value: '24', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-    { name: 'Productos Activos', value: '156', icon: Package, color: 'text-green-600', bgColor: 'bg-green-100' },
-    { name: 'Pedidos del Mes', value: '89', icon: ShoppingCart, color: 'text-purple-600', bgColor: 'bg-purple-100' },
-    { name: 'Clientes Registrados', value: '342', icon: UserCheck, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  ]
+  // Estadísticas dinámicas según el rol
+  const obtenerEstadisticasPorRol = () => {
+    if (!usuario) return []
+    
+    const estadisticasBase = [
+      { name: 'Dashboard', value: 'Activo', icon: TrendingUp, color: 'text-blue-600', bgColor: 'bg-blue-100' }
+    ]
+    
+    switch (usuario.rol) {
+      case 'Admin':
+        return [
+          ...estadisticasBase,
+          { name: 'Total Empleados', value: '24', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+          { name: 'Productos Activos', value: '156', icon: Package, color: 'text-green-600', bgColor: 'bg-green-100' },
+          { name: 'Pedidos del Mes', value: '89', icon: ShoppingCart, color: 'text-purple-600', bgColor: 'bg-purple-100' },
+          { name: 'Clientes Registrados', value: '342', icon: UserCheck, color: 'text-orange-600', bgColor: 'bg-orange-100' }
+        ]
+      case 'Vendedor':
+        return [
+          ...estadisticasBase,
+          { name: 'Ventas del Mes', value: '89', icon: ShoppingCart, color: 'text-green-600', bgColor: 'bg-green-100' },
+          { name: 'Clientes Atendidos', value: '156', icon: UserCheck, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+          { name: 'Pedidos Pendientes', value: '12', icon: ShoppingCart, color: 'text-orange-600', bgColor: 'bg-orange-100' }
+        ]
+      case 'Inventario':
+        return [
+          ...estadisticasBase,
+          { name: 'Productos Activos', value: '156', icon: Package, color: 'text-green-600', bgColor: 'bg-green-100' },
+          { name: 'Stock Bajo', value: '8', icon: Package, color: 'text-red-600', bgColor: 'bg-red-100' },
+          { name: 'Categorías', value: '12', icon: Package, color: 'text-purple-600', bgColor: 'bg-purple-100' }
+        ]
+      case 'Marketing':
+        return [
+          ...estadisticasBase,
+          { name: 'Campañas Activas', value: '5', icon: TrendingUp, color: 'text-pink-600', bgColor: 'bg-pink-100' },
+          { name: 'Clientes Potenciales', value: '89', icon: UserCheck, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+          { name: 'Conversiones', value: '23%', icon: TrendingUp, color: 'text-green-600', bgColor: 'bg-green-100' }
+        ]
+      default:
+        return estadisticasBase
+    }
+  }
 
-  const quickActions = [
-    { name: 'Nuevo Empleado', href: '/empleados/nuevo', icon: UserCheck, color: 'text-blue-600', bgColor: 'bg-blue-100', requiresModule: 'empleados' },
-    { name: 'Agregar Producto', href: '/productos', icon: Package, color: 'text-green-600', bgColor: 'bg-green-100', requiresModule: 'productos' },
-    { name: 'Nuevo Pedido', href: '/pedidos', icon: ShoppingCart, color: 'text-purple-600', bgColor: 'bg-purple-100', requiresModule: 'pedidos' },
-    { name: 'Sistema POS', href: '/pos', icon: CreditCard, color: 'text-orange-600', bgColor: 'bg-orange-100', requiresModule: 'pos' },
-  ]
+  const stats = obtenerEstadisticasPorRol()
 
-  const recentActivity = [
-    { action: 'Empleado agregado', user: 'Ana García', time: 'Hace 2 horas', type: 'success' },
-    { action: 'Producto actualizado', user: 'Carlos López', time: 'Hace 4 horas', type: 'info' },
-    { action: 'Pedido completado', user: 'María Rodríguez', time: 'Hace 6 horas', type: 'success' },
-    { action: 'Cliente registrado', user: 'Juan Pérez', time: 'Hace 8 horas', type: 'info' },
-  ]
+  // Obtener módulos disponibles según el rol del usuario
+  const obtenerModulosDisponibles = (): ModuloPermiso[] => {
+    if (!usuario) {
+      console.log('❌ No hay usuario autenticado');
+      return [];
+    }
+    
+    console.log('👤 Usuario actual:', usuario);
+    console.log('🎭 Rol del usuario:', usuario.rol);
+    
+    const permisos = obtenerPermisosRol(usuario.rol);
+    console.log('📋 Permisos obtenidos:', permisos);
+    
+    return permisos; // Ya no necesitamos filtrar dashboard
+  }
+
+  const modulosDisponibles = obtenerModulosDisponibles()
+
+  // Actividad reciente según el rol
+  const obtenerActividadReciente = () => {
+    if (!usuario) return []
+    
+    switch (usuario.rol) {
+      case 'Admin':
+        return [
+          { action: 'Empleado agregado', user: 'Ana García', time: 'Hace 2 horas', type: 'success' },
+          { action: 'Producto actualizado', user: 'Carlos López', time: 'Hace 4 horas', type: 'info' },
+          { action: 'Pedido completado', user: 'María Rodríguez', time: 'Hace 6 horas', type: 'success' },
+          { action: 'Cliente registrado', user: 'Juan Pérez', time: 'Hace 8 horas', type: 'info' }
+        ]
+      case 'Vendedor':
+        return [
+          { action: 'Venta realizada', user: 'Lucia Vendedora', time: 'Hace 1 hora', type: 'success' },
+          { action: 'Cliente atendido', user: 'María Rodríguez', time: 'Hace 3 horas', type: 'info' },
+          { action: 'Pedido procesado', user: 'Carlos López', time: 'Hace 5 horas', type: 'success' },
+          { action: 'Nuevo cliente', user: 'Juan Pérez', time: 'Hace 7 horas', type: 'info' }
+        ]
+      case 'Inventario':
+        return [
+          { action: 'Producto agregado', user: 'Ana Inventario', time: 'Hace 1 hora', type: 'success' },
+          { action: 'Stock actualizado', user: 'Carlos López', time: 'Hace 3 horas', type: 'info' },
+          { action: 'Categoría creada', user: 'María Rodríguez', time: 'Hace 5 horas', type: 'success' },
+          { action: 'Proveedor registrado', user: 'Juan Pérez', time: 'Hace 7 horas', type: 'info' }
+        ]
+      case 'Marketing':
+        return [
+          { action: 'Campaña lanzada', user: 'Ana Marketing', time: 'Hace 1 hora', type: 'success' },
+          { action: 'Promoción creada', user: 'Carlos López', time: 'Hace 3 horas', type: 'info' },
+          { action: 'Análisis completado', user: 'María Rodríguez', time: 'Hace 5 horas', type: 'success' },
+          { action: 'Cliente potencial', user: 'Juan Pérez', time: 'Hace 7 horas', type: 'info' }
+        ]
+      default:
+        return [
+          { action: 'Sistema activo', user: 'Sistema', time: 'Hace 1 hora', type: 'success' }
+        ]
+    }
+  }
+
+  const recentActivity = obtenerActividadReciente()
 
   return (
     <div className="space-y-6">
@@ -42,8 +128,21 @@ const Dashboard: React.FC = () => {
       {false && <DebugAuth />}
       
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Bienvenido, {usuario?.nombre || 'Usuario'}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Bienvenido, {usuario?.nombre || 'Usuario'}</p>
+          </div>
+          <div className="text-right">
+            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+              Rol: {usuario?.rol || 'Usuario'}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {modulosDisponibles.length} módulos del sistema
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -73,37 +172,36 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Quick Actions */}
+      {/* Módulos del Sistema */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            Acciones Rápidas
+            Módulos del Sistema
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {quickActions.map((action) => {
-              // Solo mostrar acciones para módulos a los que el usuario tiene acceso
-              if (!canAccessModule(action.requiresModule)) {
-                return null;
-              }
-              
-              return (
-                <a
-                  key={action.name}
-                  href={action.href}
-                  className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                >
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-md ${action.bgColor} flex items-center justify-center`}>
-                    <action.icon className={`h-6 w-6 ${action.color}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="absolute inset-0" aria-hidden="true" />
-                    <p className="text-sm font-medium text-gray-900">
-                      {action.name}
-                    </p>
-                  </div>
-                </a>
-              );
-            })}
+            {modulosDisponibles.map((modulo) => (
+              <a
+                key={modulo.id}
+                href={modulo.ruta}
+                className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 transition-all duration-200 hover:shadow-md"
+              >
+                <div className={`flex-shrink-0 w-12 h-12 rounded-lg ${modulo.bgColor} flex items-center justify-center`}>
+                  <span className="text-2xl">{modulo.icono}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="absolute inset-0" aria-hidden="true" />
+                  <p className="text-sm font-medium text-gray-900">
+                    {modulo.nombre}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {modulo.descripcion}
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <ArrowRight className="h-4 w-4 text-gray-400" />
+                </div>
+              </a>
+            ))}
           </div>
         </div>
       </div>

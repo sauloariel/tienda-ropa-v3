@@ -138,11 +138,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Función para redirigir según el rol (solo después del login exitoso)
     const redirigirSegunRol = (rol: Rol) => {
+        console.log('🎯 Función redirigirSegunRol llamada con rol:', rol);
         const permisos = obtenerPermisosRol(rol);
+        console.log('📋 Permisos obtenidos para el rol:', permisos);
+        
         if (permisos.length > 0) {
+            const rutaDestino = permisos[0].ruta;
+            console.log('🚀 Redirigiendo a:', rutaDestino);
             // Redirigir a la primera ruta disponible para el rol
-            navigate(permisos[0].ruta);
+            navigate(rutaDestino);
         } else {
+            console.log('❌ No se encontraron permisos para el rol, redirigiendo a unauthorized');
             navigate('/unauthorized');
         }
     };
@@ -156,11 +162,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Función de login
     const login = async (credentials: LoginRequest): Promise<void> => {
         try {
+            console.log('🚀 Iniciando proceso de login...');
             dispatch({ type: 'LOGIN_START' });
             
+            console.log('📞 Llamando al servicio de login...');
             const response = await loginService(credentials);
+            console.log('📥 Respuesta del servicio:', response);
             
             if (response.success) {
+                console.log('✅ Login exitoso, guardando datos...');
                 // Guardar en localStorage
                 localStorage.setItem('authToken', response.token);
                 localStorage.setItem('authUser', JSON.stringify(response.usuario));
@@ -173,15 +183,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     } 
                 });
 
+                console.log('🔄 Redirigiendo según rol:', response.usuario.rol);
+                // Normalizar el rol para que coincida con los tipos del frontend
+                const normalizarRol = (rol: string): Rol => {
+                    const rolUpper = rol.toUpperCase();
+                    switch (rolUpper) {
+                        case 'ADMIN':
+                            return 'Admin';
+                        case 'VENDEDOR':
+                            return 'Vendedor';
+                        case 'INVENTARIO':
+                            return 'Inventario';
+                        case 'MARKETING':
+                            return 'Marketing';
+                        default:
+                            return 'Admin'; // Por defecto
+                    }
+                };
+                
+                const rolNormalizado = normalizarRol(response.usuario.rol);
+                console.log('🔄 Rol normalizado:', rolNormalizado);
                 // Redirigir según el rol
-                redirigirSegunRol(response.usuario.rol);
+                redirigirSegunRol(rolNormalizado);
             } else {
+                console.log('❌ Login falló:', response.message);
                 dispatch({ 
                     type: 'LOGIN_FAILURE', 
                     payload: response.message || 'Error en el login' 
                 });
             }
         } catch (error: any) {
+            console.error('💥 Error en el contexto de login:', error);
             dispatch({ 
                 type: 'LOGIN_FAILURE', 
                 payload: error.message || 'Error al conectar con el servidor' 

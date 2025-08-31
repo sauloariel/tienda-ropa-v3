@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { LogIn, User, Lock, AlertCircle } from 'lucide-react'
 
@@ -9,22 +8,22 @@ const Login: React.FC = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
-  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
 
+    console.log('📝 Formulario enviado con:', { usuario: username, password: '***' })
+
     try {
-      const success = await login(username, password)
-      if (success) {
-        navigate('/')
-      } else {
-        setError('Credenciales inválidas')
-      }
-    } catch (err) {
-      setError('Error al iniciar sesión')
+      console.log('🔐 Llamando a la función login del contexto...')
+      await login({ usuario: username, password })
+      console.log('✅ Login completado exitosamente')
+      // El login ya maneja la navegación internamente
+    } catch (err: any) {
+      console.error('❌ Error en el formulario de login:', err)
+      setError(err.message || 'Error al iniciar sesión')
     } finally {
       setIsLoading(false)
     }

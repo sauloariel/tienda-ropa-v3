@@ -65,7 +65,7 @@ export interface Imagen {
     nombre_archivo?: string
     ruta?: string
     descripcion?: string
-    imagen_bin?: Buffer
+    imagen_bin?: any
 }
 
 export interface ProductoCreate {
@@ -92,7 +92,7 @@ export interface ImagenCreate {
     nombre_archivo?: string
     ruta?: string
     descripcion?: string
-    imagen_bin?: Buffer
+    imagen_bin?: any // Cambiado de Buffer a any para evitar problemas de tipos
 }
 
 export interface ProductoUpdate {

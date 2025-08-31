@@ -45,7 +45,8 @@ interface EmployeeFormData {
 }
 
 const Empleados: React.FC = () => {
-  const { isAdmin } = useAuth()
+  const { usuario } = useAuth()
+  const isAdmin = usuario?.rol === 'Admin'
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)

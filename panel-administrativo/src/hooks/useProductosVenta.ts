@@ -24,7 +24,25 @@ export const useProductosVenta = () => {
                 producto.variantes.length > 0
             )
 
-            setProductos(productosFiltrados)
+            // Convertir Producto[] a ProductoVenta[]
+            const productosVenta: ProductoVenta[] = productosFiltrados.map(producto => ({
+                id_producto: producto.id_producto,
+                descripcion: producto.descripcion,
+                precio_venta: producto.precio_venta,
+                stock: producto.stock || 0,
+                variantes: producto.variantes?.map(v => ({
+                    id_variante: v.id_variante,
+                    id_color: v.id_color,
+                    id_talla: v.id_talle, // Corregido: id_talle en lugar de id_talla
+                    stock: v.stock,
+                    precio_venta: v.precio_venta,
+                    color: v.color ? { id_color: v.color.id_color, nombre: v.color.nombre } : { id_color: 0, nombre: '' },
+                    talla: v.talla ? { id_talla: v.talla.id_talla, nombre: v.talla.nombre, id_tipo_talle: v.talla.id_tipo_talle } : { id_talla: 0, nombre: '', id_tipo_talle: 0 }
+                })) || [],
+                imagenes: producto.imagenes?.map(img => img.ruta || '') || []
+            }))
+
+            setProductos(productosVenta)
         } catch (err: any) {
             setError(err.response?.data?.error || 'Error al cargar productos')
             console.error('Error cargando productos:', err)
@@ -38,20 +56,16 @@ export const useProductosVenta = () => {
         cargarProductos()
     }, [cargarProductos])
 
-    // Filtrar productos por búsqueda y categoría
+    // Filtrar productos por búsqueda
     const productosFiltrados = productos.filter(producto => {
-        const matchesSearch = producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (producto.categoria?.nombre_categoria || '').toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesSearch = producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
 
-        const matchesCategoria = selectedCategoria === 0 || producto.id_categoria === selectedCategoria
-
-        return matchesSearch && matchesCategoria
+        // Por ahora, no filtramos por categoría ya que ProductoVenta no tiene esa información
+        return matchesSearch
     })
 
-    // Obtener categorías únicas
-    const categorias = Array.from(new Set(productos.map(p => p.id_categoria)))
-        .map(id => productos.find(p => p.id_categoria === id)?.categoria)
-        .filter(Boolean)
+    // Por ahora, categorías vacías ya que ProductoVenta no tiene información de categoría
+    const categorias: any[] = []
 
     // Obtener producto por ID
     const obtenerProducto = useCallback((id: number) => {
