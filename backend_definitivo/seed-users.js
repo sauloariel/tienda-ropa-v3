@@ -1,21 +1,74 @@
-import bcrypt from 'bcrypt';
-import { Empleados } from '../models/Empleados.model';
-import { Loguin } from '../models/Loguin.model';
-import { Roles } from '../models/Roles.model';
+// Script de seed en JavaScript puro
+const bcrypt = require('bcrypt');
+const { Sequelize } = require('sequelize');
 
-export async function seedUsers() {
+async function seedUsers() {
     try {
         console.log('🚀 Iniciando seed de usuarios...');
         
-        // Crear roles si no existen
+        // Crear conexión a la base de datos
+        const sequelize = new Sequelize({
+            dialect: 'sqlite',
+            storage: './database.sqlite',
+            logging: false
+        });
+        
+        // Definir modelos simples
+        const Roles = sequelize.define('Roles', {
+            id_rol: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true
+            },
+            descripcion: Sequelize.STRING
+        }, { tableName: 'roles', timestamps: false });
+        
+        const Empleados = sequelize.define('Empleados', {
+            id_empleado: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true
+            },
+            cuil: Sequelize.STRING,
+            nombre: Sequelize.STRING,
+            apellido: Sequelize.STRING,
+            domicilio: Sequelize.STRING,
+            telefono: Sequelize.STRING,
+            mail: Sequelize.STRING,
+            sueldo: Sequelize.DECIMAL,
+            puesto: Sequelize.STRING,
+            estado: Sequelize.STRING
+        }, { tableName: 'empleados', timestamps: false });
+        
+        const Loguin = sequelize.define('Loguin', {
+            id_loguin: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true
+            },
+            id_empleado: Sequelize.INTEGER,
+            id_rol: Sequelize.INTEGER,
+            usuario: Sequelize.STRING,
+            passwd: Sequelize.STRING,
+            password_provisoria: Sequelize.BOOLEAN,
+            fecha_cambio_pass: Sequelize.DATE
+        }, { tableName: 'loguin', timestamps: false });
+        
+        // Definir relaciones
+        Empleados.hasMany(Loguin, { foreignKey: 'id_empleado', as: 'loguins' });
+        Roles.hasMany(Loguin, { foreignKey: 'id_rol', as: 'loguins' });
+        Loguin.belongsTo(Empleados, { foreignKey: 'id_empleado', as: 'empleado' });
+        Loguin.belongsTo(Roles, { foreignKey: 'id_rol', as: 'rol' });
+        
+        // Crear roles
+        console.log('📋 Creando roles...');
         const roles = [
             { id_rol: 1, descripcion: 'Administrador' },
             { id_rol: 2, descripcion: 'Vendedor' },
             { id_rol: 3, descripcion: 'Inventario' },
             { id_rol: 4, descripcion: 'Marketing' }
         ];
-
-        console.log('📋 Creando roles...');
+        
         for (const rol of roles) {
             try {
                 const [rolCreado, created] = await Roles.findOrCreate({
@@ -32,8 +85,9 @@ export async function seedUsers() {
                 console.error(`❌ Error creando rol ${rol.descripcion}:`, error.message);
             }
         }
-
-        // Crear empleados demo
+        
+        // Crear empleados
+        console.log('👥 Creando empleados...');
         const empleados = [
             {
                 id_empleado: 1,
@@ -84,8 +138,7 @@ export async function seedUsers() {
                 estado: 'ACTIVO'
             }
         ];
-
-        console.log('👥 Creando empleados...');
+        
         for (const empleado of empleados) {
             try {
                 const [empleadoCreado, created] = await Empleados.findOrCreate({
@@ -102,8 +155,9 @@ export async function seedUsers() {
                 console.error(`❌ Error creando empleado ${empleado.nombre}:`, error.message);
             }
         }
-
+        
         // Crear usuarios de login
+        console.log('🔐 Creando usuarios de login...');
         const usuarios = [
             {
                 id_loguin: 1,
@@ -134,8 +188,7 @@ export async function seedUsers() {
                 password: 'marketing123'
             }
         ];
-
-        console.log('🔐 Creando usuarios de login...');
+        
         for (const usuario of usuarios) {
             try {
                 const passwordHash = await bcrypt.hash(usuario.password, 10);
@@ -161,9 +214,16 @@ export async function seedUsers() {
                 console.error(`❌ Error creando usuario ${usuario.usuario}:`, error.message);
             }
         }
-
-        console.log('✅ Usuarios demo creados exitosamente');
+        
+        console.log('🎉 Seed completado exitosamente');
+        
     } catch (error) {
-        console.error('❌ Error al crear usuarios demo:', error);
+        console.error('❌ Error general en seed:', error.message);
+        console.error('Stack:', error.stack);
+    } finally {
+        process.exit(0);
     }
 }
+
+// Ejecutar el seed
+seedUsers();

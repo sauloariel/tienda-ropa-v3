@@ -1,5 +1,6 @@
 import { Sequelize } from 'sequelize-typescript';
 import dotenv from 'dotenv';
+import { Usuario } from '../models/Usuario.model';
 
 dotenv.config();
 
@@ -7,7 +8,7 @@ dotenv.config();
 const db = new Sequelize({
     dialect: 'sqlite',
     storage: './database.sqlite',
-    models: [__dirname + '/../models/**/*.ts'],
+    models: [Usuario],
     logging: false
 });
 

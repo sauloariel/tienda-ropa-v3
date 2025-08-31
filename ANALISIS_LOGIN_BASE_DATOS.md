@@ -462,3 +462,5 @@ El sistema de login y conexión a la base de datos está **completamente funcion
 
 El sistema está listo para uso en producción con las configuraciones de seguridad apropiadas.
 
+
+

@@ -1,10 +1,42 @@
 import axios from 'axios';
-import { config } from '../config/config';
 
-export async function login(email: string, password: string) {
-    const { data } = await axios.post(`${config.api.baseURL}/auth/login`, {
-        usuario: email,
-        password: password
-    });
-    return data; // { token, user: { id, nombre, rol } }
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+export interface LoginCredentials {
+    email: string;
+    password: string;
 }
+
+export interface User {
+    id: number;
+    email: string;
+    nombre: string;
+    rol: string;
+}
+
+export interface LoginResponse {
+    success: boolean;
+    message: string;
+    token: string;
+    user: User;
+}
+
+export const authService = {
+    // Login
+    login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+        const response = await axios.post(`${API_URL}/auth/login`, credentials);
+        return response.data;
+    },
+
+    // Verificar token
+    verifyToken: async (token: string): Promise<{ success: boolean; user?: User }> => {
+        try {
+            const response = await axios.get(`${API_URL}/auth/verify`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            return { success: false };
+        }
+    }
+};

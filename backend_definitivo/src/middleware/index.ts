@@ -11,9 +11,6 @@ export const inputErrors = (req: Request, res: Response, next: NextFunction) => 
 
 // Exportar middleware de autenticación
 export {
-    authenticateToken,
-    requireRole,
-    requireAdmin,
-    requireEmployee,
-    requireVendor
+    authRequired,
+    authorizeRoles
 } from './auth';
