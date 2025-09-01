@@ -15,7 +15,7 @@ import {
 import { crearFactura } from '../services/factura'
 import { FacturaRequest, Factura } from '../types/factura.types'
 import FacturaModal from '../components/FacturaModal'
-import BackToDashboard from '../components/BackToDashboard'
+
 
 interface Product {
   id: number
@@ -144,7 +144,6 @@ const POS: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Punto de Venta (POS)</h1>
           <p className="text-gray-600">Gestiona las ventas y transacciones con facturación integrada</p>
         </div>
-        <BackToDashboard />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

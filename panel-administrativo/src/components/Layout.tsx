@@ -56,8 +56,6 @@ const Layout: React.FC = () => {
   // Función para obtener el icono según la ruta
   const getIconForRoute = (ruta: string) => {
     switch (ruta) {
-      case '/dashboard':
-        return Home;
       case '/pos':
         return CreditCard;
       case '/productos':
@@ -102,22 +100,7 @@ const Layout: React.FC = () => {
             </button>
           </div>
           
-          {/* User info in mobile sidebar */}
-          <div className="px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {usuario.nombre.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{usuario.nombre}</p>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {usuario.rol}
-                </span>
-              </div>
-            </div>
-          </div>
+
 
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
@@ -162,22 +145,7 @@ const Layout: React.FC = () => {
             </div>
           </div>
 
-          {/* User info */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {usuario.nombre.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{usuario.nombre}</p>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {usuario.rol}
-                </span>
-              </div>
-            </div>
-          </div>
+
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4">
@@ -236,7 +204,7 @@ const Layout: React.FC = () => {
                 {navigation.find(item => item.href === location.pathname)?.name || 'Inicio'}
               </div>
               
-              {/* User menu */}
+              {/* User menu with logout */}
               <Logout />
             </div>
           </div>

@@ -13,7 +13,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { pedidosService, Pedido } from '../services/pedidos'
-import BackToDashboard from '../components/BackToDashboard'
+
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -398,7 +398,6 @@ const Pedidos: React.FC = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
-            <BackToDashboard />
             <button
               onClick={loadPedidos}
               disabled={loading}

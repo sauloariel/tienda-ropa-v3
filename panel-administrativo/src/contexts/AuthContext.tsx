@@ -1,45 +1,20 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { authApi, User } from '../services/auth';
 import { useNavigate } from 'react-router-dom';
+import { PERMISOS_POR_ROL } from '../types/auth.types';
 
 type Ctx = {
   user: User | null;
+  usuario: User | null; // Alias para compatibilidad
   token: string | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
   login: (usuario: string, password: string) => Promise<void>;
   logout: () => void;
   canAccess: (modulePath: string) => boolean;
 };
 
 const AuthContext = createContext<Ctx | null>(null);
-
-export const PERMISOS_POR_ROL: Record<User['rol'], { id:string; nombre:string; ruta:string }[]> = {
-  Admin: [
-    { id:'pos', ruta:'/pos', nombre:'POS' },
-    { id:'productos', ruta:'/productos', nombre:'Productos' },
-    { id:'pedidos', ruta:'/pedidos', nombre:'Pedidos' },
-    { id:'clientes', ruta:'/clientes', nombre:'Clientes' },
-    { id:'empleados', ruta:'/empleados', nombre:'Empleados' },
-    { id:'ventas', ruta:'/ventas', nombre:'Ventas' },
-    { id:'estadisticas', ruta:'/estadisticas', nombre:'Estadísticas' },
-    { id:'marketing', ruta:'/marketing', nombre:'Marketing' },
-  ],
-  Vendedor: [
-    { id:'pos', ruta:'/pos', nombre:'POS' },
-    { id:'pedidos', ruta:'/pedidos', nombre:'Pedidos' },
-    { id:'clientes', ruta:'/clientes', nombre:'Clientes' },
-    { id:'ventas', ruta:'/ventas', nombre:'Ventas' },
-  ],
-  Inventario: [
-    { id:'productos', ruta:'/productos', nombre:'Productos' },
-    { id:'pedidos', ruta:'/pedidos', nombre:'Pedidos' },
-    { id:'estadisticas', ruta:'/estadisticas', nombre:'Estadísticas' },
-  ],
-  Marketing: [
-    { id:'marketing', ruta:'/marketing', nombre:'Marketing' },
-    { id:'estadisticas', ruta:'/estadisticas', nombre:'Estadísticas' },
-  ],
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]   = useState<User | null>(null);
@@ -78,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('authToken', resp.token);
     localStorage.setItem('authUser', JSON.stringify(resp.user));
     console.log('✅ Login exitoso, token guardado:', resp.token.substring(0, 20) + '...');
-    navigate('/dashboard');
+    navigate('/');
   };
 
   const logout = () => {
@@ -95,7 +70,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, canAccess }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      usuario: user, // Alias para compatibilidad
+      token, 
+      isLoading, 
+      isAuthenticated: !!user,
+      login, 
+      logout, 
+      canAccess 
+    }}>
       {children}
     </AuthContext.Provider>
   );

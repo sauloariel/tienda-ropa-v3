@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Calendar, Eye, X } from 'lucide-react';
-import BackToDashboard from '../components/BackToDashboard';
+
 
 interface Venta {
   id_venta: number;
@@ -162,7 +162,6 @@ const Ventas = () => {
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Ventas</h1>
           <p className="text-gray-600">Administra y analiza todas las ventas del sistema</p>
         </div>
-        <BackToDashboard />
       </div>
 
       {/* Estadísticas */}

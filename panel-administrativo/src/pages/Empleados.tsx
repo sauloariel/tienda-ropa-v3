@@ -14,11 +14,12 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { empleadosAPI } from '../services/api'
+import { rolesAPI, type Rol } from '../services/roles'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate } from 'react-router-dom'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import BackToDashboard from '../components/BackToDashboard'
+
 
 interface Employee {
   id_empleado: number
@@ -29,7 +30,7 @@ interface Employee {
   telefono: string
   mail: string
   sueldo?: number
-  puesto?: string
+  rol?: string
   estado?: string
 }
 
@@ -41,7 +42,7 @@ interface EmployeeFormData {
   telefono: string
   mail: string
   sueldo: string
-  puesto: string
+  rol: string
   estado: string
 }
 
@@ -52,6 +53,7 @@ const Empleados: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [roles, setRoles] = useState<Rol[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -65,7 +67,7 @@ const Empleados: React.FC = () => {
     telefono: '',
     mail: '',
     sueldo: '',
-    puesto: '',
+    rol: '',
     estado: 'activo'
   })
 
@@ -76,6 +78,7 @@ const Empleados: React.FC = () => {
 
   useEffect(() => {
     loadEmployees()
+    loadRoles()
   }, [])
 
   const loadEmployees = async () => {
@@ -93,12 +96,24 @@ const Empleados: React.FC = () => {
       
       // Fallback to mock data for development
       setEmployees([
-        { id_empleado: 1, cuil: '20123456789', nombre: 'Ana', apellido: 'García', domicilio: 'Calle 123', telefono: '+1234567890', mail: 'ana@empresa.com', sueldo: 4500, puesto: 'Gerente', estado: 'activo' },
-        { id_empleado: 2, cuil: '20123456790', nombre: 'Carlos', apellido: 'López', domicilio: 'Av. Principal 456', telefono: '+1234567891', mail: 'carlos@empresa.com', sueldo: 2800, puesto: 'Vendedor', estado: 'activo' },
+        { id_empleado: 1, cuil: '20123456789', nombre: 'Ana', apellido: 'García', domicilio: 'Calle 123', telefono: '+1234567890', mail: 'ana@empresa.com', sueldo: 4500, rol: 'Admin', estado: 'activo' },
+        { id_empleado: 2, cuil: '20123456790', nombre: 'Carlos', apellido: 'López', domicilio: 'Av. Principal 456', telefono: '+1234567891', mail: 'carlos@empresa.com', sueldo: 2800, rol: 'Vendedor', estado: 'activo' },
       ])
       toast.warning('Usando datos de ejemplo - Backend no disponible')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadRoles = async () => {
+    try {
+      console.log('🔄 Cargando roles desde la base de datos...')
+      const response = await rolesAPI.getAll()
+      console.log('✅ Roles cargados:', response.data)
+      setRoles(response.data)
+    } catch (err: any) {
+      console.error('❌ Error al cargar roles:', err)
+      // No mostramos error para roles ya que no es crítico
     }
   }
 
@@ -111,7 +126,7 @@ const Empleados: React.FC = () => {
       telefono: '',
       mail: '',
       sueldo: '',
-      puesto: '',
+      rol: '',
       estado: 'activo'
     })
     setEditingEmployee(null)
@@ -206,7 +221,7 @@ const Empleados: React.FC = () => {
       telefono: employee.telefono,
       mail: employee.mail,
       sueldo: employee.sueldo?.toString() || '',
-      puesto: employee.puesto || '',
+      rol: employee.rol || '',
       estado: employee.estado || 'activo'
     })
     setShowAddModal(true)
@@ -265,7 +280,6 @@ const Empleados: React.FC = () => {
           <p className="text-gray-600">Administra la información de todos los empleados</p>
         </div>
         <div className="flex items-center gap-3">
-          <BackToDashboard />
           <button
             onClick={() => { resetForm(); setShowAddModal(true); }} 
             className="btn-primary"
@@ -318,7 +332,7 @@ const Empleados: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CUIL</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puesto</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -357,7 +371,7 @@ const Empleados: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{employee.puesto || '-'}</div>
+                      <div className="text-sm text-gray-900">{employee.rol || '-'}</div>
                       {employee.sueldo && (
                         <div className="text-sm text-gray-500">${employee.sueldo.toLocaleString()}</div>
                       )}
@@ -525,16 +539,21 @@ const Empleados: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Puesto
+                    Rol
                   </label>
-                  <input
-                    type="text"
-                    name="puesto"
-                    value={formData.puesto}
+                  <select
+                    name="rol"
+                    value={formData.rol}
                     onChange={handleInputChange}
-                    placeholder="Cargo o función"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  >
+                    <option value="">Seleccionar rol</option>
+                    {roles.map((rol) => (
+                      <option key={rol.id_rol} value={rol.descripcion}>
+                        {rol.descripcion}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>

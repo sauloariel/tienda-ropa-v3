@@ -12,7 +12,7 @@ import {
   XCircle,
   X
 } from 'lucide-react'
-import BackToDashboard from '../components/BackToDashboard'
+
 import { clientesAPI, type Cliente, type ClienteCreate, type ClienteUpdate } from '../services/clientes'
 
 const Clientes: React.FC = () => {
@@ -135,7 +135,6 @@ const Clientes: React.FC = () => {
           <p className="text-gray-600">Administra la información de todos los clientes</p>
         </div>
         <div className="flex items-center gap-3">
-          <BackToDashboard />
           <button
             onClick={handleAdd}
             className="btn-primary"

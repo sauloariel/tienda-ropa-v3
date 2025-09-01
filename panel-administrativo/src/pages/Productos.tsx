@@ -7,17 +7,14 @@ import {
   Package,
   DollarSign,
   TrendingUp,
-  AlertCircle,
   CheckCircle,
   XCircle,
-  Palette,
-  Ruler,
   Image,
   Upload,
   X
 } from 'lucide-react'
 import { productosAPI, type Producto, type ProductoCreate, type ProductoUpdate, type Categoria, type Proveedor, type Color, type Talla, type TipoTalle, type ProductoVarianteCreate } from '../services/productos'
-import BackToDashboard from '../components/BackToDashboard'
+
 
 const Productos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -302,7 +299,6 @@ const Productos: React.FC = () => {
           <p className="text-gray-600">Administra el inventario de productos con variantes e imágenes</p>
         </div>
         <div className="flex items-center gap-3">
-          <BackToDashboard />
           <button
             onClick={handleAdd}
             className="btn-primary"

@@ -21,7 +21,7 @@ import {
   XCircle,
   X
 } from 'lucide-react'
-import BackToDashboard from '../components/BackToDashboard'
+
 import { useMarketing } from '../hooks/useMarketing'
 import { ModalPromocion } from '../components/marketing/ModalPromocion'
 import { PromocionResponse } from '../types/marketing.types'
@@ -174,7 +174,6 @@ const Marketing: React.FC = () => {
             <p className="text-gray-600">Administra campañas y estrategias de marketing</p>
           </div>
           <div className="flex items-center gap-3">
-            <BackToDashboard />
             <button
               onClick={() => {
                 setEditingPromocion(null)

@@ -2,8 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleGuard from './components/RoleGuard';
+import Layout from './components/Layout';
+import RedirectToFirstModule from './components/RedirectToFirstModule';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import Unauthorized from './pages/Unauthorized';
 import POS from './pages/POS';
 import Productos from './pages/Productos';
@@ -21,75 +22,62 @@ export default function App() {
         <Route path="/login" element={<Login/>} />
         <Route path="/unauthorized" element={<Unauthorized/>} />
 
-        <Route path="/dashboard" element={
-          <ProtectedRoute><Dashboard/></ProtectedRoute>
-        }/>
-
-        <Route path="/pos" element={
+        {/* Rutas protegidas con Layout */}
+        <Route path="/" element={
           <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }>
+          <Route path="pos" element={
             <RoleGuard allow={['Admin','Vendedor']} ruta="/pos">
               <POS />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/productos" element={
-          <ProtectedRoute>
+          <Route path="productos" element={
             <RoleGuard allow={['Admin','Inventario']} ruta="/productos">
               <Productos />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/pedidos" element={
-          <ProtectedRoute>
+          <Route path="pedidos" element={
             <RoleGuard allow={['Admin','Vendedor','Marketing']} ruta="/pedidos">
               <Pedidos />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/clientes" element={
-          <ProtectedRoute>
+          <Route path="clientes" element={
             <RoleGuard allow={['Admin','Vendedor']} ruta="/clientes">
               <Clientes />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/empleados" element={
-          <ProtectedRoute>
+          <Route path="empleados" element={
             <RoleGuard allow={['Admin']} ruta="/empleados">
               <Empleados />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/ventas" element={
-          <ProtectedRoute>
+          <Route path="ventas" element={
             <RoleGuard allow={['Admin','Vendedor']} ruta="/ventas">
               <Ventas />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/estadisticas" element={
-          <ProtectedRoute>
+          <Route path="estadisticas" element={
             <RoleGuard allow={['Admin','Vendedor','Inventario','Marketing']} ruta="/estadisticas">
               <Estadisticas />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/marketing" element={
-          <ProtectedRoute>
+          <Route path="marketing" element={
             <RoleGuard allow={['Admin','Marketing']} ruta="/marketing">
               <Marketing />
             </RoleGuard>
-          </ProtectedRoute>
-        }/>
+          }/>
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<RedirectToFirstModule />} />
+        </Route>
       </Routes>
     </AuthProvider>
   );

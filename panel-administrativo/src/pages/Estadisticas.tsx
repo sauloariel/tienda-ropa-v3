@@ -27,7 +27,7 @@ import type {
 } from '../services/estadisticas'
 import MetricCard from '../components/MetricCard'
 import Chart from '../components/Chart'
-import BackToDashboard from '../components/BackToDashboard'
+
 
 const Estadisticas: React.FC = () => {
   const [periodo, setPeriodo] = useState('30')
@@ -118,7 +118,6 @@ const Estadisticas: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Estadísticas</h1>
           <p className="text-gray-600">Análisis y reportes del negocio</p>
         </div>
-        <BackToDashboard />
       </div>
 
       {/* Métricas Principales */}
