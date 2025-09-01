@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Calendar, Eye, X } from 'lucide-react';
+import BackToDashboard from '../components/BackToDashboard';
 
 interface Venta {
   id_venta: number;
@@ -156,18 +157,12 @@ const Ventas = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">📊 Gestión de Ventas</h1>
-        <div className="flex space-x-2">
-          <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </button>
-          <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <Calendar className="h-4 w-4 mr-2" />
-            Reportes
-          </button>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Ventas</h1>
+          <p className="text-gray-600">Administra y analiza todas las ventas del sistema</p>
         </div>
+        <BackToDashboard />
       </div>
 
       {/* Estadísticas */}

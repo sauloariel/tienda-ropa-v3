@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Navigate } from 'react-router-dom'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import BackToDashboard from '../components/BackToDashboard'
 
 interface Employee {
   id_empleado: number
@@ -258,18 +259,21 @@ const Empleados: React.FC = () => {
       <ToastContainer position="top-right" autoClose={3000} />
       
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Empleados</h1>
-          <p className="text-gray-600 mt-2">Administra la información de todos los empleados</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Empleados</h1>
+          <p className="text-gray-600">Administra la información de todos los empleados</p>
         </div>
-        <button 
-          onClick={() => { resetForm(); setShowAddModal(true); }} 
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          Nuevo Empleado
-        </button>
+        <div className="flex items-center gap-3">
+          <BackToDashboard />
+          <button
+            onClick={() => { resetForm(); setShowAddModal(true); }} 
+            className="btn-primary"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Empleado
+          </button>
+        </div>
       </div>
 
       {/* Status Info */}

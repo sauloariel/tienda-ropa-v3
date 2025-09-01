@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Roles Frontend</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: black;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .log {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 Test de Roles y Permisos - Frontend</h1>
+
+    <div class="test-section info">
+        <h3>📋 Información del Test</h3>
+        <p>Este test verifica que cada rol pueda acceder solo a los módulos que le corresponden.</p>
+        <p><strong>API URL:</strong> <span id="apiUrl">http://localhost:4000</span></p>
+    </div>
+
+    <div class="test-section">
+        <h3>🔐 Test de Login por Roles</h3>
+        <button class="btn-primary" onclick="testLogin('admin', 'admin123')">Test Admin</button>
+        <button class="btn-warning" onclick="testLogin('vendedor', 'vendedor123')">Test Vendedor</button>
+        <button class="btn-success" onclick="testLogin('inventario', 'inventario123')">Test Inventario</button>
+        <button class="btn-danger" onclick="testLogin('marketing', 'marketing123')">Test Marketing</button>
+        <div id="loginResult" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>🎯 Test de Permisos por Rol</h3>
+        <button class="btn-primary" onclick="testAllRoles()">Test Todos los Roles</button>
+        <div id="permissionsResult" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Resultados del Test</h3>
+        <div id="testResults" class="log"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:4000';
+        let currentToken = null;
+        let currentUser = null;
+
+        const PERMISOS_POR_ROL = {
+            Admin: [
+                { id: 'pos', ruta: '/pos', nombre: 'POS' },
+                { id: 'productos', ruta: '/productos', nombre: 'Productos' },
+                { id: 'pedidos', ruta: '/pedidos', nombre: 'Pedidos' },
+                { id: 'clientes', ruta: '/clientes', nombre: 'Clientes' },
+                { id: 'empleados', ruta: '/empleados', nombre: 'Empleados' },
+                { id: 'ventas', ruta: '/ventas', nombre: 'Ventas' },
+                { id: 'estadisticas', ruta: '/estadisticas', nombre: 'Estadísticas' },
+                { id: 'marketing', ruta: '/marketing', nombre: 'Marketing' },
+            ],
+            Vendedor: [
+                { id: 'pos', ruta: '/pos', nombre: 'POS' },
+                { id: 'pedidos', ruta: '/pedidos', nombre: 'Pedidos' },
+                { id: 'clientes', ruta: '/clientes', nombre: 'Clientes' },
+                { id: 'ventas', ruta: '/ventas', nombre: 'Ventas' },
+            ],
+            Inventario: [
+                { id: 'productos', ruta: '/productos', nombre: 'Productos' },
+                { id: 'pedidos', ruta: '/pedidos', nombre: 'Pedidos' },
+                { id: 'estadisticas', ruta: '/estadisticas', nombre: 'Estadísticas' },
+            ],
+            Marketing: [
+                { id: 'marketing', ruta: '/marketing', nombre: 'Marketing' },
+                { id: 'estadisticas', ruta: '/estadisticas', nombre: 'Estadísticas' },
+            ],
+        };
+
+        function log(elementId, message) {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function canAccess(rol, ruta) {
+            const permisos = PERMISOS_POR_ROL[rol] || [];
+            return permisos.some(p => p.ruta === ruta || p.id === ruta);
+        }
+
+        async function testLogin(usuario, password) {
+            try {
+                log('loginResult', `🔐 Probando login con ${usuario}...`);
+
+                const response = await axios.post(`${API_URL}/auth/login`, {
+                    usuario,
+                    password
+                });
+
+                if (response.data.success) {
+                    currentToken = response.data.token;
+                    currentUser = response.data.user;
+
+                    log('loginResult', `✅ Login exitoso para ${currentUser.nombre} (${currentUser.rol})`);
+                    log('loginResult', `🔑 Token: ${currentToken.substring(0, 20)}...`);
+
+                    // Test de permisos para este rol
+                    testRolePermissions(currentUser.rol);
+
+                } else {
+                    log('loginResult', `❌ Login fallido: ${response.data.message}`);
+                }
+
+            } catch (error) {
+                log('loginResult', `❌ Error en login: ${error.message}`);
+                if (error.response) {
+                    log('loginResult', `   Status: ${error.response.status}`);
+                    log('loginResult', `   Data: ${JSON.stringify(error.response.data)}`);
+                }
+            }
+        }
+
+        function testRolePermissions(rol) {
+            log('permissionsResult', `\n🎯 Test de permisos para rol: ${rol}`);
+
+            const allModules = [
+                '/pos', '/productos', '/pedidos', '/clientes',
+                '/empleados', '/ventas', '/estadisticas', '/marketing'
+            ];
+
+            const permisos = PERMISOS_POR_ROL[rol] || [];
+            log('permissionsResult', `📋 Módulos permitidos (${permisos.length}): ${permisos.map(p => p.nombre).join(', ')}`);
+
+            allModules.forEach(modulo => {
+                const tieneAcceso = canAccess(rol, modulo);
+                const estado = tieneAcceso ? '✅ PERMITIDO' : '❌ DENEGADO';
+                log('permissionsResult', `   ${modulo}: ${estado}`);
+            });
+        }
+
+        async function testAllRoles() {
+            log('testResults', '🚀 Iniciando test completo de todos los roles...\n');
+
+            const roles = [
+                { usuario: 'admin', password: 'admin123', nombre: 'Admin' },
+                { usuario: 'vendedor', password: 'vendedor123', nombre: 'Vendedor' },
+                { usuario: 'inventario', password: 'inventario123', nombre: 'Inventario' },
+                { usuario: 'marketing', password: 'marketing123', nombre: 'Marketing' }
+            ];
+
+            let resultados = [];
+
+            for (const rol of roles) {
+                try {
+                    log('testResults', `🔐 Probando ${rol.nombre}...`);
+
+                    const response = await axios.post(`${API_URL}/auth/login`, {
+                        usuario: rol.usuario,
+                        password: rol.password
+                    });
+
+                    if (response.data.success) {
+                        const userRol = response.data.user.rol;
+                        const permisos = PERMISOS_POR_ROL[userRol] || [];
+
+                        log('testResults', `✅ ${rol.nombre} logueado correctamente`);
+                        log('testResults', `   Rol: ${userRol}`);
+                        log('testResults', `   Módulos: ${permisos.length}`);
+
+                        resultados.push({
+                            rol: userRol,
+                            nombre: rol.nombre,
+                            exito: true,
+                            modulos: permisos.length
+                        });
+
+                    } else {
+                        log('testResults', `❌ ${rol.nombre} falló: ${response.data.message}`);
+                        resultados.push({
+                            rol: rol.nombre,
+                            nombre: rol.nombre,
+                            exito: false,
+                            modulos: 0
+                        });
+                    }
+
+                } catch (error) {
+                    log('testResults', `❌ Error con ${rol.nombre}: ${error.message}`);
+                    resultados.push({
+                        rol: rol.nombre,
+                        nombre: rol.nombre,
+                        exito: false,
+                        modulos: 0
+                    });
+                }
+
+                // Esperar un poco entre tests
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Resumen final
+            log('testResults', '\n📊 RESUMEN FINAL:');
+            const exitosos = resultados.filter(r => r.exito).length;
+            const total = resultados.length;
+
+            log('testResults', `✅ Exitosos: ${exitosos}/${total}`);
+
+            resultados.forEach(r => {
+                const estado = r.exito ? '✅' : '❌';
+                log('testResults', `${estado} ${r.nombre}: ${r.modulos} módulos`);
+            });
+
+            log('testResults', '\n🎉 Test completo finalizado');
+        }
+
+        // Test inicial de conectividad
+        window.onload = async function () {
+            try {
+                log('testResults', '🔍 Verificando conectividad con el backend...');
+                const response = await axios.get(`${API_URL}/auth/me`);
+                log('testResults', '❌ Error: El endpoint /auth/me no debería ser accesible sin token');
+            } catch (error) {
+                if (error.response && error.response.status === 401) {
+                    log('testResults', '✅ Backend conectado correctamente (401 esperado sin token)');
+                } else {
+                    log('testResults', `⚠️ Backend no disponible: ${error.message}`);
+                }
+            }
+        };
+    </script>
+</body>
+
+</html>

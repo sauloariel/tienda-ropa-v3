@@ -1,7 +1,6 @@
-import server from "./server";
+import server from './server';  // <-- default OK
 
 const PORT = 4000;
-
 server.listen(PORT, () => {
-    console.log(`El servidor esta corriendo en el puerto http://localhost:${PORT}`);
+    console.log(`Servidor en http://localhost:${PORT}`);
 });

@@ -27,6 +27,7 @@ import type {
 } from '../services/estadisticas'
 import MetricCard from '../components/MetricCard'
 import Chart from '../components/Chart'
+import BackToDashboard from '../components/BackToDashboard'
 
 const Estadisticas: React.FC = () => {
   const [periodo, setPeriodo] = useState('30')
@@ -111,31 +112,13 @@ const Estadisticas: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header con filtros */}
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Estadísticas Empresariales</h1>
-          <p className="text-gray-600">Métricas clave para la toma de decisiones</p>
+          <h1 className="text-2xl font-bold text-gray-900">Estadísticas</h1>
+          <p className="text-gray-600">Análisis y reportes del negocio</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <select
-            value={periodo}
-            onChange={(e) => setPeriodo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="7">Últimos 7 días</option>
-            <option value="30">Últimos 30 días</option>
-            <option value="90">Últimos 3 meses</option>
-            <option value="365">Último año</option>
-          </select>
-          <button
-            onClick={cargarEstadisticas}
-            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>Actualizar</span>
-          </button>
-        </div>
+        <BackToDashboard />
       </div>
 
       {/* Métricas Principales */}

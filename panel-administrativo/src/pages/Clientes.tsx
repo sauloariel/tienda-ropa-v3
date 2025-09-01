@@ -9,8 +9,10 @@ import {
   Mail,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  X
 } from 'lucide-react'
+import BackToDashboard from '../components/BackToDashboard'
 import { clientesAPI, type Cliente, type ClienteCreate, type ClienteUpdate } from '../services/clientes'
 
 const Clientes: React.FC = () => {
@@ -127,18 +129,21 @@ const Clientes: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
-          <p className="text-gray-600">Administra la base de datos de clientes</p>
+          <p className="text-gray-600">Administra la información de todos los clientes</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="btn-primary"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Cliente
-        </button>
+        <div className="flex items-center gap-3">
+          <BackToDashboard />
+          <button
+            onClick={handleAdd}
+            className="btn-primary"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </button>
+        </div>
       </div>
 
       {/* Alertas */}

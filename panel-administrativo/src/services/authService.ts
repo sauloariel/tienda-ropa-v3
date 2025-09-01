@@ -3,13 +3,13 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export interface LoginCredentials {
-    email: string;
+    usuario: string;
     password: string;
 }
 
 export interface User {
     id: number;
-    email: string;
+    usuario: string;
     nombre: string;
     rol: string;
 }

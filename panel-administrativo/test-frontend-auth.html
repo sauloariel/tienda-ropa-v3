@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend Auth</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <h1>Test Frontend Authentication</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testMe()">Test /auth/me</button>
+    <div id="output"></div>
+
+    <script>
+        const API_URL = 'http://localhost:4000';
+        let currentToken = null;
+
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+
+        async function testLogin() {
+            try {
+                log('🔐 Probando login...');
+                const response = await axios.post(`${API_URL}/auth/login`, {
+                    usuario: 'admin',
+                    password: 'admin123'
+                });
+
+                log('✅ Login exitoso: ' + JSON.stringify(response.data, null, 2));
+                currentToken = response.data.token;
+                log('🔑 Token guardado: ' + currentToken.substring(0, 20) + '...');
+
+            } catch (error) {
+                log('❌ Error en login: ' + error.message);
+                if (error.response) {
+                    log('Status: ' + error.response.status);
+                    log('Data: ' + JSON.stringify(error.response.data));
+                }
+            }
+        }
+
+        async function testMe() {
+            if (!currentToken) {
+                log('❌ No hay token, haz login primero');
+                return;
+            }
+
+            try {
+                log('🔍 Probando /auth/me...');
+                const response = await axios.get(`${API_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log('✅ /auth/me exitoso: ' + JSON.stringify(response.data, null, 2));
+
+            } catch (error) {
+                log('❌ Error en /auth/me: ' + error.message);
+                if (error.response) {
+                    log('Status: ' + error.response.status);
+                    log('Data: ' + JSON.stringify(error.response.data));
+                    log('Headers: ' + JSON.stringify(error.response.headers));
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

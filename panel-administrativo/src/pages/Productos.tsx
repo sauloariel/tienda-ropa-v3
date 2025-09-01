@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react'
 import { productosAPI, type Producto, type ProductoCreate, type ProductoUpdate, type Categoria, type Proveedor, type Color, type Talla, type TipoTalle, type ProductoVarianteCreate } from '../services/productos'
+import BackToDashboard from '../components/BackToDashboard'
 
 const Productos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -295,18 +296,21 @@ const Productos: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Productos</h1>
           <p className="text-gray-600">Administra el inventario de productos con variantes e imágenes</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="btn-primary"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Producto
-        </button>
+        <div className="flex items-center gap-3">
+          <BackToDashboard />
+          <button
+            onClick={handleAdd}
+            className="btn-primary"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Producto
+          </button>
+        </div>
       </div>
 
       {/* Alertas */}
