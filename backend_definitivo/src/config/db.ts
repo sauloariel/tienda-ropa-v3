@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuración directa para SQLite
+// Configuración para SQLite
 const db = new Sequelize({
     dialect: 'sqlite',
     storage: './database.sqlite',

@@ -4,6 +4,7 @@ import db from './config/db';
 import authRoutes from './router/auth.routes';
 import empleadosRoutes from './router/RouterEmpleados';
 import rolesRoutes from './router/RouterRoles';
+import loguinRoutes from './router/RouterLoguin';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -17,6 +18,9 @@ app.use('/empleados', empleadosRoutes);
 
 // Rutas de roles
 app.use('/roles', rolesRoutes);
+
+// Rutas de loguin (usuarios de login)
+app.use('/loguin', loguinRoutes);
 
 (async () => {
   await db.authenticate();

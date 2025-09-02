@@ -11,10 +11,13 @@ import {
   Save,
   X,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Key,
+  UserPlus
 } from 'lucide-react'
 import { empleadosAPI } from '../services/api'
 import { rolesAPI, type Rol } from '../services/roles'
+import { loguinAPI, type LoguinUser } from '../services/loguin'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate } from 'react-router-dom'
 import { toast, ToastContainer } from 'react-toastify'
@@ -31,6 +34,7 @@ interface Employee {
   mail: string
   sueldo?: number
   rol?: string
+  id_rol?: number
   estado?: string
 }
 
@@ -43,7 +47,14 @@ interface EmployeeFormData {
   mail: string
   sueldo: string
   rol: string
+  id_rol?: number
   estado: string
+}
+
+interface LoginUserFormData {
+  usuario: string
+  password: string
+  id_rol: number | undefined
 }
 
 const Empleados: React.FC = () => {
@@ -51,12 +62,15 @@ const Empleados: React.FC = () => {
   const isAdmin = usuario?.rol === 'Admin'
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [selectedEmployeeForLogin, setSelectedEmployeeForLogin] = useState<Employee | null>(null)
   const [employees, setEmployees] = useState<Employee[]>([])
   const [roles, setRoles] = useState<Rol[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCreatingLogin, setIsCreatingLogin] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -69,6 +83,12 @@ const Empleados: React.FC = () => {
     sueldo: '',
     rol: '',
     estado: 'activo'
+  })
+
+  const [loginFormData, setLoginFormData] = useState<LoginUserFormData>({
+    usuario: '',
+    password: '',
+    id_rol: undefined
   })
 
   // Redirect if not admin
@@ -127,17 +147,46 @@ const Empleados: React.FC = () => {
       mail: '',
       sueldo: '',
       rol: '',
+      id_rol: undefined,
       estado: 'activo'
     })
     setEditingEmployee(null)
   }
 
+  const resetLoginForm = () => {
+    setLoginFormData({
+      usuario: '',
+      password: '',
+      id_rol: undefined
+    })
+    setSelectedEmployeeForLogin(null)
+  }
+
+  const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    
+    setLoginFormData(prev => ({
+      ...prev,
+      [name]: name === 'id_rol' ? (value ? parseInt(value) : undefined) : value
+    }))
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    
+    if (name === 'id_rol') {
+      const selectedRol = roles.find(rol => rol.id_rol === parseInt(value))
+      setFormData(prev => ({
+        ...prev,
+        id_rol: value ? parseInt(value) : undefined,
+        rol: selectedRol?.descripcion || ''
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const validateForm = (): boolean => {
@@ -187,6 +236,7 @@ const Empleados: React.FC = () => {
         mail: formData.mail.trim(),
         puesto: formData.puesto?.trim() || undefined,
         estado: formData.estado || undefined,
+        id_rol: formData.id_rol
       }
 
       if (editingEmployee) {
@@ -222,6 +272,7 @@ const Empleados: React.FC = () => {
       mail: employee.mail,
       sueldo: employee.sueldo?.toString() || '',
       rol: employee.rol || '',
+      id_rol: employee.id_rol || undefined,
       estado: employee.estado || 'activo'
     })
     setShowAddModal(true)
@@ -241,6 +292,63 @@ const Empleados: React.FC = () => {
       console.error('❌ Error al eliminar empleado:', err)
       const errorMsg = err.response?.data?.error || err.message || 'Error desconocido'
       toast.error(`Error al eliminar empleado: ${errorMsg}`)
+    }
+  }
+
+  const handleCreateLogin = (employee: Employee) => {
+    setSelectedEmployeeForLogin(employee)
+    setLoginFormData({
+      usuario: '',
+      password: '',
+      id_rol: employee.id_rol || undefined
+    })
+    setShowLoginModal(true)
+  }
+
+  const validateLoginForm = (): boolean => {
+    if (!loginFormData.usuario.trim()) {
+      toast.error('Usuario es requerido')
+      return false
+    }
+    if (!loginFormData.password.trim()) {
+      toast.error('Contraseña es requerida')
+      return false
+    }
+    if (!loginFormData.id_rol) {
+      toast.error('Rol es requerido')
+      return false
+    }
+    return true
+  }
+
+  const handleCreateLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateLoginForm() || !selectedEmployeeForLogin) return
+    
+    try {
+      setIsCreatingLogin(true)
+      
+      const loginData = {
+        usuario: loginFormData.usuario.trim(),
+        password: loginFormData.password,
+        id_empleado: selectedEmployeeForLogin.id_empleado,
+        id_rol: loginFormData.id_rol!
+      }
+
+      console.log('🔄 Creando usuario de login para empleado:', selectedEmployeeForLogin.id_empleado)
+      await loguinAPI.create(loginData)
+      toast.success('Usuario de login creado exitosamente')
+      
+      setShowLoginModal(false)
+      resetLoginForm()
+      loadEmployees() // Recargar empleados para mostrar el nuevo usuario
+    } catch (err: any) {
+      console.error('❌ Error al crear usuario de login:', err)
+      const errorMsg = err.response?.data?.error || err.message || 'Error desconocido'
+      toast.error(`Error al crear usuario de login: ${errorMsg}`)
+    } finally {
+      setIsCreatingLogin(false)
     }
   }
 
@@ -387,12 +495,21 @@ const Empleados: React.FC = () => {
                         <button
                           onClick={() => handleEdit(employee)}
                           className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                          title="Editar empleado"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => handleCreateLogin(employee)}
+                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                          title="Crear usuario de login"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(employee.id_empleado)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                          title="Eliminar empleado"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -542,14 +659,14 @@ const Empleados: React.FC = () => {
                     Rol
                   </label>
                   <select
-                    name="rol"
-                    value={formData.rol}
+                    name="id_rol"
+                    value={formData.id_rol || ''}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Seleccionar rol</option>
                     {roles.map((rol) => (
-                      <option key={rol.id_rol} value={rol.descripcion}>
+                      <option key={rol.id_rol} value={rol.id_rol}>
                         {rol.descripcion}
                       </option>
                     ))}
@@ -595,6 +712,101 @@ const Empleados: React.FC = () => {
                     <div className="flex items-center">
                       <Save className="h-4 w-4 mr-2" />
                       {editingEmployee ? 'Actualizar' : 'Crear'} Empleado
+                    </div>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Login User Modal */}
+      {showLoginModal && selectedEmployeeForLogin && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Crear Usuario de Login
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Para: {selectedEmployeeForLogin.nombre} {selectedEmployeeForLogin.apellido}
+              </p>
+            </div>
+            
+            <form onSubmit={handleCreateLoginSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Usuario *
+                </label>
+                <input
+                  type="text"
+                  name="usuario"
+                  value={loginFormData.usuario}
+                  onChange={handleLoginInputChange}
+                  placeholder="Nombre de usuario"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Contraseña *
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={loginFormData.password}
+                  onChange={handleLoginInputChange}
+                  placeholder="Contraseña"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rol *
+                </label>
+                <select
+                  name="id_rol"
+                  value={loginFormData.id_rol || ''}
+                  onChange={handleLoginInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Seleccionar rol</option>
+                  {roles.map((rol) => (
+                    <option key={rol.id_rol} value={rol.id_rol}>
+                      {rol.descripcion}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowLoginModal(false); resetLoginForm(); }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingLogin}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingLogin ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creando...
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <Key className="h-4 w-4 mr-2" />
+                      Crear Usuario
                     </div>
                   )}
                 </button>
