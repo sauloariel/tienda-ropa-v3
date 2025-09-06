@@ -1,0 +1,5 @@
+[33mbb30650[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Resolución de conflictos de merge: manteniendo cambios locales y eliminando archivos obsoletos
+[33ma6c0b17[m Actualización completa del sistema: mejoras en autenticación, marketing, y funcionalidades del POS
+[33ma1b6064[m Fix: Corregir configuración de base de datos y autenticación
+[33mef8480c[m feat: Refactor admin panel - Remove Dashboard, simplify navigation and user interface
+[33m9a4808b[m[33m ([m[1;31morigin-v2/main[m[33m)[m Sistema completo de tienda de ropa v2 - Autenticación por roles, POS, Panel administrativo
