@@ -508,7 +508,7 @@ const Pedidos: React.FC = () => {
         </div>
         
         <div className="overflow-x-auto">
-          {console.log('🎨 Pedidos.tsx - Renderizando tabla con filteredOrders:', filteredOrders)}
+          {/* Debug: filteredOrders.length = {filteredOrders.length} */}
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

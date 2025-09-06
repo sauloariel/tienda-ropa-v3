@@ -29,7 +29,7 @@ export class Empleados extends Model {
   @Column(DataType.STRING(45))
   mail!: string;
 
-  @Column(DataType.DECIMAL(60,2))
+  @Column(DataType.DECIMAL(12, 2))
   sueldo?: number;
 
   @Column(DataType.STRING(20))

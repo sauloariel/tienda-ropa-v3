@@ -6,7 +6,10 @@ import { Loguin } from "../models/Loguin.model";
 import { Empleados } from "../models/Empleados.model";
 import { Roles } from "../models/Roles.model";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_jwt_super_seguro_2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET no configurado en las variables de entorno');
+}
 
 // Almacén temporal para tokens de recuperación (en producción usar Redis)
 const passwordResetTokens = new Map<string, { userId: number; expires: Date }>();

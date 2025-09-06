@@ -1,6 +1,18 @@
 {
+  "name": "tienda-ropa-v3",
+  "version": "1.0.0",
+  "description": "Sistema completo de tienda de ropa con backend, panel administrativo y tienda web",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix backend_definitivo i && npm --prefix panel-administrativo i && npm --prefix tienda-ropa i",
+    "build:all": "npm --prefix backend_definitivo run build && npm --prefix panel-administrativo run build && npm --prefix tienda-ropa run build",
+    "lint:all": "npm --prefix backend_definitivo run lint && npm --prefix panel-administrativo run lint && npm --prefix tienda-ropa run lint",
+    "smoke:all": "npm --prefix backend_definitivo run smoke && npm --prefix panel-administrativo run smoke && npm --prefix tienda-ropa run smoke",
+    "dev:backend": "npm --prefix backend_definitivo run dev",
+    "dev:admin": "npm --prefix panel-administrativo run dev",
+    "dev:tienda": "npm --prefix tienda-ropa run dev"
+  },
   "dependencies": {
-    "axios": "^1.11.0",
-    "sqlite3": "^5.1.7"
+    "axios": "^1.11.0"
   }
 }

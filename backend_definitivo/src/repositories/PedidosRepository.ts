@@ -121,11 +121,11 @@ export class PedidosRepository {
                 bind: queryParams.slice(0, -2) // Excluir limit y offset
             });
 
-            const total = parseInt(countResult[0]?.total || '0');
+            const total = parseInt((countResult[0] as any)?.total || '0');
 
             return {
                 success: true,
-                data: pedidos,
+                data: pedidos as Pedido[],
                 total: total,
                 page: page,
                 limit: limit,

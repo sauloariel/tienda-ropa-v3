@@ -27,6 +27,7 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         timestamp: new Date().toISOString(),
         endpoints: {
+            health: '/api/health',
             auth: '/auth',
             empleados: '/empleados',
             roles: '/roles',
@@ -42,6 +43,11 @@ app.get('/', (req, res) => {
             marketing: '/marketing'
         }
     });
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
 // Rutas de autenticación
@@ -86,10 +92,4 @@ app.use('/ventas', ventasRoutes);
 // Rutas de marketing
 app.use('/marketing', marketingRoutes);
 
-(async () => {
-    await db.authenticate();
-    await db.sync();
-    console.log('✅ DB is connected');
-})();
-
-export default app;   // <-- export default
+export default app;

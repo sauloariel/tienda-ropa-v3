@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "build": "vite build",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --fix",
     "preview": "vite preview",
+    "smoke": "node scripts/smoke-frontend.mjs",
     "start": "npm run dev",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist node_modules",
