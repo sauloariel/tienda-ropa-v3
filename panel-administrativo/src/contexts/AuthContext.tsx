@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🔐 Intentando login con:', usuario);
     const resp = await authApi.login(usuario, password);
     console.log('🔐 Respuesta del login:', resp);
-    if (!resp.success) throw new Error('Credenciales inválidas');
+    if (!resp.token || !resp.user) throw new Error('Credenciales inválidas');
     setToken(resp.token);
     setUser(resp.user);
     localStorage.setItem('authToken', resp.token);
