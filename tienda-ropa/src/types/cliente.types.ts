@@ -35,3 +35,4 @@ export interface RegisterRequest {
     password: string;
 }
 
+

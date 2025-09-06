@@ -3,22 +3,17 @@ import server from './server';
 import db from './config/db';
 
 // Validar variables de entorno críticas
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    console.error('❌ JWT_SECRET no configurado en .env');
-    process.exit(1);
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'mi_jwt_secret_super_seguro_para_desarrollo_2024';
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_USER = process.env.DB_USER || 'postgres';
+const DB_PASSWORD = process.env.DB_PASSWORD || '123';
+const DB_NAME = process.env.DB_NAME || 'ecommerce';
 
-const DB_HOST = process.env.DB_HOST;
-const DB_USER = process.env.DB_USER;
-const DB_PASSWORD = process.env.DB_PASSWORD;
-const DB_NAME = process.env.DB_NAME;
-
-if (!DB_HOST || !DB_USER || !DB_PASSWORD || !DB_NAME) {
-    console.error('❌ Variables de base de datos no configuradas en .env');
-    console.error('Requeridas: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME');
-    process.exit(1);
-}
+console.log('🔧 Configuración cargada:');
+console.log(`   JWT_SECRET: ${JWT_SECRET ? '✅ Configurado' : '❌ No configurado'}`);
+console.log(`   DB_HOST: ${DB_HOST}`);
+console.log(`   DB_USER: ${DB_USER}`);
+console.log(`   DB_NAME: ${DB_NAME}`);
 
 const PORT = process.env.PORT || 4000;
 

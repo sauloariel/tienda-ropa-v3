@@ -6,10 +6,7 @@ import { Loguin } from "../models/Loguin.model";
 import { Empleados } from "../models/Empleados.model";
 import { Roles } from "../models/Roles.model";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET no configurado en las variables de entorno');
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'mi_jwt_secret_super_seguro_para_desarrollo_2024';
 
 // Almacén temporal para tokens de recuperación (en producción usar Redis)
 const passwordResetTokens = new Map<string, { userId: number; expires: Date }>();
@@ -52,7 +49,7 @@ export const loginEmpleado = async (req: Request, res: Response) => {
     }
 
     // Verificar si el empleado está activo
-    if (loguinData.empleado?.estado !== 'ACTIVO') {
+    if (loguinData.empleado?.estado?.toUpperCase() !== 'ACTIVO') {
       return res.status(401).json({
         success: false,
         message: 'Cuenta de empleado inactiva'
@@ -93,12 +90,13 @@ export const loginEmpleado = async (req: Request, res: Response) => {
       usuario: loguinData.usuario,
       email: loguinData.empleado?.mail || `${loguinData.usuario}@empresa.com`,
       rol: loguinData.rol?.descripcion || 'Usuario',
-      activo: loguinData.empleado?.estado === 'ACTIVO',
+      activo: loguinData.empleado?.estado?.toUpperCase() === 'ACTIVO',
       empleado_id: loguinData.empleado?.id_empleado,
       rol_id: loguinData.rol?.id_rol
     };
 
     res.json({
+      success: true,
       token,
       user: usuarioResponse
     });
@@ -136,7 +134,7 @@ export const solicitarRecuperacionPassword = async (req: Request, res: Response)
       ]
     });
 
-    if (!loguinData || loguinData.empleado?.estado !== 'ACTIVO') {
+    if (!loguinData || loguinData.empleado?.estado?.toUpperCase() !== 'ACTIVO') {
       return res.status(404).json({
         success: false,
         message: 'Usuario no encontrado o inactivo'
@@ -300,7 +298,7 @@ export const verifyToken = async (req: Request, res: Response) => {
       ]
     });
 
-    if (!loguinData || loguinData.empleado?.estado !== 'ACTIVO') {
+    if (!loguinData || loguinData.empleado?.estado?.toUpperCase() !== 'ACTIVO') {
       return res.status(401).json({
         success: false,
         message: 'Usuario no válido o inactivo'
@@ -313,7 +311,7 @@ export const verifyToken = async (req: Request, res: Response) => {
       usuario: loguinData.usuario,
       email: loguinData.empleado?.mail || `${loguinData.usuario}@empresa.com`,
       rol: loguinData.rol?.descripcion || 'Usuario',
-      activo: loguinData.empleado?.estado === 'ACTIVO',
+      activo: loguinData.empleado?.estado?.toUpperCase() === 'ACTIVO',
       empleado_id: loguinData.empleado?.id_empleado,
       rol_id: loguinData.rol?.id_rol
     };
@@ -385,7 +383,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       ]
     });
 
-    if (!loguinData || loguinData.empleado?.estado !== 'ACTIVO') {
+    if (!loguinData || loguinData.empleado?.estado?.toUpperCase() !== 'ACTIVO') {
       return res.status(401).json({
         success: false,
         message: 'Usuario no válido o inactivo'
@@ -398,7 +396,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       usuario: loguinData.usuario,
       email: loguinData.empleado?.mail || `${loguinData.usuario}@empresa.com`,
       rol: loguinData.rol?.descripcion || 'Usuario',
-      activo: loguinData.empleado?.estado === 'ACTIVO',
+      activo: loguinData.empleado?.estado?.toUpperCase() === 'ACTIVO',
       empleado_id: loguinData.empleado?.id_empleado,
       rol_id: loguinData.rol?.id_rol
     };
