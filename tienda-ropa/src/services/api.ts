@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Producto, Categoria } from '../types/productos.types';
 
 // Configuración base de la API
-const API_BASE_URL = 'http://localhost:4000/api'; // Puerto del backend con prefijo /api
+const API_BASE_URL = 'http://localhost:4000'; // Puerto del backend sin prefijo /api
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -62,4 +62,59 @@ export const categoriasAPI = {
     },
 };
 
+// Servicios para pedidos
+export const pedidosAPI = {
+    // Crear un nuevo pedido
+    create: async (pedidoData: any) => {
+        const response = await api.post('/pedidos', pedidoData);
+        return response.data;
+    },
+
+    // Obtener pedido por número
+    getByNumber: async (numeroPedido: string) => {
+        const response = await api.get(`/pedidos/seguimiento/${numeroPedido}`);
+        return response.data;
+    },
+
+    // Obtener pedido por teléfono
+    getByPhone: async (telefono: string) => {
+        const response = await api.get(`/pedidos/seguimiento/telefono/${telefono}`);
+        return response.data;
+    },
+
+    // Obtener pedido por email
+    getByEmail: async (email: string) => {
+        const response = await api.get(`/pedidos/seguimiento/email/${email}`);
+        return response.data;
+    },
+
+    // Obtener historial de estados
+    getHistorial: async (idPedido: number) => {
+        const response = await api.get(`/pedidos/${idPedido}/historial`);
+        return response.data;
+    }
+};
+
+// Servicios para clientes
+export const clientesAPI = {
+    // Crear un nuevo cliente
+    create: async (clienteData: any) => {
+        const response = await api.post('/clientes', clienteData);
+        return response.data;
+    },
+
+    // Buscar cliente por teléfono
+    getByPhone: async (telefono: string) => {
+        const response = await api.get(`/clientes/telefono/${telefono}`);
+        return response.data;
+    },
+
+    // Buscar cliente por email
+    getByEmail: async (email: string) => {
+        const response = await api.get(`/clientes/email/${email}`);
+        return response.data;
+    }
+};
+
+export { api };
 export default api;

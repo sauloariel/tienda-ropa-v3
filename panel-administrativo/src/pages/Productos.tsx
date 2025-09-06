@@ -389,22 +389,7 @@ const Productos: React.FC = () => {
         </div>
       </div>
 
-      {/* Debug Info - Temporal */}
-      {productos.length > 0 && (
-        <div className="card bg-yellow-50 border-yellow-200">
-          <div className="text-sm text-yellow-800">
-            <strong>Debug Info:</strong> {productos.length} productos cargados
-            {productos[0] && (
-              <div className="mt-2 text-xs">
-                <div>Primer producto ID: {productos[0].id_producto}</div>
-                <div>Precio venta: {productos[0].precio_venta} (tipo: {typeof productos[0].precio_venta})</div>
-                <div>Precio compra: {productos[0].precio_compra} (tipo: {typeof productos[0].precio_compra})</div>
-                <div>Stock: {productos[0].stock} (tipo: {typeof productos[0].stock})</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
 
       {/* Productos Table - MEJORADA */}
       <div className="card">

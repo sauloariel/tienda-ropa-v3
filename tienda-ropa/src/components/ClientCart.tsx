@@ -1,5 +1,8 @@
 import React from 'react';
+import { useClientAuth } from '../contexts/ClientAuthContext';
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, User } from 'lucide-react';
 import type { Producto } from '../types/productos.types';
+import type { Cliente } from '../types/cliente.types';
 
 interface CartItem {
   producto: Producto;
@@ -7,7 +10,7 @@ interface CartItem {
   precioUnitario: number;
 }
 
-interface CartProps {
+interface ClientCartProps {
   items: CartItem[];
   total: number;
   onUpdateQuantity: (productoId: number, cantidad: number) => void;
@@ -16,7 +19,7 @@ interface CartProps {
   onCheckout: () => void;
 }
 
-const Cart: React.FC<CartProps> = ({
+const ClientCart: React.FC<ClientCartProps> = ({
   items,
   total,
   onUpdateQuantity,
@@ -24,16 +27,40 @@ const Cart: React.FC<CartProps> = ({
   onClearCart,
   onCheckout
 }) => {
+  const { cliente, logout } = useClientAuth();
   const itemCount = items.reduce((sum, item) => sum + item.cantidad, 0);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 h-fit sticky top-4 border-2 border-blue-500">
+    <div className="bg-white rounded-lg shadow-lg p-6 h-fit sticky top-4">
       {/* Header del carrito */}
-      <div className="border-b border-gray-200 pb-3 mb-4">
-        <h2 className="text-xl font-bold text-gray-900">🛒 Carrito de Venta</h2>
-        <p className="text-sm text-gray-600">
-          {itemCount} producto{itemCount !== 1 ? 's' : ''} en el carrito
-        </p>
+      <div className="border-b border-gray-200 pb-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center">
+            <ShoppingCart className="w-6 h-6 mr-2" />
+            Mi Carrito
+          </h2>
+          <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+            {itemCount}
+          </span>
+        </div>
+        
+        {/* Información del cliente */}
+        {cliente && (
+          <div className="flex items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+            <User className="w-4 h-4 mr-2" />
+            <div>
+              <p className="font-medium">{cliente.nombre} {cliente.apellido}</p>
+              <p className="text-xs">{cliente.mail}</p>
+            </div>
+            <button
+              onClick={logout}
+              className="ml-auto text-red-500 hover:text-red-700 text-xs"
+              title="Cerrar sesión"
+            >
+              Salir
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Lista de items */}
@@ -58,14 +85,14 @@ const Cart: React.FC<CartProps> = ({
 
       {/* Total y acciones */}
       {items.length > 0 && (
-        <div className="border-t border-gray-200 pt-4 space-y-3">
+        <div className="border-t border-gray-200 pt-4 space-y-4">
           {/* Subtotal */}
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Subtotal:</span>
             <span className="font-medium">${total.toFixed(2)}</span>
           </div>
 
-          {/* IVA (ejemplo) */}
+          {/* IVA */}
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">IVA (21%):</span>
             <span className="font-medium">${(total * 0.21).toFixed(2)}</span>
@@ -83,15 +110,15 @@ const Cart: React.FC<CartProps> = ({
               onClick={onCheckout}
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 active:bg-green-800 transition-colors duration-200 flex items-center justify-center space-x-2"
             >
-              <span>💳</span>
-              <span>Finalizar Venta</span>
+              <CreditCard className="w-5 h-5" />
+              <span>Finalizar Compra</span>
             </button>
             
             <button
               onClick={onClearCart}
               className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 active:bg-gray-700 transition-colors duration-200 flex items-center justify-center space-x-2"
             >
-              <span>🗑️</span>
+              <Trash2 className="w-4 h-4" />
               <span>Limpiar Carrito</span>
             </button>
           </div>
@@ -150,7 +177,7 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item, onUpdateQuantity, onR
             className="w-6 h-6 bg-gray-200 text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors duration-200"
             disabled={cantidadValida <= 1}
           >
-            -
+            <Minus className="w-3 h-3" />
           </button>
           
           <span className="text-sm font-medium min-w-[2rem] text-center">
@@ -161,7 +188,7 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item, onUpdateQuantity, onR
             onClick={() => onUpdateQuantity(producto.id_producto, cantidadValida + 1)}
             className="w-6 h-6 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center hover:bg-blue-300 transition-colors duration-200"
           >
-            +
+            <Plus className="w-3 h-3" />
           </button>
         </div>
 
@@ -174,5 +201,4 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item, onUpdateQuantity, onR
   );
 };
 
-export default Cart;
-
+export default ClientCart;

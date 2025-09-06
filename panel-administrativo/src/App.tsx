@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Unauthorized from './pages/Unauthorized';
 import POS from './pages/POS';
 import Productos from './pages/Productos';
+import Categorias from './pages/Categorias';
 import Pedidos from './pages/Pedidos';
 import Clientes from './pages/Clientes';
 import Empleados from './pages/Empleados';
@@ -37,6 +38,12 @@ export default function App() {
           <Route path="productos" element={
             <RoleGuard allow={['Admin','Inventario']} ruta="/productos">
               <Productos />
+            </RoleGuard>
+          }/>
+
+          <Route path="categorias" element={
+            <RoleGuard allow={['Admin','Inventario']} ruta="/categorias">
+              <Categorias />
             </RoleGuard>
           }/>
 

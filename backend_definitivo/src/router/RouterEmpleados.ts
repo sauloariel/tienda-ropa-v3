@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { inputErrors } from '../middleware';
-import {createEmpleado, getEmpleados, getEmpleadoById,updateEmpleado, deleteEmpleado,
+import { authRequired } from '../middleware/auth';
+import {
+  createEmpleado,
+  getEmpleados,
+  getEmpleadoById,
+  updateEmpleado,
+  deleteEmpleado
 } from '../controllers/EmpleadosController';
 
 const router = Router();

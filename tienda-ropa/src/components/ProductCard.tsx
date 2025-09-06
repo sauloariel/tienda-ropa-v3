@@ -4,15 +4,17 @@ import type { Producto } from '../types/productos.types';
 
 interface ProductCardProps {
   producto: Producto;
+  onAddToCart?: (producto: Producto) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const handleAddToCart = () => {
-    // TODO: Implementar lógica del carrito
-    console.log('Agregar al carrito:', producto.descripcion);
+    if (onAddToCart) {
+      onAddToCart(producto);
+    }
   };
 
   const handleToggleWishlist = () => {
@@ -33,8 +35,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
   const nombreCategoria = producto.categoria?.nombre_categoria || 'Sin categoría';
 
   // Obtener talles y colores de las variantes
-  const talles = producto.variantes?.map(v => v.talle).filter(Boolean) || [];
-  const colores = producto.variantes?.map(v => v.color).filter(Boolean) || [];
+  const talles = producto.variantes?.map(v => v.talle?.nombre_talle).filter(Boolean) || [];
+  const colores = producto.variantes?.map(v => v.color?.nombre).filter(Boolean) || [];
 
   return (
     <div 
@@ -170,9 +172,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
           <div className="mt-3">
             <div className="text-xs text-gray-500 mb-2">Talles disponibles:</div>
             <div className="flex flex-wrap gap-1">
-              {talles.map((talle) => (
+              {talles.map((talle, index) => (
                 <span
-                  key={talle}
+                  key={`talle-${index}-${talle}`}
                   className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded border hover:bg-gray-200 cursor-pointer transition-colors"
                 >
                   {talle}
@@ -187,9 +189,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
           <div className="mt-3">
             <div className="text-xs text-gray-500 mb-2">Colores disponibles:</div>
             <div className="flex flex-wrap gap-1">
-              {colores.map((color) => (
+              {colores.map((color, index) => (
                 <span
-                  key={color}
+                  key={`color-${index}-${color}`}
                   className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded border hover:bg-gray-200 cursor-pointer transition-colors"
                 >
                   {color}

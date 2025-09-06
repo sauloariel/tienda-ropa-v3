@@ -12,7 +12,9 @@ import {
   BarChart3,
   Megaphone,
   DollarSign,
-  Receipt
+  Receipt,
+  Key,
+  Tag
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { obtenerPermisosRol } from '../types/auth.types';
@@ -60,12 +62,16 @@ const Layout: React.FC = () => {
         return CreditCard;
       case '/productos':
         return Package;
+      case '/categorias':
+        return Tag;
       case '/pedidos':
         return ShoppingCart;
       case '/clientes':
         return Users;
       case '/empleados':
         return UserCheck;
+      case '/usuarios-login':
+        return Key;
       case '/ventas':
         return Receipt;
       case '/estadisticas':

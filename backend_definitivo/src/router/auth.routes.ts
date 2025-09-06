@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { login, me } from '../controllers/auth.controller';
+import { loginEmpleado, getCurrentUser, verifyToken } from '../controllers/LoguinController';
 
 const router = Router();
-router.post('/login', login);
-router.get('/me', me);
+router.post('/login', loginEmpleado);
+router.get('/verify', verifyToken);
+router.get('/me', getCurrentUser);
 export default router;

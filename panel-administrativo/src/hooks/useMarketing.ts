@@ -1,135 +1,212 @@
-import { useState, useEffect, useCallback } from 'react'
-import { PromocionResponse, PromocionStats } from '../types/marketing.types'
-import { marketingAPI } from '../services/marketing'
+import { useState, useEffect, useMemo } from 'react';
+import { marketingAPI, Promocion, MarketingStats, CreatePromocionData } from '../services/marketing';
 
 export const useMarketing = () => {
-    const [promociones, setPromociones] = useState<PromocionResponse[]>([])
-    const [stats, setStats] = useState<PromocionStats | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [searchTerm, setSearchTerm] = useState('')
-    const [selectedEstado, setSelectedEstado] = useState<string>('TODOS')
-    const [selectedTipo, setSelectedTipo] = useState<string>('TODOS')
+    const [promociones, setPromociones] = useState<Promocion[]>([]);
+    const [stats, setStats] = useState<MarketingStats | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Cargar promociones
-    const cargarPromociones = useCallback(async () => {
+    // Estados de filtros
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedEstado, setSelectedEstado] = useState('TODOS');
+    const [selectedTipo, setSelectedTipo] = useState('TODOS');
+
+    // Cargar datos iniciales
+    const cargarDatos = async () => {
         try {
-            setLoading(true)
-            setError(null)
+            setLoading(true);
+            setError(null);
 
             const [promocionesData, statsData] = await Promise.all([
                 marketingAPI.getPromociones(),
-                marketingAPI.getPromocionStats()
-            ])
+                marketingAPI.getMarketingStats()
+            ]);
 
-            setPromociones(promocionesData)
-            setStats(statsData)
+            setPromociones(promocionesData);
+            setStats(statsData);
         } catch (err: any) {
-            setError(err.message)
-            console.error('Error cargando promociones:', err)
+            setError(err.message || 'Error al cargar los datos de marketing');
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [])
+    };
 
-    // Cargar datos al montar el componente
     useEffect(() => {
-        cargarPromociones()
-    }, [cargarPromociones])
+        cargarDatos();
+    }, []);
 
     // Filtrar promociones
-    const promocionesFiltradas = promociones.filter(promocion => {
-        const matchesSearch = promocion.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            promocion.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+    const promocionesFiltradas = useMemo(() => {
+        return promociones.filter(promocion => {
+            const matchesSearch = !searchTerm ||
+                promocion.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                promocion.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                promocion.codigo_descuento?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesEstado = selectedEstado === 'TODOS' || promocion.estado === selectedEstado
-        const matchesTipo = selectedTipo === 'TODOS' || promocion.tipo === selectedTipo
+            const matchesEstado = selectedEstado === 'TODOS' || promocion.estado === selectedEstado;
+            const matchesTipo = selectedTipo === 'TODOS' || promocion.tipo === selectedTipo;
 
-        return matchesSearch && matchesEstado && matchesTipo
-    })
+            return matchesSearch && matchesEstado && matchesTipo;
+        });
+    }, [promociones, searchTerm, selectedEstado, selectedTipo]);
+
+    // Promociones por vencer (próximos 7 días)
+    const promocionesPorVencer = useMemo(() => {
+        const hoy = new Date();
+        const en7Dias = new Date();
+        en7Dias.setDate(hoy.getDate() + 7);
+
+        return promociones.filter(promocion => {
+            const fechaFin = new Date(promocion.fecha_fin);
+            return promocion.estado === 'ACTIVA' &&
+                fechaFin >= hoy &&
+                fechaFin <= en7Dias;
+        });
+    }, [promociones]);
+
+    // Promociones expiradas
+    const promocionesExpiradas = useMemo(() => {
+        const hoy = new Date();
+        return promociones.filter(promocion => {
+            const fechaFin = new Date(promocion.fecha_fin);
+            return promocion.estado === 'ACTIVA' && fechaFin < hoy;
+        });
+    }, [promociones]);
 
     // Crear promoción
-    const crearPromocion = useCallback(async (promocionData: any) => {
+    const crearPromocion = async (data: CreatePromocionData): Promise<void> => {
         try {
-            const nuevaPromocion = await marketingAPI.crearPromocion(promocionData)
-            setPromociones(prev => [...prev, nuevaPromocion])
-            await cargarPromociones() // Recargar para actualizar stats
-            return nuevaPromocion
+            const nuevaPromocion = await marketingAPI.createPromocion(data);
+            setPromociones(prev => [nuevaPromocion, ...prev]);
+
+            // Actualizar estadísticas
+            if (stats) {
+                setStats(prev => prev ? {
+                    ...prev,
+                    total_promociones: prev.total_promociones + 1,
+                    promociones_activas: data.estado === 'ACTIVA' ? prev.promociones_activas + 1 : prev.promociones_activas,
+                    promociones_inactivas: data.estado === 'INACTIVA' ? prev.promociones_inactivas + 1 : prev.promociones_inactivas
+                } : null);
+            }
         } catch (err: any) {
-            throw new Error(err.message)
+            throw new Error(err.message || 'Error al crear la promoción');
         }
-    }, [cargarPromociones])
+    };
 
     // Actualizar promoción
-    const actualizarPromocion = useCallback(async (id: number, promocionData: any) => {
+    const actualizarPromocion = async (id: number, data: Partial<CreatePromocionData>): Promise<void> => {
         try {
-            const promocionActualizada = await marketingAPI.actualizarPromocion(id, promocionData)
-            setPromociones(prev => prev.map(p => p.id_promocion === id ? promocionActualizada : p))
-            await cargarPromociones() // Recargar para actualizar stats
-            return promocionActualizada
+            const promocionActualizada = await marketingAPI.updatePromocion(id, data);
+            setPromociones(prev => prev.map(p =>
+                p.id_promocion === id ? promocionActualizada : p
+            ));
         } catch (err: any) {
-            throw new Error(err.message)
+            throw new Error(err.message || 'Error al actualizar la promoción');
         }
-    }, [cargarPromociones])
+    };
 
     // Eliminar promoción
-    const eliminarPromocion = useCallback(async (id: number) => {
+    const eliminarPromocion = async (id: number): Promise<void> => {
         try {
-            await marketingAPI.eliminarPromocion(id)
-            setPromociones(prev => prev.filter(p => p.id_promocion !== id))
-            await cargarPromociones() // Recargar para actualizar stats
+            await marketingAPI.deletePromocion(id);
+            setPromociones(prev => prev.filter(p => p.id_promocion !== id));
+
+            // Actualizar estadísticas
+            if (stats) {
+                const promocionEliminada = promociones.find(p => p.id_promocion === id);
+                if (promocionEliminada) {
+                    setStats(prev => prev ? {
+                        ...prev,
+                        total_promociones: prev.total_promociones - 1,
+                        promociones_activas: promocionEliminada.estado === 'ACTIVA' ? prev.promociones_activas - 1 : prev.promociones_activas,
+                        promociones_inactivas: promocionEliminada.estado === 'INACTIVA' ? prev.promociones_inactivas - 1 : prev.promociones_inactivas,
+                        promociones_expiradas: promocionEliminada.estado === 'EXPIRADA' ? prev.promociones_expiradas - 1 : prev.promociones_expiradas
+                    } : null);
+                }
+            }
         } catch (err: any) {
-            throw new Error(err.message)
+            throw new Error(err.message || 'Error al eliminar la promoción');
         }
-    }, [cargarPromociones])
+    };
 
     // Cambiar estado de promoción
-    const cambiarEstadoPromocion = useCallback(async (id: number, estado: 'ACTIVA' | 'INACTIVA') => {
+    const cambiarEstadoPromocion = async (id: number, nuevoEstado: 'ACTIVA' | 'INACTIVA' | 'EXPIRADA'): Promise<void> => {
         try {
-            const promocionActualizada = await marketingAPI.cambiarEstadoPromocion(id, estado)
-            setPromociones(prev => prev.map(p => p.id_promocion === id ? promocionActualizada : p))
-            await cargarPromociones() // Recargar para actualizar stats
-            return promocionActualizada
+            const promocionActualizada = await marketingAPI.togglePromocionEstado(id, nuevoEstado);
+            setPromociones(prev => prev.map(p =>
+                p.id_promocion === id ? promocionActualizada : p
+            ));
+
+            // Actualizar estadísticas
+            if (stats) {
+                const promocionOriginal = promociones.find(p => p.id_promocion === id);
+                if (promocionOriginal) {
+                    setStats(prev => prev ? {
+                        ...prev,
+                        promociones_activas:
+                            promocionOriginal.estado === 'ACTIVA' ? prev.promociones_activas - 1 :
+                                nuevoEstado === 'ACTIVA' ? prev.promociones_activas + 1 : prev.promociones_activas,
+                        promociones_inactivas:
+                            promocionOriginal.estado === 'INACTIVA' ? prev.promociones_inactivas - 1 :
+                                nuevoEstado === 'INACTIVA' ? prev.promociones_inactivas + 1 : prev.promociones_inactivas,
+                        promociones_expiradas:
+                            promocionOriginal.estado === 'EXPIRADA' ? prev.promociones_expiradas - 1 :
+                                nuevoEstado === 'EXPIRADA' ? prev.promociones_expiradas + 1 : prev.promociones_expiradas
+                    } : null);
+                }
+            }
         } catch (err: any) {
-            throw new Error(err.message)
+            throw new Error(err.message || 'Error al cambiar el estado de la promoción');
         }
-    }, [cargarPromociones])
+    };
 
-    // Obtener promoción por ID
-    const obtenerPromocion = useCallback((id: number) => {
-        return promociones.find(p => p.id_promocion === id)
-    }, [promociones])
+    // Validar código de descuento
+    const validarCodigoDescuento = async (codigo: string, montoCompra?: number) => {
+        try {
+            return await marketingAPI.validateCodigoDescuento(codigo, montoCompra);
+        } catch (err: any) {
+            throw new Error(err.message || 'Error al validar el código de descuento');
+        }
+    };
 
-    // Obtener tipos únicos
-    const tiposPromocion = Array.from(new Set(promociones.map(p => p.tipo)))
+    // Usar código de descuento
+    const usarCodigoDescuento = async (codigo: string): Promise<void> => {
+        try {
+            await marketingAPI.usarCodigoDescuento(codigo);
 
-    // Obtener estados únicos
-    const estadosPromocion = Array.from(new Set(promociones.map(p => p.estado)))
+            // Actualizar uso en la lista local
+            setPromociones(prev => prev.map(p =>
+                p.codigo_descuento === codigo
+                    ? { ...p, uso_actual: p.uso_actual + 1 }
+                    : p
+            ));
 
-    // Calcular promociones por vencer (7 días)
-    const promocionesPorVencer = promociones.filter(promocion => {
-        if (promocion.estado !== 'ACTIVA') return false
+            // Actualizar estadísticas
+            if (stats) {
+                setStats(prev => prev ? {
+                    ...prev,
+                    total_uso: prev.total_uso + 1
+                } : null);
+            }
+        } catch (err: any) {
+            throw new Error(err.message || 'Error al usar el código de descuento');
+        }
+    };
 
-        const fechaFin = new Date(promocion.fecha_fin)
-        const hoy = new Date()
-        const diasRestantes = Math.ceil((fechaFin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-
-        return diasRestantes <= 7 && diasRestantes > 0
-    })
-
-    // Calcular promociones expiradas
-    const promocionesExpiradas = promociones.filter(promocion => {
-        const fechaFin = new Date(promocion.fecha_fin)
-        const hoy = new Date()
-        return fechaFin < hoy
-    })
+    // Recargar datos
+    const recargarDatos = () => {
+        cargarDatos();
+    };
 
     return {
-        // Estado
+        // Estados
         promociones: promocionesFiltradas,
         stats,
         loading,
         error,
+
+        // Filtros
         searchTerm,
         setSearchTerm,
         selectedEstado,
@@ -137,18 +214,17 @@ export const useMarketing = () => {
         selectedTipo,
         setSelectedTipo,
 
-        // Funciones
-        cargarPromociones,
+        // Promociones especiales
+        promocionesPorVencer,
+        promocionesExpiradas,
+
+        // Acciones
         crearPromocion,
         actualizarPromocion,
         eliminarPromocion,
         cambiarEstadoPromocion,
-        obtenerPromocion,
-
-        // Datos calculados
-        tiposPromocion,
-        estadosPromocion,
-        promocionesPorVencer,
-        promocionesExpiradas
-    }
-}
+        validarCodigoDescuento,
+        usarCodigoDescuento,
+        recargarDatos
+    };
+};

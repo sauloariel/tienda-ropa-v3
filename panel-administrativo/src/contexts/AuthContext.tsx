@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('🔄 AuthContext useEffect iniciado');
     const t = localStorage.getItem('authToken');
     const u = localStorage.getItem('authUser');
     if (t && u) {
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         console.log('🔍 Token encontrado:', t.substring(0, 20) + '...');
         console.log('🔍 Usuario encontrado:', userData);
+        console.log('🔍 Rol del usuario guardado:', userData.rol);
+        console.log('🔍 Tipo de rol:', typeof userData.rol);
       } catch (e) {
         console.error('❌ Error parseando usuario:', e);
         localStorage.removeItem('authToken');
@@ -40,7 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       console.log('🔍 No hay token guardado');
     }
+    console.log('🔄 AuthContext - Estableciendo isLoading a false');
     setIsLoading(false);
+    console.log('✅ AuthContext useEffect completado');
   }, []);
 
   const login = async (usuario: string, password: string) => {
@@ -53,6 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('authToken', resp.token);
     localStorage.setItem('authUser', JSON.stringify(resp.user));
     console.log('✅ Login exitoso, token guardado:', resp.token.substring(0, 20) + '...');
+    console.log('✅ Usuario guardado:', resp.user);
+    console.log('✅ Rol del usuario:', resp.user.rol);
     navigate('/');
   };
 
@@ -64,8 +71,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const canAccess = (modulePath: string) => {
-    if (!user) return false;
-    return PERMISOS_POR_ROL[user.rol].some(p => p.ruta === modulePath || p.id === modulePath);
+    if (!user) {
+      console.log('🔍 canAccess - No hay usuario');
+      return false;
+    }
+    
+    const permisos = PERMISOS_POR_ROL[user.rol];
+    console.log('🔍 canAccess - Rol del usuario:', user.rol);
+    console.log('🔍 canAccess - Permisos disponibles:', permisos);
+    console.log('🔍 canAccess - Módulo solicitado:', modulePath);
+    
+    const tieneAcceso = permisos?.some(p => p.ruta === modulePath || p.id === modulePath) || false;
+    console.log('🔍 canAccess - Tiene acceso?', tieneAcceso);
+    
+    return tieneAcceso;
     // permite both: canAccess('/pos') o canAccess('pos')
   };
 

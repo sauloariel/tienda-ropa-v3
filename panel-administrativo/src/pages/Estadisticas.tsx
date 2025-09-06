@@ -39,11 +39,14 @@ const Estadisticas: React.FC = () => {
   const [clientesTop, setClientesTop] = useState<ClienteTopCompras[]>([])
   const [actividadReciente, setActividadReciente] = useState<ActividadReciente[]>([])
   const [resumenFinanciero, setResumenFinanciero] = useState<ResumenFinanciero | null>(null)
+  const [conexionDB, setConexionDB] = useState<'conectado' | 'desconectado' | 'verificando'>('verificando')
 
   // Cargar todas las estadísticas
   const cargarEstadisticas = async () => {
     setLoading(true)
+    setConexionDB('verificando')
     try {
+      console.log('🔄 Cargando estadísticas desde la base de datos...')
       const [
         stats,
         ventas,
@@ -69,8 +72,11 @@ const Estadisticas: React.FC = () => {
       setClientesTop(clientes)
       setActividadReciente(actividad)
       setResumenFinanciero(financiero)
+      setConexionDB('conectado')
+      console.log('✅ Estadísticas cargadas exitosamente desde la base de datos')
     } catch (error) {
-      console.error('Error cargando estadísticas:', error)
+      console.error('❌ Error cargando estadísticas:', error)
+      setConexionDB('desconectado')
     } finally {
       setLoading(false)
     }
@@ -115,49 +121,100 @@ const Estadisticas: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Estadísticas</h1>
-          <p className="text-gray-600">Análisis y reportes del negocio</p>
+          <div className="flex items-center space-x-3">
+            <h1 className="text-2xl font-bold text-gray-900">📊 Estadísticas del Negocio</h1>
+            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${
+              conexionDB === 'conectado' ? 'bg-green-100 text-green-800' :
+              conexionDB === 'desconectado' ? 'bg-red-100 text-red-800' :
+              'bg-yellow-100 text-yellow-800'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                conexionDB === 'conectado' ? 'bg-green-500' :
+                conexionDB === 'desconectado' ? 'bg-red-500' :
+                'bg-yellow-500 animate-pulse'
+              }`} />
+              <span>
+                {conexionDB === 'conectado' ? 'Base de datos conectada' :
+                 conexionDB === 'desconectado' ? 'Sin conexión a BD' :
+                 'Verificando conexión...'}
+              </span>
+            </div>
+          </div>
+          <p className="text-gray-600">Análisis y reportes en tiempo real conectados a la base de datos</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-gray-400" />
+            <select
+              value={periodo}
+              onChange={(e) => setPeriodo(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="7">Últimos 7 días</option>
+              <option value="30">Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+              <option value="365">Último año</option>
+            </select>
+          </div>
+          <button
+            onClick={cargarEstadisticas}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Actualizar</span>
+          </button>
         </div>
       </div>
 
-      {/* Métricas Principales */}
+      {/* 5 Datos Estadísticos Principales */}
       {estadisticas && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
           <MetricCard
-            title="Ventas Totales"
+            title="💰 Ventas Totales"
             value={estadisticas.ventasTotales}
             change={estadisticas.cambioVentas}
             changeType={estadisticas.cambioVentas >= 0 ? 'positive' : 'negative'}
             icon={DollarSign}
             iconColor="text-green-500"
             trend={estadisticas.cambioVentas > 0 ? 'up' : 'down'}
+            description="Ingresos del período"
           />
           <MetricCard
-            title="Clientes Nuevos"
+            title="👥 Clientes Activos"
             value={estadisticas.clientesNuevos}
             change={estadisticas.cambioClientes}
             changeType={estadisticas.cambioClientes >= 0 ? 'positive' : 'negative'}
             icon={Users}
             iconColor="text-blue-500"
             trend={estadisticas.cambioClientes > 0 ? 'up' : 'down'}
+            description="Nuevos clientes"
           />
           <MetricCard
-            title="Productos Vendidos"
+            title="📦 Productos Vendidos"
             value={estadisticas.productosVendidos}
             change={estadisticas.cambioProductos}
             changeType={estadisticas.cambioProductos >= 0 ? 'positive' : 'negative'}
             icon={Package}
             iconColor="text-purple-500"
             trend={estadisticas.cambioProductos > 0 ? 'up' : 'down'}
+            description="Unidades vendidas"
           />
           <MetricCard
-            title="Pedidos Completados"
+            title="🛒 Pedidos Completados"
             value={estadisticas.pedidosCompletados}
             change={estadisticas.cambioPedidos}
             changeType={estadisticas.cambioPedidos >= 0 ? 'positive' : 'negative'}
             icon={ShoppingCart}
             iconColor="text-orange-500"
             trend={estadisticas.cambioPedidos > 0 ? 'up' : 'down'}
+            description="Órdenes finalizadas"
+          />
+          <MetricCard
+            title="📈 Ticket Promedio"
+            value={estadisticas.pedidosCompletados > 0 ? Math.round(estadisticas.ventasTotales / estadisticas.pedidosCompletados) : 0}
+            icon={BarChart3}
+            iconColor="text-indigo-500"
+            description="Por pedido"
           />
         </div>
       )}
@@ -196,22 +253,36 @@ const Estadisticas: React.FC = () => {
         </div>
       )}
 
-      {/* Gráficos y Análisis */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Ventas Mensuales */}
-        <Chart
-          data={datosVentasMensuales}
-          title="Evolución de Ventas Mensuales"
-          type="line"
-          height={300}
-        />
+      {/* 3 Gráficos Principales Conectados a la Base de Datos */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Gráfico 1: Evolución de Ventas Mensuales */}
+        <div className="lg:col-span-2">
+          <Chart
+            data={datosVentasMensuales}
+            title="📈 Evolución de Ventas Mensuales"
+            type="line"
+            height={350}
+          />
+        </div>
 
-        {/* Distribución por Categorías */}
+        {/* Gráfico 2: Distribución por Categorías */}
+        <div>
+          <Chart
+            data={datosCategorias}
+            title="🥧 Ventas por Categoría"
+            type="doughnut"
+            height={350}
+          />
+        </div>
+      </div>
+
+      {/* Gráfico 3: Productos Más Vendidos */}
+      <div className="grid grid-cols-1 gap-6">
         <Chart
-          data={datosCategorias}
-          title="Ventas por Categoría"
-          type="doughnut"
-          height={300}
+          data={datosProductos}
+          title="🏆 Top 10 Productos Más Vendidos"
+          type="bar"
+          height={400}
         />
       </div>
 
@@ -340,6 +411,40 @@ const Estadisticas: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Resumen Ejecutivo */}
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 border-l-4 border-green-500">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">📋 Resumen Ejecutivo - Período: {periodo} días</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <h4 className="font-semibold text-gray-900 mb-2">🎯 Rendimiento General</h4>
+            <p className="text-sm text-gray-600">
+              {estadisticas?.cambioVentas && estadisticas.cambioVentas > 0 
+                ? `✅ Las ventas crecieron ${estadisticas.cambioVentas}% vs período anterior`
+                : `⚠️ Las ventas disminuyeron ${Math.abs(estadisticas?.cambioVentas || 0)}% vs período anterior`
+              }
+            </p>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <h4 className="font-semibold text-gray-900 mb-2">👥 Crecimiento de Clientes</h4>
+            <p className="text-sm text-gray-600">
+              {estadisticas?.cambioClientes && estadisticas.cambioClientes > 0 
+                ? `📈 ${estadisticas.cambioClientes}% más clientes nuevos`
+                : `📉 ${Math.abs(estadisticas?.cambioClientes || 0)}% menos clientes nuevos`
+              }
+            </p>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <h4 className="font-semibold text-gray-900 mb-2">💰 Rentabilidad</h4>
+            <p className="text-sm text-gray-600">
+              {resumenFinanciero?.margen && resumenFinanciero.margen > 30
+                ? `💚 Excelente margen: ${resumenFinanciero.margen}%`
+                : `💛 Margen actual: ${resumenFinanciero?.margen}% - Oportunidad de mejora`
+              }
+            </p>
           </div>
         </div>
       </div>

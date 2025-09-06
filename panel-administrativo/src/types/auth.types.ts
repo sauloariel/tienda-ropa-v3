@@ -63,6 +63,7 @@ export const PERMISOS_POR_ROL: RolPermisos = {
     Admin: [
         { id: 'pos', nombre: 'POS', icono: '🛒', ruta: '/pos', descripcion: 'Punto de venta', color: 'text-green-600', bgColor: 'bg-green-100' },
         { id: 'productos', nombre: 'Productos', icono: '📦', ruta: '/productos', descripcion: 'Gestión de productos', color: 'text-purple-600', bgColor: 'bg-purple-100' },
+        { id: 'categorias', nombre: 'Categorías', icono: '🏷️', ruta: '/categorias', descripcion: 'Gestión de categorías', color: 'text-blue-600', bgColor: 'bg-blue-100' },
         { id: 'pedidos', nombre: 'Pedidos', icono: '📋', ruta: '/pedidos', descripcion: 'Gestión de pedidos', color: 'text-orange-600', bgColor: 'bg-orange-100' },
         { id: 'clientes', nombre: 'Clientes', icono: '👥', ruta: '/clientes', descripcion: 'Gestión de clientes', color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
         { id: 'empleados', nombre: 'Empleados', icono: '👨‍💼', ruta: '/empleados', descripcion: 'Gestión de empleados', color: 'text-red-600', bgColor: 'bg-red-100' },
@@ -79,6 +80,7 @@ export const PERMISOS_POR_ROL: RolPermisos = {
     ],
     Inventario: [
         { id: 'productos', nombre: 'Productos', icono: '📦', ruta: '/productos', descripcion: 'Gestión de productos', color: 'text-purple-600', bgColor: 'bg-purple-100' },
+        { id: 'categorias', nombre: 'Categorías', icono: '🏷️', ruta: '/categorias', descripcion: 'Gestión de categorías', color: 'text-blue-600', bgColor: 'bg-blue-100' },
         { id: 'estadisticas', nombre: 'Estadísticas', icono: '📈', ruta: '/estadisticas', descripcion: 'Reportes de inventario', color: 'text-cyan-600', bgColor: 'bg-cyan-100' }
     ],
     Marketing: [

@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { FacturaRequest, FacturaResponse, FacturaListResponse, FacturaStatsResponse } from '../types/factura.types';
 
-const API_BASE_URL = 'http://localhost:4000/api';
+const API_BASE_URL = 'http://localhost:4000';
 
 // Configurar axios
 const facturaAPI = axios.create({
@@ -12,7 +11,7 @@ const facturaAPI = axios.create({
 });
 
 // Crear nueva factura
-export const crearFactura = async (facturaData: FacturaRequest): Promise<FacturaResponse> => {
+export const crearFactura = async (facturaData: any): Promise<any> => {
     try {
         const response = await facturaAPI.post('/', facturaData);
         return response.data;
@@ -23,7 +22,7 @@ export const crearFactura = async (facturaData: FacturaRequest): Promise<Factura
 };
 
 // Obtener todas las facturas
-export const obtenerFacturas = async (fechaInicio?: string, fechaFin?: string, estado?: string): Promise<FacturaListResponse> => {
+export const obtenerFacturas = async (fechaInicio?: string, fechaFin?: string, estado?: string): Promise<any> => {
     try {
         const params = new URLSearchParams();
         if (fechaInicio) params.append('fecha_inicio', fechaInicio);
@@ -39,7 +38,7 @@ export const obtenerFacturas = async (fechaInicio?: string, fechaFin?: string, e
 };
 
 // Obtener factura por ID
-export const obtenerFacturaPorId = async (id: number): Promise<FacturaResponse> => {
+export const obtenerFacturaPorId = async (id: number): Promise<any> => {
     try {
         const response = await facturaAPI.get(`/${id}`);
         return response.data;
@@ -50,7 +49,7 @@ export const obtenerFacturaPorId = async (id: number): Promise<FacturaResponse> 
 };
 
 // Obtener estadísticas de facturas
-export const obtenerEstadisticasFacturas = async (fechaInicio?: string, fechaFin?: string): Promise<FacturaStatsResponse> => {
+export const obtenerEstadisticasFacturas = async (fechaInicio?: string, fechaFin?: string): Promise<any> => {
     try {
         const params = new URLSearchParams();
         if (fechaInicio) params.append('fecha_inicio', fechaInicio);
@@ -80,7 +79,7 @@ export const generarPDFFactura = async (factura: any): Promise<void> => {
     try {
         // Importar html2pdf.js dinámicamente
         const html2pdf = (await import('html2pdf.js')).default;
-        
+
         // Crear el contenido HTML de la factura
         const contenidoHTML = `
             <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -147,7 +146,7 @@ export const generarPDFFactura = async (factura: any): Promise<void> => {
 
         // Generar y descargar el PDF
         html2pdf().from(contenidoHTML).set(opt).save();
-        
+
     } catch (error) {
         console.error('Error al generar PDF:', error);
         throw new Error('Error al generar el PDF de la factura');

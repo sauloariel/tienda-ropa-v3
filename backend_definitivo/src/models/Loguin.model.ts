@@ -36,5 +36,11 @@ export class Loguin extends Model {
 
   @Column(DataType.DATE)
   fecha_cambio_pass?: Date;
+
+  @Column(DataType.DATE)
+  ultimo_acceso?: Date;
+
+  @Column(DataType.BOOLEAN)
+  activo?: boolean;
 }
 export default Loguin;

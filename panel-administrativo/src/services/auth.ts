@@ -16,9 +16,20 @@ export interface LoginResp {
     message?: string;
 }
 
+export interface LoginRequest {
+    usuario: string;
+    password: string;
+}
+
 export const authApi = {
     login: (usuario: string, password: string) =>
-        api.post<LoginResp>('/auth/login', { usuario, password }).then(r => r.data),
+        api.post<LoginResp>('/loguin/auth/login', { usuario, password }).then(r => r.data),
     me: (token: string) =>
-        api.get<{ success: boolean; user: User }>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data),
+        api.get<{ success: boolean; usuario: User }>('/loguin/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data),
+    verify: (token: string) =>
+        api.get<{ success: boolean; usuario: User }>('/loguin/auth/verify', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data),
+    changePassword: (password_actual: string, password_nuevo: string, token: string) =>
+        api.put('/loguin/auth/change-password', { password_actual, password_nuevo }, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.data),
+    logout: () =>
+        api.post('/loguin/auth/logout').then(r => r.data),
 };

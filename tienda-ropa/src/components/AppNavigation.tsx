@@ -1,8 +1,8 @@
 import React from 'react';
 
 interface AppNavigationProps {
-  currentView: 'tienda' | 'pos';
-  onViewChange: (view: 'tienda' | 'pos') => void;
+  currentView: 'tienda' | 'pos' | 'seguimiento';
+  onViewChange: (view: 'tienda' | 'pos' | 'seguimiento') => void;
 }
 
 const AppNavigation: React.FC<AppNavigationProps> = ({ currentView, onViewChange }) => {
@@ -41,6 +41,17 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ currentView, onViewChange
               }`}
             >
               💰 Sistema POS
+            </button>
+
+            <button
+              onClick={() => onViewChange('seguimiento')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                currentView === 'seguimiento'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              📦 Seguimiento
             </button>
           </nav>
 

@@ -1,4 +1,4 @@
-import api from './api';
+import { api } from './api';
 import type { Producto } from '../types/productos.types';
 
 export interface CartItem {

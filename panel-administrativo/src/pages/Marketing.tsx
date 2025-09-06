@@ -24,6 +24,7 @@ import {
 
 import { useMarketing } from '../hooks/useMarketing'
 import { ModalPromocion } from '../components/marketing/ModalPromocion'
+import { MarketingAnalytics } from '../components/marketing/MarketingAnalytics'
 import { PromocionResponse } from '../types/marketing.types'
 
 const Marketing: React.FC = () => {
@@ -205,57 +206,13 @@ const Marketing: React.FC = () => {
           </div>
         )}
 
-        {/* Estadísticas */}
+        {/* Analytics de Marketing */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Megaphone className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Promociones</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.total_promociones}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Activas</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.promociones_activas}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Por Vencer</p>
-                  <p className="text-2xl font-semibold text-gray-900">{promocionesPorVencer.length}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Uso</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.total_uso}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MarketingAnalytics 
+            stats={stats}
+            promocionesPorVencer={promocionesPorVencer}
+            promocionesExpiradas={promocionesExpiradas}
+          />
         )}
 
         {/* Alertas */}
@@ -414,12 +371,12 @@ const Marketing: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
                           {promocion.tipo === 'PORCENTAJE' ? `${promocion.valor}%` :
-                           promocion.tipo === 'MONTO_FIJO' ? `$${promocion.valor.toFixed(2)}` :
+                           promocion.tipo === 'MONTO_FIJO' ? `$${Number(promocion.valor).toFixed(2)}` :
                            promocion.tipo === '2X1' ? 'Segundo gratis' : 'Especial'}
                         </div>
                         {promocion.minimo_compra && (
                           <div className="text-xs text-gray-500">
-                            Mín: ${promocion.minimo_compra.toFixed(2)}
+                            Mín: ${Number(promocion.minimo_compra).toFixed(2)}
                           </div>
                         )}
                       </td>
