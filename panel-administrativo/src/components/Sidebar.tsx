@@ -10,6 +10,8 @@ export default function Sidebar() {
       {hasRole('Administrador', 'Inventario') && <a href="/inventario">Inventario</a>}
       {hasRole('Administrador', 'Marketing') && <a href="/marketing">Marketing</a>}
       {hasRole('Administrador') && <a href="/empleados">Empleados</a>}
+      {hasRole('Administrador') && <a href="/proveedores">Proveedores</a>}
+      {hasRole('Administrador', 'Vendedor') && <a href="/facturas">Facturas</a>}
     </nav>
   );
 }

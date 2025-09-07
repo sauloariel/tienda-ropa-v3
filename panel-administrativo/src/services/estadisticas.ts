@@ -67,9 +67,10 @@ export const estadisticasAPI = {
     getEstadisticasGenerales: async (periodo: string = '30'): Promise<EstadisticasGenerales> => {
         try {
             const response = await api.get(`/estadisticas/generales?periodo=${periodo}`)
+            console.log('✅ Estadísticas generales obtenidas desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo estadísticas generales:', error)
+            console.error('❌ Error obteniendo estadísticas generales:', error)
             // Retornar datos de ejemplo si falla la API
             return {
                 ventasTotales: 45231,
@@ -88,9 +89,10 @@ export const estadisticasAPI = {
     getVentasPorMes: async (meses: number = 12): Promise<VentasPorMes[]> => {
         try {
             const response = await api.get(`/estadisticas/ventas-mensuales?meses=${meses}`)
+            console.log('✅ Ventas mensuales obtenidas desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo ventas mensuales:', error)
+            console.error('❌ Error obteniendo ventas mensuales:', error)
             // Retornar datos de ejemplo
             return [
                 { mes: 'Ene', ventas: 15000, pedidos: 45 },
@@ -107,9 +109,10 @@ export const estadisticasAPI = {
     getProductosTopVentas: async (limite: number = 10): Promise<ProductoTopVentas[]> => {
         try {
             const response = await api.get(`/estadisticas/productos-top?limite=${limite}`)
+            console.log('✅ Productos top obtenidos desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo productos top:', error)
+            console.error('❌ Error obteniendo productos top:', error)
             // Retornar datos de ejemplo
             return [
                 { id_producto: 1, descripcion: 'Camiseta Azul', ventas: 45, porcentaje: 25, stock: 50, precio_venta: 25.99 },
@@ -124,9 +127,10 @@ export const estadisticasAPI = {
     getCategoriasTopVentas: async (limite: number = 5): Promise<CategoriaTopVentas[]> => {
         try {
             const response = await api.get(`/estadisticas/categorias-top?limite=${limite}`)
+            console.log('✅ Categorías top obtenidas desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo categorías top:', error)
+            console.error('❌ Error obteniendo categorías top:', error)
             // Retornar datos de ejemplo
             return [
                 { id_categoria: 1, nombre_categoria: 'Ropa de Hombre', ventas: 12000, porcentaje: 35, productos: 45 },
@@ -140,9 +144,10 @@ export const estadisticasAPI = {
     getClientesTopCompras: async (limite: number = 10): Promise<ClienteTopCompras[]> => {
         try {
             const response = await api.get(`/estadisticas/clientes-top?limite=${limite}`)
+            console.log('✅ Clientes top obtenidos desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo clientes top:', error)
+            console.error('❌ Error obteniendo clientes top:', error)
             // Retornar datos de ejemplo
             return [
                 { id_cliente: 1, nombre: 'Juan Pérez', email: 'juan@email.com', total_compras: 1250, ultima_compra: '2024-01-15' },
@@ -156,9 +161,10 @@ export const estadisticasAPI = {
     getActividadReciente: async (limite: number = 20): Promise<ActividadReciente[]> => {
         try {
             const response = await api.get(`/estadisticas/actividad-reciente?limite=${limite}`)
+            console.log('✅ Actividad reciente obtenida desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo actividad reciente:', error)
+            console.error('❌ Error obteniendo actividad reciente:', error)
             // Retornar datos de ejemplo
             return [
                 { id: 1, accion: 'Nuevo pedido #1234', tiempo: 'Hace 2 minutos', tipo: 'order', detalles: 'Cliente: Juan Pérez', monto: 150 },
@@ -173,9 +179,10 @@ export const estadisticasAPI = {
     getResumenFinanciero: async (periodo: string = '30'): Promise<ResumenFinanciero> => {
         try {
             const response = await api.get(`/estadisticas/resumen-financiero?periodo=${periodo}`)
+            console.log('✅ Resumen financiero obtenido desde la base de datos:', response.data)
             return response.data
         } catch (error) {
-            console.error('Error obteniendo resumen financiero:', error)
+            console.error('❌ Error obteniendo resumen financiero:', error)
             // Retornar datos de ejemplo
             return {
                 ingresos: 45231,
@@ -188,20 +195,4 @@ export const estadisticasAPI = {
         }
     },
 
-    // Obtener estadísticas de inventario
-    getEstadisticasInventario: async () => {
-        try {
-            const response = await api.get('/estadisticas/inventario')
-            return response.data
-        } catch (error) {
-            console.error('Error obteniendo estadísticas de inventario:', error)
-            return {
-                total_productos: 150,
-                productos_bajo_stock: 12,
-                productos_agotados: 3,
-                valor_inventario: 45000,
-                rotacion_promedio: 2.5
-            }
-        }
-    }
 }

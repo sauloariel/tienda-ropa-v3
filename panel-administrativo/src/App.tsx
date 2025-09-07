@@ -15,6 +15,8 @@ import Empleados from './pages/Empleados';
 import Ventas from './pages/Ventas';
 import Estadisticas from './pages/Estadisticas';
 import Marketing from './pages/Marketing';
+import Proveedores from './pages/Proveedores';
+import Facturas from './pages/Facturas';
 
 export default function App() {
   return (
@@ -80,6 +82,18 @@ export default function App() {
           <Route path="marketing" element={
             <RoleGuard allow={['Admin','Marketing']} ruta="/marketing">
               <Marketing />
+            </RoleGuard>
+          }/>
+
+          <Route path="proveedores" element={
+            <RoleGuard allow={['Admin']} ruta="/proveedores">
+              <Proveedores />
+            </RoleGuard>
+          }/>
+
+          <Route path="facturas" element={
+            <RoleGuard allow={['Admin','Vendedor']} ruta="/facturas">
+              <Facturas />
             </RoleGuard>
           }/>
 

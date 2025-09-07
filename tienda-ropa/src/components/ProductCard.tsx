@@ -26,10 +26,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
     console.log('Vista rápida:', producto.descripcion);
   };
 
-  // Obtener la primera imagen del producto
-  const imagenProducto = producto.imagenes && producto.imagenes.length > 0 
-    ? producto.imagenes[0].url 
-    : null;
+  // Obtener las imágenes del producto
+  const imagenesProducto = producto.imagenes && producto.imagenes.length > 0 
+    ? producto.imagenes 
+    : [];
+  const imagenPrincipal = imagenesProducto.length > 0 ? imagenesProducto[0] : null;
 
   // Obtener el nombre de la categoría
   const nombreCategoria = producto.categoria?.nombre_categoria || 'Sin categoría';
@@ -46,15 +47,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
     >
       {/* Imagen del producto */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
-        {imagenProducto ? (
+        {imagenPrincipal ? (
           <img
-            src={imagenProducto}
+            src={imagenPrincipal.ruta || imagenPrincipal.url}
             alt={producto.descripcion}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200">
             <span className="text-gray-400 text-sm">Sin imagen</span>
+          </div>
+        )}
+        
+        {/* Indicador de múltiples imágenes */}
+        {imagenesProducto.length > 1 && (
+          <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+            +{imagenesProducto.length - 1} más
           </div>
         )}
         
@@ -188,15 +196,43 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
         {colores.length > 0 && (
           <div className="mt-3">
             <div className="text-xs text-gray-500 mb-2">Colores disponibles:</div>
-            <div className="flex flex-wrap gap-1">
-              {colores.map((color, index) => (
-                <span
-                  key={`color-${index}-${color}`}
-                  className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded border hover:bg-gray-200 cursor-pointer transition-colors"
-                >
-                  {color}
-                </span>
-              ))}
+            <div className="flex flex-wrap gap-2">
+              {colores.map((color, index) => {
+                // Mapear nombres de colores a códigos de color
+                const getColorCode = (colorName: string) => {
+                  const colorMap: { [key: string]: string } = {
+                    'rojo': '#ef4444',
+                    'azul': '#3b82f6',
+                    'verde': '#10b981',
+                    'amarillo': '#f59e0b',
+                    'negro': '#1f2937',
+                    'blanco': '#f9fafb',
+                    'gris': '#6b7280',
+                    'rosa': '#ec4899',
+                    'morado': '#8b5cf6',
+                    'naranja': '#f97316',
+                    'celeste': '#06b6d4',
+                    'marrón': '#a3a3a3'
+                  };
+                  return colorMap[colorName.toLowerCase()] || '#6b7280';
+                };
+
+                return (
+                  <div
+                    key={`color-${index}-${color}`}
+                    className="flex items-center gap-1"
+                    title={color}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                      style={{ backgroundColor: getColorCode(color) }}
+                    />
+                    <span className="text-xs text-gray-600 hidden sm:block">
+                      {color}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

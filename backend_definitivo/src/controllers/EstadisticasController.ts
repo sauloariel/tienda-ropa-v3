@@ -6,7 +6,7 @@ import { Pedidos } from '../models/Pedidos.model';
 import { DetallePedidos } from '../models/DetallePedidos.model';
 import { Op } from 'sequelize';
 
-// Obtener estadísticas generales
+// Estadísticas generales del dashboard
 export const getEstadisticasGenerales = async (req: Request, res: Response) => {
     try {
         const { periodo = '30' } = req.query;
@@ -36,7 +36,7 @@ export const getEstadisticasGenerales = async (req: Request, res: Response) => {
                 ]
             }),
 
-            // Clientes nuevos del período (usar fecha_pedido como aproximación)
+            // Clientes nuevos del período
             Pedidos.count({
                 where: {
                     fecha_pedido: { [Op.gte]: fechaLimite }
@@ -169,7 +169,7 @@ export const getEstadisticasGenerales = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener ventas mensuales
+// Ventas mensuales
 export const getVentasMensuales = async (req: Request, res: Response) => {
     try {
         const { meses = '12' } = req.query;
@@ -211,7 +211,7 @@ export const getVentasMensuales = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener productos más vendidos
+// Productos más vendidos
 export const getProductosTopVentas = async (req: Request, res: Response) => {
     try {
         const { limite = '10' } = req.query;
@@ -259,7 +259,7 @@ export const getProductosTopVentas = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener categorías más vendidas
+// Categorías más vendidas (mejorado para el gráfico)
 export const getCategoriasTopVentas = async (req: Request, res: Response) => {
     try {
         const { limite = '5' } = req.query;
@@ -317,7 +317,7 @@ export const getCategoriasTopVentas = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener clientes con más compras
+// Clientes con más compras
 export const getClientesTopCompras = async (req: Request, res: Response) => {
     try {
         const { limite = '10' } = req.query;
@@ -332,11 +332,11 @@ export const getClientesTopCompras = async (req: Request, res: Response) => {
                 estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
             },
             attributes: [
-                [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'total_compras'],
-                [DetallePedidos.sequelize.fn('MAX', DetallePedidos.sequelize.col('Pedido.fecha_pedido')), 'ultima_compra']
+                [Pedidos.sequelize.fn('SUM', Pedidos.sequelize.col('importe')), 'total_compras'],
+                [Pedidos.sequelize.fn('MAX', Pedidos.sequelize.col('fecha_pedido')), 'ultima_compra']
             ],
             group: ['cliente.id_cliente'],
-            order: [[DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'DESC']],
+            order: [[Pedidos.sequelize.fn('SUM', Pedidos.sequelize.col('importe')), 'DESC']],
             limit: numLimite
         });
 
@@ -355,7 +355,7 @@ export const getClientesTopCompras = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener actividad reciente
+// Actividad reciente
 export const getActividadReciente = async (req: Request, res: Response) => {
     try {
         const { limite = '20' } = req.query;
@@ -392,10 +392,10 @@ export const getActividadReciente = async (req: Request, res: Response) => {
                 attributes: ['nombre', 'apellido']
             }],
             attributes: [
-                [DetallePedidos.sequelize.fn('MIN', DetallePedidos.sequelize.col('Pedido.fecha_pedido')), 'primera_compra']
+                [Pedidos.sequelize.fn('MIN', Pedidos.sequelize.col('fecha_pedido')), 'primera_compra']
             ],
             group: ['cliente.id_cliente'],
-            order: [[DetallePedidos.sequelize.fn('MIN', DetallePedidos.sequelize.col('Pedido.fecha_pedido')), 'DESC']],
+            order: [[Pedidos.sequelize.fn('MIN', Pedidos.sequelize.col('fecha_pedido')), 'DESC']],
             limit: Math.ceil(numLimite / 4)
         });
 
@@ -419,7 +419,7 @@ export const getActividadReciente = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener resumen financiero
+// Resumen financiero
 export const getResumenFinanciero = async (req: Request, res: Response) => {
     try {
         const { periodo = '30' } = req.query;
@@ -471,41 +471,6 @@ export const getResumenFinanciero = async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Error obteniendo resumen financiero:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    }
-};
-
-// Obtener estadísticas de inventario
-export const getEstadisticasInventario = async (req: Request, res: Response) => {
-    try {
-        const [
-            totalProductos,
-            productosBajoStock,
-            productosAgotados,
-            valorInventario
-        ] = await Promise.all([
-            Productos.count(),
-            Productos.count({ where: { stock: { [Op.lte]: 10 } } }),
-            Productos.count({ where: { stock: { [Op.eq]: 0 } } }),
-            Productos.findAll({
-                attributes: [
-                    [Productos.sequelize.fn('SUM', Productos.sequelize.literal('stock * precio_venta')), 'valor_total']
-                ]
-            })
-        ]);
-
-        const valorTotal = parseFloat(valorInventario[0]?.getDataValue('valor_total') || '0');
-        const rotacionPromedio = totalProductos > 0 ? (totalProductos / (productosBajoStock + productosAgotados)) : 0;
-
-        res.json({
-            total_productos: totalProductos,
-            productos_bajo_stock: productosBajoStock,
-            productos_agotados: productosAgotados,
-            valor_inventario: valorTotal,
-            rotacion_promedio: Math.round(rotacionPromedio * 100) / 100
-        });
-    } catch (error) {
-        console.error('Error obteniendo estadísticas de inventario:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };

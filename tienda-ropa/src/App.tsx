@@ -3,6 +3,7 @@ import { productosAPI, categoriasAPI } from './services/api';
 import type { Producto, Categoria } from './types/productos.types';
 import ProductCard from './components/ProductCard';
 import CategoryFilter from './components/CategoryFilter';
+import ColorFilter from './components/ColorFilter';
 import SearchBar from './components/SearchBar';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -30,6 +31,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Estados del carrito
@@ -69,7 +71,7 @@ function AppContent() {
     loadData();
   }, []);
 
-  // Filtrar productos por categoría y búsqueda
+  // Filtrar productos por categoría, colores y búsqueda
   const filteredProductos = productos.filter(producto => {
     // Filtrar por categoría
     const matchesCategory = !selectedCategory || producto.id_categoria === selectedCategory;
@@ -78,16 +80,38 @@ function AppContent() {
     const matchesSearch = !searchQuery || 
       producto.descripcion.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesCategory && matchesSearch;
+    // Filtrar por colores
+    const matchesColors = selectedColors.length === 0 || 
+      producto.variantes?.some(variante => 
+        variante.color?.nombre && selectedColors.includes(variante.color.nombre)
+      ) || false;
+    
+    return matchesCategory && matchesSearch && matchesColors;
   });
 
   const handleCategoryChange = (categoryId: number | null) => {
     setSelectedCategory(categoryId);
   };
 
+  const handleColorChange = (colors: string[]) => {
+    setSelectedColors(colors);
+  };
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
+
+  // Obtener todos los colores disponibles de los productos
+  const availableColors = productos.reduce((colors: string[], producto) => {
+    if (producto.variantes) {
+      producto.variantes.forEach(variante => {
+        if (variante.color?.nombre && !colors.includes(variante.color.nombre)) {
+          colors.push(variante.color.nombre);
+        }
+      });
+    }
+    return colors;
+  }, []);
 
   const handleViewChange = (view: 'tienda' | 'pos' | 'seguimiento') => {
     setCurrentView(view);
@@ -227,12 +251,20 @@ function AppContent() {
           {/* Filtros y Productos */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar con filtros */}
-            <aside className="lg:col-span-1">
+            <aside className="lg:col-span-1 space-y-6">
               <CategoryFilter 
                 categorias={categorias}
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
               />
+              
+              {availableColors.length > 0 && (
+                <ColorFilter
+                  colores={availableColors}
+                  selectedColors={selectedColors}
+                  onColorChange={handleColorChange}
+                />
+              )}
             </aside>
 
             {/* Lista de productos */}

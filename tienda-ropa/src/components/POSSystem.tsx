@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Receipt, CreditCard, DollarSign, QrCode, Banknote, X, Plus, Minus, Trash2, CheckCircle } from 'lucide-react';
+import { Search, ShoppingCart, Receipt, CreditCard, DollarSign, QrCode, Banknote, X, Plus, Minus, Trash2, CheckCircle, User, Package, AlertTriangle } from 'lucide-react';
 import { productosAPI, categoriasAPI } from '../services/api';
 import { crearFactura } from '../services/facturaService';
+import { stockService } from '../services/stockService';
+import { clientesService } from '../services/clientesService';
 import type { Producto, Categoria } from '../types/productos.types';
 import type { Factura, FacturaRequest } from '../types/factura.types';
+import type { Cliente } from '../types/cliente.types';
+import ClienteManager from './ClienteManager';
+import StockAlerts from './StockAlerts';
+import QuickSearch from './QuickSearch';
+import POSStats from './POSStats';
+import DescuentosManager from './DescuentosManager';
+import FacturaSessionInfo from './FacturaSessionInfo';
+import { useFacturaSession } from '../hooks/useFacturaSession';
 
 interface CartItem {
   producto: Producto;
@@ -14,7 +24,6 @@ interface CartItem {
 const POSSystem: React.FC = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -22,7 +31,22 @@ const POSSystem: React.FC = () => {
   const [facturaGenerada, setFacturaGenerada] = useState<Factura | null>(null);
   const [processingFactura, setProcessingFactura] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [stockErrors, setStockErrors] = useState<string[]>([]);
+  const [showStockValidation, setShowStockValidation] = useState(false);
+
+  // Hook para manejar la sesión de factura
+  const {
+    session,
+    iniciarSesion,
+    agregarItem,
+    actualizarCantidad,
+    removerItem,
+    establecerCliente,
+    establecerDescuento,
+    establecerMetodoPago,
+    limpiarSesion,
+    obtenerDatosFactura
+  } = useFacturaSession();
 
   // Cargar productos y categorías
   useEffect(() => {
@@ -53,61 +77,68 @@ const POSSystem: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Agregar producto al carrito
-  const addToCart = (producto: Producto) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.producto.id_producto === producto.id_producto);
-      
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.producto.id_producto === producto.id_producto
-            ? { ...item, cantidad: item.cantidad + 1 }
-            : item
-        );
-      } else {
-        return [...prevCart, {
-          producto,
-          cantidad: 1,
-          precioUnitario: producto.precio_venta
-        }];
-      }
+  // Agregar producto al carrito con validación de stock
+  const addToCart = async (producto: Producto) => {
+    // Iniciar sesión si no existe
+    if (!session.numeroFactura) {
+      iniciarSesion();
+    }
+
+    // Verificar stock disponible
+    const stockDisponible = await stockService.obtenerStock(producto.id_producto);
+    const cantidadEnCarrito = session.items.find(item => item.producto.id_producto === producto.id_producto)?.cantidad || 0;
+    const cantidadTotal = cantidadEnCarrito + 1;
+
+    if (stockDisponible < cantidadTotal) {
+      setStockErrors([...stockErrors, `Stock insuficiente para ${producto.descripcion}. Disponible: ${stockDisponible}`]);
+      setShowStockValidation(true);
+      return;
+    }
+
+    // Agregar item a la sesión
+    agregarItem({
+      producto,
+      cantidad: 1,
+      precioUnitario: producto.precio_venta
     });
   };
 
   // Actualizar cantidad en carrito
   const updateQuantity = (productoId: number, cantidad: number) => {
-    if (cantidad <= 0) {
-      removeFromCart(productoId);
-      return;
-    }
-    
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.producto.id_producto === productoId
-          ? { ...item, cantidad }
-          : item
-      )
-    );
+    actualizarCantidad(productoId, cantidad);
   };
 
   // Remover producto del carrito
   const removeFromCart = (productoId: number) => {
-    setCart(prevCart => prevCart.filter(item => item.producto.id_producto !== productoId));
+    removerItem(productoId);
   };
-
-  // Calcular total del carrito
-  const cartTotal = cart.reduce((total, item) => total + (item.precioUnitario * item.cantidad), 0);
-  const iva = cartTotal * 0.21;
-  const totalConIva = cartTotal + iva;
 
   // Limpiar carrito
   const clearCart = () => {
-    setCart([]);
+    limpiarSesion();
   };
 
-  // Finalizar venta
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
+  // Finalizar venta con validación de stock
+  const handleCheckout = async () => {
+    if (session.items.length === 0) return;
+
+    // Validar stock para todos los productos en el carrito
+    const items = session.items.map(item => ({
+      id_producto: item.producto.id_producto,
+      cantidad: item.cantidad
+    }));
+
+    const validacionStock = await stockService.validarStockMultiple(items);
+    
+    if (!validacionStock.valido) {
+      const errores = validacionStock.productosSinStock.map(item => 
+        `Stock insuficiente para producto ID ${item.id_producto}. Requerido: ${item.cantidadRequerida}, Disponible: ${item.stockDisponible}`
+      );
+      setStockErrors(errores);
+      setShowStockValidation(true);
+      return;
+    }
+
     setShowPaymentModal(true);
   };
 
@@ -116,18 +147,8 @@ const POSSystem: React.FC = () => {
     try {
       setProcessingFactura(true);
       
-      // Preparar datos para la factura
-      const facturaData: FacturaRequest = {
-        productos: cart.map(item => ({
-          id_producto: item.producto.id_producto,
-          cantidad: item.cantidad,
-          precio_unitario: item.precioUnitario,
-          subtotal: item.precioUnitario * item.cantidad
-        })),
-        total: totalConIva,
-        metodo_pago: paymentMethod,
-        cliente_id: undefined
-      };
+      // Obtener datos de la sesión para la factura
+      const facturaData = obtenerDatosFactura();
 
       // Crear factura en el backend
       const response = await crearFactura(facturaData);
@@ -191,18 +212,12 @@ const POSSystem: React.FC = () => {
             {/* Barra de búsqueda y filtros */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex flex-col lg:flex-row gap-4">
-                {/* Búsqueda */}
+                {/* Búsqueda rápida */}
                 <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder="Buscar productos..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                  <QuickSearch
+                    onProductoSeleccionado={addToCart}
+                    placeholder="Buscar productos por nombre o código..."
+                  />
                 </div>
 
                 {/* Filtro de categorías */}
@@ -293,7 +308,36 @@ const POSSystem: React.FC = () => {
           </div>
 
           {/* Panel derecho - Carrito y Facturación */}
-          <div className="xl:col-span-1">
+          <div className="xl:col-span-1 space-y-6">
+            {/* Información de la sesión de factura */}
+            <FacturaSessionInfo
+              numeroFactura={session.numeroFactura}
+              cliente={session.cliente}
+              descuento={session.descuento}
+              total={session.total}
+              itemCount={session.items.reduce((sum, item) => sum + item.cantidad, 0)}
+            />
+
+            {/* Estadísticas del POS */}
+            <POSStats />
+            
+            {/* Alertas de Stock */}
+            <StockAlerts />
+            
+            {/* Gestión de Cliente */}
+            <ClienteManager
+              onClienteSeleccionado={establecerCliente}
+              clienteActual={session.cliente}
+            />
+
+            {/* Gestión de Descuentos */}
+            <DescuentosManager
+              total={session.subtotal}
+              onDescuentoAplicado={establecerDescuento}
+              descuentoActual={session.descuento}
+            />
+
+            {/* Carrito de Venta */}
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
               {/* Header del carrito */}
               <div className="flex items-center gap-3 mb-6">
@@ -301,21 +345,26 @@ const POSSystem: React.FC = () => {
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">🛒 Carrito de Venta</h2>
                   <p className="text-sm text-gray-600">
-                    {cart.reduce((sum, item) => sum + item.cantidad, 0)} producto{cart.reduce((sum, item) => sum + item.cantidad, 0) !== 1 ? 's' : ''} en el carrito
+                    {session.items.reduce((sum, item) => sum + item.cantidad, 0)} producto{session.items.reduce((sum, item) => sum + item.cantidad, 0) !== 1 ? 's' : ''} en el carrito
                   </p>
+                  {session.numeroFactura && (
+                    <p className="text-xs text-blue-600 font-medium">
+                      Sesión: {session.numeroFactura}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Lista de items */}
               <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-                {cart.length === 0 ? (
+                {session.items.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-gray-400 text-4xl mb-2">🛒</div>
                     <p className="text-gray-500 text-sm">Carrito vacío</p>
                     <p className="text-gray-400 text-xs">Agrega productos para comenzar</p>
                   </div>
                 ) : (
-                  cart.map((item) => (
+                  session.items.map((item) => (
                     <div key={item.producto.id_producto} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-medium text-sm text-gray-900 line-clamp-2 leading-tight flex-1">
@@ -365,21 +414,27 @@ const POSSystem: React.FC = () => {
               </div>
 
               {/* Total y acciones */}
-              {cart.length > 0 && (
+              {session.items.length > 0 && (
                 <div className="space-y-4">
                   {/* Resumen de totales */}
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">${cartTotal.toFixed(2)}</span>
+                      <span className="font-medium">${session.subtotal.toFixed(2)}</span>
                     </div>
+                    {session.descuento && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Descuento:</span>
+                        <span className="font-medium">-${(session.subtotal - (session.subtotal - (session.descuento.tipo === 'porcentaje' ? (session.subtotal * session.descuento.valor) / 100 : Math.min(session.descuento.valor, session.subtotal)))).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">IVA (21%):</span>
-                      <span className="font-medium">${iva.toFixed(2)}</span>
+                      <span className="font-medium">${session.iva.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                       <span>Total:</span>
-                      <span className="text-blue-600">${totalConIva.toFixed(2)}</span>
+                      <span className="text-blue-600">${session.total.toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -387,7 +442,7 @@ const POSSystem: React.FC = () => {
                   <div className="space-y-3">
                     <button
                       onClick={handleCheckout}
-                      disabled={cart.length === 0}
+                      disabled={session.items.length === 0}
                       className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-4 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 active:from-green-800 active:to-emerald-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg"
                     >
                       <Receipt className="w-5 h-5" />
@@ -431,8 +486,8 @@ const POSSystem: React.FC = () => {
                       type="radio"
                       name="paymentMethod"
                       value={method.value}
-                      checked={paymentMethod === method.value}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      checked={session.metodoPago === method.value}
+                      onChange={(e) => establecerMetodoPago(e.target.value)}
                       className="mr-3"
                     />
                     <method.icon className="w-5 h-5 mr-3" />
@@ -620,6 +675,57 @@ const POSSystem: React.FC = () => {
                   className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Validación de Stock */}
+      {showStockValidation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+                <h3 className="text-xl font-bold text-gray-800">
+                  Error de Stock
+                </h3>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  No se puede completar la operación debido a problemas de stock:
+                </p>
+                <div className="space-y-2">
+                  {stockErrors.map((error, index) => (
+                    <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-800">{error}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowStockValidation(false);
+                    setStockErrors([]);
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Entendido
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStockValidation(false);
+                    setStockErrors([]);
+                    clearCart();
+                  }}
+                  className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  Limpiar Carrito
                 </button>
               </div>
             </div>

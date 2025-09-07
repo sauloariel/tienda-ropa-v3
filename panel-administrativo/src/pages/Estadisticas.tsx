@@ -1,44 +1,31 @@
 import React, { useState, useEffect } from 'react'
 import { 
-  TrendingUp, 
   Users, 
-  Package, 
-  ShoppingCart, 
-  DollarSign, 
-  BarChart3,
   Calendar,
   Target,
-  AlertTriangle,
-  TrendingDown,
   Activity,
   PieChart,
-  LineChart,
   RefreshCw
 } from 'lucide-react'
 import { estadisticasAPI } from '../services/estadisticas'
 import type { 
-  EstadisticasGenerales, 
   VentasPorMes, 
   ProductoTopVentas, 
   CategoriaTopVentas,
   ClienteTopCompras,
-  ActividadReciente,
-  ResumenFinanciero
+  ActividadReciente
 } from '../services/estadisticas'
-import MetricCard from '../components/MetricCard'
 import Chart from '../components/Chart'
 
 
 const Estadisticas: React.FC = () => {
   const [periodo, setPeriodo] = useState('30')
   const [loading, setLoading] = useState(true)
-  const [estadisticas, setEstadisticas] = useState<EstadisticasGenerales | null>(null)
   const [ventasMensuales, setVentasMensuales] = useState<VentasPorMes[]>([])
   const [productosTop, setProductosTop] = useState<ProductoTopVentas[]>([])
   const [categoriasTop, setCategoriasTop] = useState<CategoriaTopVentas[]>([])
   const [clientesTop, setClientesTop] = useState<ClienteTopCompras[]>([])
   const [actividadReciente, setActividadReciente] = useState<ActividadReciente[]>([])
-  const [resumenFinanciero, setResumenFinanciero] = useState<ResumenFinanciero | null>(null)
   const [conexionDB, setConexionDB] = useState<'conectado' | 'desconectado' | 'verificando'>('verificando')
 
   // Cargar todas las estadísticas
@@ -48,30 +35,24 @@ const Estadisticas: React.FC = () => {
     try {
       console.log('🔄 Cargando estadísticas desde la base de datos...')
       const [
-        stats,
         ventas,
         productos,
         categorias,
         clientes,
-        actividad,
-        financiero
+        actividad
       ] = await Promise.all([
-        estadisticasAPI.getEstadisticasGenerales(periodo),
         estadisticasAPI.getVentasPorMes(12),
         estadisticasAPI.getProductosTopVentas(10),
         estadisticasAPI.getCategoriasTopVentas(5),
         estadisticasAPI.getClientesTopCompras(10),
-        estadisticasAPI.getActividadReciente(20),
-        estadisticasAPI.getResumenFinanciero(periodo)
+        estadisticasAPI.getActividadReciente(20)
       ])
 
-      setEstadisticas(stats)
       setVentasMensuales(ventas)
       setProductosTop(productos)
       setCategoriasTop(categorias)
       setClientesTop(clientes)
       setActividadReciente(actividad)
-      setResumenFinanciero(financiero)
       setConexionDB('conectado')
       console.log('✅ Estadísticas cargadas exitosamente desde la base de datos')
     } catch (error) {
@@ -93,10 +74,18 @@ const Estadisticas: React.FC = () => {
     color: 'bg-blue-500'
   }))
 
-  const datosCategorias = categoriasTop.map(item => ({
+  // Mejorar datos de categorías con colores únicos y mejor formato
+  const coloresCategorias = [
+    'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500',
+    'bg-indigo-500', 'bg-red-500', 'bg-yellow-500', 'bg-teal-500', 'bg-cyan-500'
+  ]
+
+  const datosCategorias = categoriasTop.map((item, index) => ({
     label: item.nombre_categoria,
     value: item.ventas,
-    color: 'bg-green-500'
+    color: coloresCategorias[index % coloresCategorias.length],
+    porcentaje: item.porcentaje,
+    productos: item.productos
   }))
 
   const datosProductos = productosTop.map(item => ({
@@ -134,13 +123,13 @@ const Estadisticas: React.FC = () => {
                 'bg-yellow-500 animate-pulse'
               }`} />
               <span>
-                {conexionDB === 'conectado' ? 'Base de datos conectada' :
-                 conexionDB === 'desconectado' ? 'Sin conexión a BD' :
-                 'Verificando conexión...'}
+                {conexionDB === 'conectado' ? 'Base de Datos Conectada' :
+                 conexionDB === 'desconectado' ? 'Base de Datos Desconectada' :
+                 'Verificando Conexión...'}
               </span>
             </div>
           </div>
-          <p className="text-gray-600">Análisis y reportes en tiempo real conectados a la base de datos</p>
+          
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -166,92 +155,9 @@ const Estadisticas: React.FC = () => {
         </div>
       </div>
 
-      {/* 5 Datos Estadísticos Principales */}
-      {estadisticas && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-          <MetricCard
-            title="💰 Ventas Totales"
-            value={estadisticas.ventasTotales}
-            change={estadisticas.cambioVentas}
-            changeType={estadisticas.cambioVentas >= 0 ? 'positive' : 'negative'}
-            icon={DollarSign}
-            iconColor="text-green-500"
-            trend={estadisticas.cambioVentas > 0 ? 'up' : 'down'}
-            description="Ingresos del período"
-          />
-          <MetricCard
-            title="👥 Clientes Activos"
-            value={estadisticas.clientesNuevos}
-            change={estadisticas.cambioClientes}
-            changeType={estadisticas.cambioClientes >= 0 ? 'positive' : 'negative'}
-            icon={Users}
-            iconColor="text-blue-500"
-            trend={estadisticas.cambioClientes > 0 ? 'up' : 'down'}
-            description="Nuevos clientes"
-          />
-          <MetricCard
-            title="📦 Productos Vendidos"
-            value={estadisticas.productosVendidos}
-            change={estadisticas.cambioProductos}
-            changeType={estadisticas.cambioProductos >= 0 ? 'positive' : 'negative'}
-            icon={Package}
-            iconColor="text-purple-500"
-            trend={estadisticas.cambioProductos > 0 ? 'up' : 'down'}
-            description="Unidades vendidas"
-          />
-          <MetricCard
-            title="🛒 Pedidos Completados"
-            value={estadisticas.pedidosCompletados}
-            change={estadisticas.cambioPedidos}
-            changeType={estadisticas.cambioPedidos >= 0 ? 'positive' : 'negative'}
-            icon={ShoppingCart}
-            iconColor="text-orange-500"
-            trend={estadisticas.cambioPedidos > 0 ? 'up' : 'down'}
-            description="Órdenes finalizadas"
-          />
-          <MetricCard
-            title="📈 Ticket Promedio"
-            value={estadisticas.pedidosCompletados > 0 ? Math.round(estadisticas.ventasTotales / estadisticas.pedidosCompletados) : 0}
-            icon={BarChart3}
-            iconColor="text-indigo-500"
-            description="Por pedido"
-          />
-        </div>
-      )}
+      
 
-      {/* Resumen Financiero */}
-      {resumenFinanciero && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Ingresos"
-            value={resumenFinanciero.ingresos}
-            icon={TrendingUp}
-            iconColor="text-green-500"
-            description="Ingresos totales del período"
-          />
-          <MetricCard
-            title="Gastos"
-            value={resumenFinanciero.gastos}
-            icon={TrendingDown}
-            iconColor="text-red-500"
-            description="Gastos totales del período"
-          />
-          <MetricCard
-            title="Ganancia Neta"
-            value={resumenFinanciero.ganancia}
-            icon={DollarSign}
-            iconColor="text-blue-500"
-            description={`Margen: ${resumenFinanciero.margen}%`}
-          />
-          <MetricCard
-            title="Alertas Stock"
-            value={resumenFinanciero.productos_bajo_stock + resumenFinanciero.productos_agotados}
-            icon={AlertTriangle}
-            iconColor="text-orange-500"
-            description={`${resumenFinanciero.productos_agotados} agotados`}
-          />
-        </div>
-      )}
+      
 
       {/* 3 Gráficos Principales Conectados a la Base de Datos */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -317,29 +223,38 @@ const Estadisticas: React.FC = () => {
           </div>
         </div>
 
-        {/* Categorías Más Vendidas */}
+        {/* Categorías Más Vendidas - Mejorado */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">Categorías Más Vendidas</h3>
             <PieChart className="h-5 w-5 text-green-500" />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {categoriasTop.map((categoria, index) => (
-              <div key={categoria.id_categoria} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-green-600">{index + 1}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-900">{categoria.nombre_categoria}</span>
-                    <div className="text-xs text-gray-500">
-                      {categoria.productos} productos
+              <div key={categoria.id_categoria} className="relative">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 ${coloresCategorias[index % coloresCategorias.length]} rounded-full flex items-center justify-center`}>
+                      <span className="text-xs font-medium text-white">{index + 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">{categoria.nombre_categoria}</span>
+                      <div className="text-xs text-gray-500">
+                        {categoria.productos} productos en esta categoría
+                      </div>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold text-gray-900">${categoria.ventas.toLocaleString()}</span>
+                    <div className="text-xs text-gray-500">{categoria.porcentaje}% del total</div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">${categoria.ventas.toLocaleString()}</span>
-                  <span className="text-sm text-gray-400">({categoria.porcentaje}%)</span>
+                {/* Barra de progreso visual */}
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${coloresCategorias[index % coloresCategorias.length]}`}
+                    style={{ width: `${categoria.porcentaje}%` }}
+                  ></div>
                 </div>
               </div>
             ))}
@@ -415,84 +330,8 @@ const Estadisticas: React.FC = () => {
         </div>
       </div>
 
-      {/* Resumen Ejecutivo */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 border-l-4 border-green-500">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">📋 Resumen Ejecutivo - Período: {periodo} días</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-900 mb-2">🎯 Rendimiento General</h4>
-            <p className="text-sm text-gray-600">
-              {estadisticas?.cambioVentas && estadisticas.cambioVentas > 0 
-                ? `✅ Las ventas crecieron ${estadisticas.cambioVentas}% vs período anterior`
-                : `⚠️ Las ventas disminuyeron ${Math.abs(estadisticas?.cambioVentas || 0)}% vs período anterior`
-              }
-            </p>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-900 mb-2">👥 Crecimiento de Clientes</h4>
-            <p className="text-sm text-gray-600">
-              {estadisticas?.cambioClientes && estadisticas.cambioClientes > 0 
-                ? `📈 ${estadisticas.cambioClientes}% más clientes nuevos`
-                : `📉 ${Math.abs(estadisticas?.cambioClientes || 0)}% menos clientes nuevos`
-              }
-            </p>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-900 mb-2">💰 Rentabilidad</h4>
-            <p className="text-sm text-gray-600">
-              {resumenFinanciero?.margen && resumenFinanciero.margen > 30
-                ? `💚 Excelente margen: ${resumenFinanciero.margen}%`
-                : `💛 Margen actual: ${resumenFinanciero?.margen}% - Oportunidad de mejora`
-              }
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Insights y Recomendaciones */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">💡 Insights para Decisiones Empresariales</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
-            <h4 className="font-medium text-gray-900 mb-2">Rendimiento de Ventas</h4>
-            <p className="text-sm text-gray-600">
-              {estadisticas?.cambioVentas && estadisticas.cambioVentas > 0 
-                ? `Las ventas están creciendo un ${estadisticas.cambioVentas}% respecto al mes anterior. Considera aumentar el inventario de productos populares.`
-                : `Las ventas han disminuido un ${Math.abs(estadisticas?.cambioVentas || 0)}%. Revisa estrategias de marketing y precios.`
-              }
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
-            <h4 className="font-medium text-gray-900 mb-2">Gestión de Inventario</h4>
-            <p className="text-sm text-gray-600">
-              {resumenFinanciero?.productos_bajo_stock && resumenFinanciero.productos_bajo_stock > 0
-                ? `Tienes ${resumenFinanciero.productos_bajo_stock} productos con stock bajo. Revisa reabastecimiento urgente.`
-                : 'El inventario está bien gestionado. Continúa monitoreando niveles de stock.'
-              }
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border-l-4 border-purple-500">
-            <h4 className="font-medium text-gray-900 mb-2">Clientes VIP</h4>
-            <p className="text-sm text-gray-600">
-              {clientesTop.length > 0 && 
-                `Tu cliente top ${clientesTop[0]?.nombre} ha gastado $${clientesTop[0]?.total_compras.toLocaleString()}. Considera programas de fidelización.`
-              }
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border-l-4 border-orange-500">
-            <h4 className="font-medium text-gray-900 mb-2">Rentabilidad</h4>
-            <p className="text-sm text-gray-600">
-              {resumenFinanciero?.margen && resumenFinanciero.margen > 30
-                ? `Excelente margen de ${resumenFinanciero.margen}%. Puedes considerar inversiones en crecimiento.`
-                : `Margen del ${resumenFinanciero?.margen}%. Revisa costos y precios para mejorar rentabilidad.`
-              }
-            </p>
-          </div>
-        </div>
-      </div>
+      
+      
     </div>
   )
 }

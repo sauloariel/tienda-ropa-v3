@@ -33,7 +33,10 @@ const Clientes: React.FC = () => {
   const cargarClientes = async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await clientesAPI.getClientes()
+      console.log('👥 Clientes cargados desde la base de datos:', data.length)
+      console.log('📊 Datos de clientes:', data)
       setClientes(data)
     } catch (error) {
       setError('Error al cargar los clientes')
@@ -43,7 +46,20 @@ const Clientes: React.FC = () => {
     }
   }
 
-  const filteredClientes = clientes.filter(cliente =>
+  // Filtrar solo clientes activos para mostrar (maneja inconsistencias de mayúsculas/minúsculas)
+  const clientesActivos = clientes.filter(c => 
+    !c.estado || 
+    c.estado.toUpperCase() === 'ACTIVO' || 
+    c.estado.toLowerCase() === 'activo'
+  )
+  const totalClientes = clientesActivos.length
+  const clientesConEstado = clientesActivos.filter(c => 
+    c.estado && (c.estado.toUpperCase() === 'ACTIVO' || c.estado.toLowerCase() === 'activo')
+  ).length
+  const clientesSinEstado = clientesActivos.filter(c => !c.estado).length
+
+  // Filtrar solo clientes activos y aplicar búsqueda
+  const filteredClientes = clientesActivos.filter(cliente =>
     cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.mail.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,14 +68,16 @@ const Clientes: React.FC = () => {
 
   const getStatusColor = (estado: string | undefined) => {
     if (!estado) return 'bg-gray-100 text-gray-800'
-    return estado === 'ACTIVO' 
+    const estadoNormalizado = estado?.toUpperCase()
+    return estadoNormalizado === 'ACTIVO' 
       ? 'bg-green-100 text-green-800' 
       : 'bg-red-100 text-red-800'
   }
 
   const getStatusText = (estado: string | undefined) => {
     if (!estado) return 'Sin estado'
-    return estado === 'ACTIVO' ? 'Activo' : 'Inactivo'
+    const estadoNormalizado = estado?.toUpperCase()
+    return estadoNormalizado === 'ACTIVO' ? 'Activo' : 'Inactivo'
   }
 
   const handleAdd = () => {
@@ -112,10 +130,23 @@ const Clientes: React.FC = () => {
     }
   }
 
+  console.log('📊 Estadísticas de clientes:', {
+    total: clientes.length,
+    activos: clientesActivos.length,
+    conEstado: clientesConEstado,
+    sinEstado: clientesSinEstado
+  })
+
+  // Debug detallado de estados
+  console.log('🔍 Análisis detallado de estados:')
+  clientes.forEach((cliente, index) => {
+    console.log(`Cliente ${index + 1}: ${cliente.nombre} ${cliente.apellido} - Estado: "${cliente.estado}" (tipo: ${typeof cliente.estado})`)
+  })
+
   const stats = [
-    { name: 'Total Clientes', value: clientes.length, icon: Users, color: 'text-blue-600' },
-    { name: 'Clientes Activos', value: clientes.filter(c => c.estado === 'ACTIVO').length, icon: UserPlus, color: 'text-green-600' },
-    { name: 'Clientes Inactivos', value: clientes.filter(c => c.estado !== 'ACTIVO').length, icon: Mail, color: 'text-purple-600' },
+    { name: 'Total Clientes', value: totalClientes, icon: Users, color: 'text-blue-600' },
+    { name: 'Clientes Activos', value: clientesConEstado, icon: UserPlus, color: 'text-green-600' },
+    { name: 'Clientes Nuevos', value: clientesSinEstado, icon: Mail, color: 'text-purple-600' },
   ]
 
   if (loading) {

@@ -6,8 +6,7 @@ import {
     getCategoriasTopVentas,
     getClientesTopCompras,
     getActividadReciente,
-    getResumenFinanciero,
-    getEstadisticasInventario
+    getResumenFinanciero
 } from '../controllers/EstadisticasController';
 
 const router = Router();
@@ -23,8 +22,7 @@ router.get('/', (req, res) => {
             categoriasTop: '/estadisticas/categorias-top',
             clientesTop: '/estadisticas/clientes-top',
             actividadReciente: '/estadisticas/actividad-reciente',
-            resumenFinanciero: '/estadisticas/resumen-financiero',
-            inventario: '/estadisticas/inventario'
+            resumenFinanciero: '/estadisticas/resumen-financiero'
         }
     });
 });
@@ -49,8 +47,5 @@ router.get('/actividad-reciente', getActividadReciente);
 
 // Resumen financiero
 router.get('/resumen-financiero', getResumenFinanciero);
-
-// Estadísticas de inventario
-router.get('/inventario', getEstadisticasInventario);
 
 export default router;

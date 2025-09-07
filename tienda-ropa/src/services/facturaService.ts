@@ -1,19 +1,12 @@
-import axios from 'axios';
+import { api } from './api';
 
-const API_BASE_URL = 'http://localhost:4000';
-
-// Configurar axios
-const facturaAPI = axios.create({
-    baseURL: `${API_BASE_URL}/facturas`,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+// Usar la instancia compartida de axios
+const facturaAPI = api;
 
 // Crear nueva factura
 export const crearFactura = async (facturaData: any): Promise<any> => {
     try {
-        const response = await facturaAPI.post('/', facturaData);
+        const response = await facturaAPI.post('/facturas', facturaData);
         return response.data;
     } catch (error: any) {
         console.error('Error al crear factura:', error);
@@ -29,7 +22,7 @@ export const obtenerFacturas = async (fechaInicio?: string, fechaFin?: string, e
         if (fechaFin) params.append('fecha_fin', fechaFin);
         if (estado) params.append('estado', estado);
 
-        const response = await facturaAPI.get(`/?${params.toString()}`);
+        const response = await facturaAPI.get(`/facturas?${params.toString()}`);
         return response.data;
     } catch (error: any) {
         console.error('Error al obtener facturas:', error);
@@ -40,7 +33,7 @@ export const obtenerFacturas = async (fechaInicio?: string, fechaFin?: string, e
 // Obtener factura por ID
 export const obtenerFacturaPorId = async (id: number): Promise<any> => {
     try {
-        const response = await facturaAPI.get(`/${id}`);
+        const response = await facturaAPI.get(`/facturas/${id}`);
         return response.data;
     } catch (error: any) {
         console.error('Error al obtener factura:', error);
@@ -55,7 +48,7 @@ export const obtenerEstadisticasFacturas = async (fechaInicio?: string, fechaFin
         if (fechaInicio) params.append('fecha_inicio', fechaInicio);
         if (fechaFin) params.append('fecha_fin', fechaFin);
 
-        const response = await facturaAPI.get(`/estadisticas?${params.toString()}`);
+        const response = await facturaAPI.get(`/facturas/estadisticas?${params.toString()}`);
         return response.data;
     } catch (error: any) {
         console.error('Error al obtener estadísticas:', error);
@@ -66,7 +59,7 @@ export const obtenerEstadisticasFacturas = async (fechaInicio?: string, fechaFin
 // Anular factura
 export const anularFactura = async (id: number): Promise<{ success: boolean; message: string }> => {
     try {
-        const response = await facturaAPI.put(`/${id}/anular`);
+        const response = await facturaAPI.put(`/facturas/${id}/anular`);
         return response.data;
     } catch (error: any) {
         console.error('Error al anular factura:', error);
