@@ -56,11 +56,9 @@ export const useProductosVenta = () => {
         cargarProductos()
     }, [cargarProductos])
 
-    // Filtrar productos por búsqueda
+    // Filtrar productos por búsqueda (igual que en el módulo de productos)
     const productosFiltrados = productos.filter(producto => {
         const matchesSearch = producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-
-        // Por ahora, no filtramos por categoría ya que ProductoVenta no tiene esa información
         return matchesSearch
     })
 

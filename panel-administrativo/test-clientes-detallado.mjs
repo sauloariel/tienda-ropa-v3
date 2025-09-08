@@ -204,3 +204,6 @@ console.log('🚀 Iniciando test detallado del módulo de clientes...');
 testClientesDetallado();
 
 
+
+
+

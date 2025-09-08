@@ -43,6 +43,24 @@ const generarNumeroFactura = async (): Promise<string> => {
     return `F${año}${mes}${String(consecutivo).padStart(4, '0')}`;
 };
 
+// Obtener siguiente número de factura
+export const getNextFacturaNumber = async (req: Request, res: Response) => {
+    try {
+        const numeroFactura = await generarNumeroFactura();
+
+        res.json({
+            success: true,
+            numero: numeroFactura
+        });
+    } catch (error: any) {
+        console.error("Error al obtener siguiente número de factura", error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message
+        });
+    }
+};
+
 // Crear nueva factura
 export const createFactura = async (req: Request, res: Response) => {
     try {

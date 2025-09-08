@@ -17,11 +17,11 @@ export interface DetalleFactura {
 
 export interface Factura {
     id?: number;
-    numeroFactura: string;
+    numeroFactura: string; // Siempre viene del backend
     fecha: Date;
     total: number;
     cliente_id?: number;
-    estado: 'activa' | 'anulada';
+    estado: 'activa' | 'anulada' | 'borrador';
     metodo_pago: string;
     detalles: DetalleFactura[];
     cliente?: {
@@ -42,6 +42,7 @@ export interface FacturaRequest {
     total: number;
     metodo_pago: string;
     cliente_id?: number;
+    // NO incluir numeroFactura - se asigna en el backend
 }
 
 export interface FacturaResponse {

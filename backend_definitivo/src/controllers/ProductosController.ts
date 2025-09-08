@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import { Productos } from "../models/Productos.model";
 import { Categorias } from "../models/Categorias.model";
 import { Proveedores } from "../models/Proveedores.model";
@@ -87,7 +88,25 @@ export const createProducto = async (req: Request, res: Response) => {
 // Obtener todos los productos con relaciones
 export const getProductos = async (req: Request, res: Response) => {
   try {
+    const { buscar, categoria } = req.query;
+    
+    // Construir condiciones de búsqueda
+    const whereConditions: any = {};
+    
+    // Filtro por categoría si se proporciona
+    if (categoria) {
+      whereConditions.id_categoria = categoria;
+    }
+    
+    // Filtro de búsqueda por descripción si se proporciona
+    if (buscar) {
+      whereConditions.descripcion = {
+        [Op.iLike]: `%${buscar}%`
+      };
+    }
+
     const productos = await Productos.findAll({
+      where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
       include: [
         { model: Categorias, as: 'categoria' },
         { model: Proveedores, as: 'proveedor' },
@@ -102,6 +121,8 @@ export const getProductos = async (req: Request, res: Response) => {
         { model: Imagenes, as: 'imagenes' }
       ]
     });
+    
+    console.log(`🔍 Búsqueda de productos - Query: "${buscar}", Categoría: ${categoria}, Resultados: ${productos.length}`);
     res.status(200).json(productos);
   } catch (error: any) {
     console.error("Error al obtener productos", error);

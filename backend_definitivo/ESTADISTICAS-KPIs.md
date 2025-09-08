@@ -213,3 +213,6 @@ GET /estadisticas/clientes-por-periodo?periodo=mes&limite=6
 - **Tasa de Repetición:** Mide la fidelización de clientes
 - **Nuevos vs. Recurrentes:** Analiza la composición de la base de clientes
 
+
+
+

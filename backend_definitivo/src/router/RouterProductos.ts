@@ -61,6 +61,12 @@ router.delete('/:id',
 
 // ==================== RUTAS DE CATEGORÍAS ====================
 
+// Obtener todas las categorías (DEBE ir antes de la ruta con parámetros)
+router.get('/categorias', getCategorias);
+
+// Ruta específica para evitar conflictos
+router.get('/categorias/all', getCategorias);
+
 // Crear categoría
 router.post('/categorias',
   body('nombre_categoria')
@@ -75,9 +81,6 @@ router.post('/categorias',
   inputErrors,
   createCategoria
 );
-
-// Obtener todas las categorías
-router.get('/categorias', getCategorias);
 
 // Obtener categoría por ID
 router.get('/categorias/:id',

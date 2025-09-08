@@ -8,6 +8,7 @@ import {
 import { crearFactura } from '../services/factura'
 import { FacturaRequest } from '../types/factura.types'
 import { productosAPI, Producto, Categoria } from '../services/productos'
+import { useStableInvoiceNumber } from '../hooks/useStableInvoiceNumber'
 
 
 interface CartItem {
@@ -27,6 +28,9 @@ const POS: React.FC = () => {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Hook para obtener número de factura estable
+  const { value: numeroFactura, loading: loadingNumero, error: errorNumero, refresh: refreshNumeroFactura } = useStableInvoiceNumber()
 
   // Cargar productos y categorías al montar el componente
   useEffect(() => {
@@ -70,7 +74,29 @@ const POS: React.FC = () => {
     const matchesSearch = producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (producto.categoria?.nombre_categoria || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === null || producto.id_categoria === selectedCategory
-    return matchesSearch && matchesCategory && producto.estado === 'ACTIVO'
+    // Incluir productos activos o sin estado definido (para compatibilidad)
+    const isActive = !producto.estado || producto.estado === 'ACTIVO'
+    
+    // Debug logs
+    if (searchTerm && producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) {
+      console.log('🔍 POS - Producto encontrado:', {
+        descripcion: producto.descripcion,
+        estado: producto.estado,
+        isActive,
+        matchesSearch,
+        matchesCategory
+      })
+    }
+    
+    return matchesSearch && matchesCategory && isActive
+  })
+  
+  // Debug: mostrar información del filtrado
+  console.log('🔍 POS - Filtrado:', {
+    searchTerm,
+    totalProductos: productos.length,
+    productosFiltrados: filteredProducts.length,
+    productosConZapa: productos.filter(p => p.descripcion.toLowerCase().includes('zapa'))
   })
 
   const addToCart = (product: Producto) => {
@@ -160,8 +186,10 @@ const POS: React.FC = () => {
       const response = await crearFactura(facturaData)
       
       if (response.success) {
-        alert('Factura generada exitosamente!')
+        alert(`Factura generada exitosamente! Número: ${response.factura.numeroFactura}`)
         setCart([])
+        // Actualizar el número de factura para la próxima venta
+        refreshNumeroFactura()
       }
     } catch (error) {
       console.error('Error al crear factura:', error)
@@ -234,7 +262,23 @@ const POS: React.FC = () => {
               FACTURA
             </div>
             <div className="text-right text-sm text-gray-500">
-              <div>N.º F-{Math.floor(Math.random() * 900000) + 100000}</div>
+              <div className="flex items-center justify-end gap-2">
+                <span>N.º F-{loadingNumero ? (
+                  <span className="inline-block w-16 h-4 bg-gray-200 rounded animate-pulse"></span>
+                ) : errorNumero ? (
+                  <span className="text-red-500">Error</span>
+                ) : (
+                  numeroFactura || Math.floor(Math.random() * 900000) + 100000
+                )}</span>
+                <button
+                  onClick={refreshNumeroFactura}
+                  disabled={loadingNumero}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  title="Actualizar número de factura"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingNumero ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
               <div>Fecha: {new Date().toLocaleString('es-AR')}</div>
               <div className="flex items-center gap-2 mt-1">
                 <span>Pago:</span>

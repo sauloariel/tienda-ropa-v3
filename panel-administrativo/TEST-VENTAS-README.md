@@ -116,3 +116,6 @@ Si encuentras problemas:
 4. Ejecuta el test simple primero para diagnóstico básico
 
 
+
+
+

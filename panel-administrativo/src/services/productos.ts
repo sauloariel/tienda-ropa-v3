@@ -133,6 +133,17 @@ export const productosAPI = {
         }
     },
 
+    // Buscar productos
+    search: async (query: string): Promise<Producto[]> => {
+        try {
+            const response = await api.get(`/productos?buscar=${encodeURIComponent(query)}`)
+            return response.data
+        } catch (error) {
+            console.error('Error buscando productos:', error)
+            return []
+        }
+    },
+
     // Crear nuevo producto
     createProducto: async (producto: ProductoCreate): Promise<Producto | null> => {
         try {
@@ -169,7 +180,7 @@ export const productosAPI = {
     // Obtener categorías
     getCategorias: async (): Promise<Categoria[]> => {
         try {
-            const response = await api.get('/productos/categorias')
+            const response = await api.get('/productos/categorias/all')
             return response.data
         } catch (error) {
             console.error('Error obteniendo categorías:', error)

@@ -1,12 +1,11 @@
 import axios from 'axios';
 import type { Producto, Categoria } from '../types/productos.types';
+import { API_CONFIG } from '../config/api';
 
-// Configuración base de la API
-const API_BASE_URL = 'http://localhost:4000'; // Puerto del backend sin prefijo /api
-
+// Configuración base de la API unificada
 const api = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 10000,
+    baseURL: API_CONFIG.baseURL,
+    timeout: API_CONFIG.timeout,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -25,25 +24,25 @@ api.interceptors.response.use(
 export const productosAPI = {
     // Obtener todos los productos con información de categoría e imágenes
     getAll: async (): Promise<Producto[]> => {
-        const response = await api.get('/productos');
+        const response = await api.get(API_CONFIG.endpoints.productos);
         return response.data;
     },
 
     // Obtener productos por categoría
     getByCategory: async (categoriaId: number): Promise<Producto[]> => {
-        const response = await api.get(`/productos?categoria=${categoriaId}`);
+        const response = await api.get(`${API_CONFIG.endpoints.productos}?categoria=${categoriaId}`);
         return response.data;
     },
 
     // Obtener un producto específico
     getById: async (id: number): Promise<Producto> => {
-        const response = await api.get(`/productos/${id}`);
+        const response = await api.get(`${API_CONFIG.endpoints.productos}/${id}`);
         return response.data;
     },
 
     // Buscar productos
     search: async (query: string): Promise<Producto[]> => {
-        const response = await api.get(`/productos?buscar=${encodeURIComponent(query)}`);
+        const response = await api.get(`${API_CONFIG.endpoints.productos}?buscar=${encodeURIComponent(query)}`);
         return response.data;
     },
 };
@@ -51,13 +50,13 @@ export const productosAPI = {
 export const categoriasAPI = {
     // Obtener todas las categorías
     getAll: async (): Promise<Categoria[]> => {
-        const response = await api.get('/categorias');
+        const response = await api.get(API_CONFIG.endpoints.categorias);
         return response.data;
     },
 
     // Obtener categoría por ID
     getById: async (id: number): Promise<Categoria> => {
-        const response = await api.get(`/categorias/${id}`);
+        const response = await api.get(`${API_CONFIG.endpoints.categorias}/${id}`);
         return response.data;
     },
 };

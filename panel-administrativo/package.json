@@ -1,3 +1,4 @@
+
 {
     "name": "panel-administrativo",
     "private": true,
@@ -9,6 +10,8 @@
         "preview": "vite preview",
         "lint": "eslint \"src/**/*.{ts,tsx}\" --fix",
         "smoke": "node scripts/smoke-frontend.mjs",
+        "test-pos": "node test-pos-integration.mjs",
+        "test-invoice": "node test-invoice-number.mjs",
         "tauri": "tauri"
     },
     "dependencies": {

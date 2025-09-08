@@ -52,45 +52,45 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rutas de autenticación
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Rutas de empleados
-app.use('/empleados', empleadosRoutes);
+app.use('/api/empleados', empleadosRoutes);
 
 // Rutas de roles
-app.use('/roles', rolesRoutes);
+app.use('/api/roles', rolesRoutes);
 
 // Rutas de loguin (usuarios de login)
-app.use('/loguin', loguinRoutes);
+app.use('/api/loguin', loguinRoutes);
 
 // Rutas de productos
-app.use('/productos', productosRoutes);
+app.use('/api/productos', productosRoutes);
 
 // Rutas de clientes
-app.use('/clientes', clientesRoutes);
+app.use('/api/clientes', clientesRoutes);
 
 // Rutas de autenticación de clientes
-app.use('/clientes/auth', clientAuthRoutes);
+app.use('/api/clientes/auth', clientAuthRoutes);
 
 // Rutas de pedidos
-app.use('/pedidos', pedidosRoutes);
+app.use('/api/pedidos', pedidosRoutes);
 
 // Rutas de categorías (integradas en productos)
-// app.use('/categorias', categoriasRoutes); // Comentado - ahora está en /productos/categorias
+// app.use('/api/categorias', categoriasRoutes); // Comentado - ahora está en /api/productos/categorias
 
 // Rutas de proveedores
-app.use('/proveedores', proveedoresRoutes);
+app.use('/api/proveedores', proveedoresRoutes);
 
 // Rutas de estadísticas
-app.use('/estadisticas', estadisticasRoutes);
+app.use('/api/estadisticas', estadisticasRoutes);
 
 // Rutas de facturas
-app.use('/facturas', facturasRoutes);
+app.use('/api/facturas', facturasRoutes);
 
 // Rutas de ventas
-app.use('/ventas', ventasRoutes);
+app.use('/api/ventas', ventasRoutes);
 
 // Rutas de marketing
-app.use('/marketing', marketingRoutes);
+app.use('/api/marketing', marketingRoutes);
 
 export default app;

@@ -1,15 +1,19 @@
 import { api } from './api';
+import { API_CONFIG } from '../config/api';
+import type { FacturaRequest, FacturaResponse } from '../types/factura.types';
 
 // Usar la instancia compartida de axios
 const facturaAPI = api;
 
-// Crear nueva factura
-export const crearFactura = async (facturaData: any): Promise<any> => {
+// Crear nueva factura - El número se asigna en el backend
+export const crearFactura = async (facturaData: FacturaRequest): Promise<FacturaResponse> => {
     try {
-        const response = await facturaAPI.post('/facturas', facturaData);
+        console.log('🔄 Creando factura con datos:', facturaData);
+        const response = await facturaAPI.post(API_CONFIG.endpoints.facturas, facturaData);
+        console.log('✅ Factura creada exitosamente:', response.data);
         return response.data;
     } catch (error: any) {
-        console.error('Error al crear factura:', error);
+        console.error('❌ Error al crear factura:', error);
         throw new Error(error.response?.data?.error || 'Error al crear la factura');
     }
 };
@@ -22,7 +26,7 @@ export const obtenerFacturas = async (fechaInicio?: string, fechaFin?: string, e
         if (fechaFin) params.append('fecha_fin', fechaFin);
         if (estado) params.append('estado', estado);
 
-        const response = await facturaAPI.get(`/facturas?${params.toString()}`);
+        const response = await facturaAPI.get(`${API_CONFIG.endpoints.facturas}?${params.toString()}`);
         return response.data;
     } catch (error: any) {
         console.error('Error al obtener facturas:', error);
