@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Unauthorized from './pages/Unauthorized';
 import POS from './pages/POS';
 import Productos from './pages/Productos';
-import Categorias from './pages/Categorias';
+// import Categorias from './pages/Categorias'; // Integrado en productos
 import Pedidos from './pages/Pedidos';
 import Clientes from './pages/Clientes';
 import Empleados from './pages/Empleados';
@@ -43,11 +43,12 @@ export default function App() {
             </RoleGuard>
           }/>
 
-          <Route path="categorias" element={
+          {/* Categorías integradas en productos */}
+          {/* <Route path="categorias" element={
             <RoleGuard allow={['Admin','Inventario']} ruta="/categorias">
               <Categorias />
             </RoleGuard>
-          }/>
+          }/> */}
 
           <Route path="pedidos" element={
             <RoleGuard allow={['Admin','Vendedor','Marketing']} ruta="/pedidos">

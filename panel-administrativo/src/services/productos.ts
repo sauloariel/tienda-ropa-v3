@@ -29,6 +29,8 @@ export interface Proveedor {
     contacto: string
     direccion: string
     telefono: string
+    email?: string
+    estado?: string
 }
 
 export interface Color {
@@ -167,11 +169,75 @@ export const productosAPI = {
     // Obtener categorías
     getCategorias: async (): Promise<Categoria[]> => {
         try {
-            const response = await api.get('/categorias')
+            const response = await api.get('/productos/categorias')
             return response.data
         } catch (error) {
             console.error('Error obteniendo categorías:', error)
             return []
+        }
+    },
+
+    // Crear categoría
+    createCategoria: async (categoriaData: Omit<Categoria, 'id_categoria'>): Promise<Categoria> => {
+        try {
+            const response = await api.post('/productos/categorias', categoriaData)
+            return response.data
+        } catch (error) {
+            console.error('Error creando categoría:', error)
+            throw error
+        }
+    },
+
+    // Actualizar categoría
+    updateCategoria: async (id: number, categoriaData: Partial<Categoria>): Promise<Categoria> => {
+        try {
+            const response = await api.put(`/productos/categorias/${id}`, categoriaData)
+            return response.data
+        } catch (error) {
+            console.error('Error actualizando categoría:', error)
+            throw error
+        }
+    },
+
+    // Eliminar categoría
+    deleteCategoria: async (id: number): Promise<void> => {
+        try {
+            await api.delete(`/productos/categorias/${id}`)
+        } catch (error) {
+            console.error('Error eliminando categoría:', error)
+            throw error
+        }
+    },
+
+    // Crear proveedor
+    createProveedor: async (proveedorData: Omit<Proveedor, 'id_proveedor'>): Promise<Proveedor> => {
+        try {
+            const response = await api.post('/proveedores', proveedorData)
+            return response.data
+        } catch (error) {
+            console.error('Error creando proveedor:', error)
+            throw error
+        }
+    },
+
+    // Actualizar proveedor
+    updateProveedor: async (id: number, proveedorData: Partial<Proveedor>): Promise<Proveedor> => {
+        try {
+            const response = await api.put(`/proveedores/${id}`, proveedorData)
+            return response.data
+        } catch (error) {
+            console.error('Error actualizando proveedor:', error)
+            throw error
+        }
+    },
+
+    // Eliminar proveedor
+    deleteProveedor: async (id: number): Promise<void> => {
+        try {
+            await api.delete(`/proveedores/${id}`)
+        } catch (error) {
+            console.error('Error eliminando proveedor:', error)
+            throw error
         }
     },
 

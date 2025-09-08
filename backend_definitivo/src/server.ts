@@ -10,7 +10,7 @@ import productosRoutes from './router/RouterProductos';
 import clientesRoutes from './router/RouterCliente';
 import clientAuthRoutes from './router/RouterClientAuth';
 import pedidosRoutes from './router/RouterPedidos';
-import categoriasRoutes from './router/RouterCategorias';
+// import categoriasRoutes from './router/RouterCategorias'; // Integrado en productos
 import proveedoresRoutes from './router/RouterProveedores';
 import estadisticasRoutes from './router/RouterEstadisticas';
 import facturasRoutes from './router/RouterFacturas';
@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
             productos: '/productos',
             clientes: '/clientes',
             pedidos: '/pedidos',
-            categorias: '/categorias',
+            categorias: '/productos/categorias',
             proveedores: '/proveedores',
             estadisticas: '/estadisticas',
             facturas: '/facturas',
@@ -75,8 +75,8 @@ app.use('/clientes/auth', clientAuthRoutes);
 // Rutas de pedidos
 app.use('/pedidos', pedidosRoutes);
 
-// Rutas de categorías
-app.use('/categorias', categoriasRoutes);
+// Rutas de categorías (integradas en productos)
+// app.use('/categorias', categoriasRoutes); // Comentado - ahora está en /productos/categorias
 
 // Rutas de proveedores
 app.use('/proveedores', proveedoresRoutes);

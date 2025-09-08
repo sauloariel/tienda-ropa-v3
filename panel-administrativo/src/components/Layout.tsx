@@ -62,8 +62,8 @@ const Layout: React.FC = () => {
         return CreditCard;
       case '/productos':
         return Package;
-      case '/categorias':
-        return Tag;
+      // case '/categorias': // Integrado en productos
+      //   return Tag;
       case '/pedidos':
         return ShoppingCart;
       case '/clientes':

@@ -28,6 +28,28 @@ const Productos: React.FC = () => {
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  
+  // Estados para gestión de categorías
+  const [showCategorias, setShowCategorias] = useState(false)
+  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null)
+  const [showCategoriaModal, setShowCategoriaModal] = useState(false)
+  const [categoriaForm, setCategoriaForm] = useState({
+    nombre_categoria: '',
+    descripcion: '',
+    estado: 'activo'
+  })
+
+  // Estados para gestión de proveedores
+  const [editingProveedor, setEditingProveedor] = useState<Proveedor | null>(null)
+  const [showProveedorModal, setShowProveedorModal] = useState(false)
+  const [proveedorForm, setProveedorForm] = useState({
+    nombre: '',
+    contacto: '',
+    direccion: '',
+    telefono: '',
+    email: '',
+    estado: 'activo'
+  })
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -116,6 +138,118 @@ const Productos: React.FC = () => {
     setSelectedTipoTalle(0)
     setImagenes([])
     setImagenesPreview([])
+  }
+
+  // ==================== FUNCIONES DE CATEGORÍAS ====================
+
+  const handleCategoriaAdd = () => {
+    setCategoriaForm({
+      nombre_categoria: '',
+      descripcion: '',
+      estado: 'activo'
+    })
+    setEditingCategoria(null)
+    setShowCategoriaModal(true)
+  }
+
+  const handleCategoriaEdit = (categoria: Categoria) => {
+    setCategoriaForm({
+      nombre_categoria: categoria.nombre_categoria,
+      descripcion: categoria.descripcion || '',
+      estado: categoria.estado || 'activo'
+    })
+    setEditingCategoria(categoria)
+    setShowCategoriaModal(true)
+  }
+
+  const handleCategoriaSave = async () => {
+    try {
+      setError(null)
+      
+      if (editingCategoria) {
+        await productosAPI.updateCategoria(editingCategoria.id_categoria, categoriaForm)
+        setSuccess('Categoría actualizada correctamente')
+      } else {
+        await productosAPI.createCategoria(categoriaForm)
+        setSuccess('Categoría creada correctamente')
+      }
+      
+      setShowCategoriaModal(false)
+      cargarDatos() // Recargar datos
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar la categoría')
+    }
+  }
+
+  const handleCategoriaDelete = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
+      try {
+        await productosAPI.deleteCategoria(id)
+        setSuccess('Categoría eliminada correctamente')
+        cargarDatos() // Recargar datos
+      } catch (err: any) {
+        setError(err.message || 'Error al eliminar la categoría')
+      }
+    }
+  }
+
+  // ==================== FUNCIONES DE PROVEEDORES ====================
+
+  const handleProveedorAdd = () => {
+    setProveedorForm({
+      nombre: '',
+      contacto: '',
+      direccion: '',
+      telefono: '',
+      email: '',
+      estado: 'activo'
+    })
+    setEditingProveedor(null)
+    setShowProveedorModal(true)
+  }
+
+  const handleProveedorEdit = (proveedor: Proveedor) => {
+    setProveedorForm({
+      nombre: proveedor.nombre,
+      contacto: proveedor.contacto || '',
+      direccion: proveedor.direccion || '',
+      telefono: proveedor.telefono || '',
+      email: proveedor.email || '',
+      estado: proveedor.estado || 'activo'
+    })
+    setEditingProveedor(proveedor)
+    setShowProveedorModal(true)
+  }
+
+  const handleProveedorSave = async () => {
+    try {
+      setError(null)
+      
+      if (editingProveedor) {
+        await productosAPI.updateProveedor(editingProveedor.id_proveedor, proveedorForm)
+        setSuccess('Proveedor actualizado correctamente')
+      } else {
+        await productosAPI.createProveedor(proveedorForm)
+        setSuccess('Proveedor creado correctamente')
+      }
+      
+      setShowProveedorModal(false)
+      cargarDatos() // Recargar datos
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar el proveedor')
+    }
+  }
+
+  const handleProveedorDelete = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este proveedor?')) {
+      try {
+        await productosAPI.deleteProveedor(id)
+        setSuccess('Proveedor eliminado correctamente')
+        cargarDatos() // Recargar datos
+      } catch (err: any) {
+        setError(err.message || 'Error al eliminar el proveedor')
+      }
+    }
   }
 
   const handleCreate = async (productoData: ProductoCreate) => {
@@ -300,6 +434,20 @@ const Productos: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={handleCategoriaAdd}
+            className="btn-secondary"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Nueva Categoría
+          </button>
+          <button
+            onClick={handleProveedorAdd}
+            className="btn-secondary"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Nuevo Proveedor
+          </button>
+          <button
             onClick={handleAdd}
             className="btn-primary"
           >
@@ -347,6 +495,77 @@ const Productos: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Sección de Gestión de Categorías */}
+      {showCategorias && (
+        <div className="card mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Gestión de Categorías</h2>
+            <button
+              onClick={handleCategoriaAdd}
+              className="btn-primary"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Categoría
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nombre
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Descripción
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {categorias.map((categoria) => (
+                  <tr key={categoria.id_categoria}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {categoria.nombre_categoria}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {categoria.descripcion || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(categoria.estado || 'ACTIVO')}`}>
+                        {getStatusText(categoria.estado || 'ACTIVO')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleCategoriaEdit(categoria)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleCategoriaDelete(categoria.id_categoria)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -954,6 +1173,193 @@ const Productos: React.FC = () => {
                     className="btn-primary mt-4"
                   >
                     Cerrar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Categoría */}
+      {showCategoriaModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {editingCategoria ? 'Editar Categoría' : 'Nueva Categoría'}
+              </h3>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                handleCategoriaSave()
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre de la Categoría *
+                    </label>
+                    <input
+                      type="text"
+                      value={categoriaForm.nombre_categoria}
+                      onChange={(e) => setCategoriaForm({...categoriaForm, nombre_categoria: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Descripción *
+                    </label>
+                    <textarea
+                      value={categoriaForm.descripcion}
+                      onChange={(e) => setCategoriaForm({...categoriaForm, descripcion: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      rows={3}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estado
+                    </label>
+                    <select
+                      value={categoriaForm.estado}
+                      onChange={(e) => setCategoriaForm({...categoriaForm, estado: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoriaModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                  >
+                    {editingCategoria ? 'Actualizar' : 'Crear'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Proveedor */}
+      {showProveedorModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {editingProveedor ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+              </h3>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                handleProveedorSave()
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre del Proveedor *
+                    </label>
+                    <input
+                      type="text"
+                      value={proveedorForm.nombre}
+                      onChange={(e) => setProveedorForm({...proveedorForm, nombre: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contacto
+                    </label>
+                    <input
+                      type="text"
+                      value={proveedorForm.contacto}
+                      onChange={(e) => setProveedorForm({...proveedorForm, contacto: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Dirección
+                    </label>
+                    <textarea
+                      value={proveedorForm.direccion}
+                      onChange={(e) => setProveedorForm({...proveedorForm, direccion: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      rows={2}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={proveedorForm.telefono}
+                      onChange={(e) => setProveedorForm({...proveedorForm, telefono: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={proveedorForm.email}
+                      onChange={(e) => setProveedorForm({...proveedorForm, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estado
+                    </label>
+                    <select
+                      value={proveedorForm.estado}
+                      onChange={(e) => setProveedorForm({...proveedorForm, estado: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowProveedorModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                  >
+                    {editingProveedor ? 'Actualizar' : 'Crear'}
                   </button>
                 </div>
               </form>
