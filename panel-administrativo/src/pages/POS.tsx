@@ -8,6 +8,7 @@ import {
 import { crearFactura } from '../services/factura'
 import { FacturaRequest } from '../types/factura.types'
 import { productosAPI, Producto, Categoria } from '../services/productos'
+import { clientesAPI, Cliente } from '../services/clientes'
 import { useStableInvoiceNumber } from '../hooks/useStableInvoiceNumber'
 
 
@@ -28,6 +29,14 @@ const POS: React.FC = () => {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Estados para clientes
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [selectedCliente, setSelectedCliente] = useState<number | null>(null)
+  const [showClienteModal, setShowClienteModal] = useState(false)
+  const [clienteSearchTerm, setClienteSearchTerm] = useState('')
+  const [showClienteSearch, setShowClienteSearch] = useState(false)
+  const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([])
 
   // Hook para obtener número de factura estable
   const { value: numeroFactura, loading: loadingNumero, error: errorNumero, refresh: refreshNumeroFactura } = useStableInvoiceNumber()
@@ -41,15 +50,21 @@ const POS: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔄 Cargando productos y categorías desde la base de datos...')
-      const [productosData, categoriasData] = await Promise.all([
+      console.log('🔄 Cargando productos, categorías y clientes desde la base de datos...')
+      const [productosData, categoriasData, clientesData] = await Promise.all([
         productosAPI.getProductos(),
-        productosAPI.getCategorias()
+        productosAPI.getCategorias(),
+        clientesAPI.getClientes()
       ])
       
       setProductos(productosData)
       setCategorias(categoriasData)
-      console.log('✅ Productos y categorías cargados exitosamente:', { productos: productosData.length, categorias: categoriasData.length })
+      setClientes(clientesData)
+      console.log('✅ Datos cargados exitosamente:', { 
+        productos: productosData.length, 
+        categorias: categoriasData.length,
+        clientes: clientesData.length 
+      })
     } catch (error) {
       console.error('❌ Error cargando datos:', error)
       setError('Error al cargar los productos. Usando datos de ejemplo.')
@@ -98,6 +113,37 @@ const POS: React.FC = () => {
     productosFiltrados: filteredProducts.length,
     productosConZapa: productos.filter(p => p.descripcion.toLowerCase().includes('zapa'))
   })
+
+  // Filtrar clientes por búsqueda
+  useEffect(() => {
+    if (clienteSearchTerm.trim().length < 2) {
+      setFilteredClientes([])
+      return
+    }
+
+    const filtered = clientes.filter(cliente => 
+      cliente.nombre.toLowerCase().includes(clienteSearchTerm.toLowerCase()) ||
+      cliente.apellido.toLowerCase().includes(clienteSearchTerm.toLowerCase()) ||
+      cliente.dni.includes(clienteSearchTerm) ||
+      cliente.mail.toLowerCase().includes(clienteSearchTerm.toLowerCase())
+    )
+    setFilteredClientes(filtered.slice(0, 10)) // Mostrar solo los primeros 10 resultados
+  }, [clienteSearchTerm, clientes])
+
+  // Cerrar dropdown de clientes al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.cliente-search-container')) {
+        setShowClienteSearch(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const addToCart = (product: Producto) => {
     // Verificar stock disponible
@@ -179,7 +225,7 @@ const POS: React.FC = () => {
         })),
         total: Number(getTotalConIVA()),
         metodo_pago: selectedPaymentMethod,
-        cliente_id: undefined
+        cliente_id: selectedCliente || undefined
       }
 
       // Crear factura en el backend
@@ -292,6 +338,86 @@ const POS: React.FC = () => {
                   <option value="transferencia">🏦 Transferencia</option>
                   <option value="qr">📱 QR / Pago móvil</option>
                 </select>
+              </div>
+              <div className="flex items-center gap-2 mt-1 relative">
+                <span>Cliente:</span>
+                <div className="relative flex-1 max-w-xs cliente-search-container">
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente por nombre, DNI o email..."
+                    value={clienteSearchTerm}
+                    onChange={(e) => {
+                      setClienteSearchTerm(e.target.value)
+                      setShowClienteSearch(true)
+                    }}
+                    onFocus={() => setShowClienteSearch(true)}
+                    className="h-7 px-2 text-xs border border-gray-300 rounded w-full"
+                  />
+                  
+                  {/* Mostrar cliente seleccionado */}
+                  {selectedCliente && !showClienteSearch && (
+                    <div className="absolute inset-0 flex items-center px-2 bg-gray-50 rounded text-xs">
+                      {clientes.find(c => c.id_cliente === selectedCliente)?.nombre} {clientes.find(c => c.id_cliente === selectedCliente)?.apellido}
+                      <button
+                        onClick={() => {
+                          setSelectedCliente(null)
+                          setClienteSearchTerm('')
+                        }}
+                        className="ml-auto text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Dropdown de resultados */}
+                  {showClienteSearch && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                      <div className="p-2 border-b">
+                        <button
+                          onClick={() => {
+                            setSelectedCliente(null)
+                            setClienteSearchTerm('')
+                            setShowClienteSearch(false)
+                          }}
+                          className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                        >
+                          👤 Sin cliente
+                        </button>
+                      </div>
+                      {filteredClientes.length > 0 ? (
+                        filteredClientes.map(cliente => (
+                          <button
+                            key={cliente.id_cliente}
+                            onClick={() => {
+                              setSelectedCliente(cliente.id_cliente)
+                              setClienteSearchTerm('')
+                              setShowClienteSearch(false)
+                            }}
+                            className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 border-b last:border-b-0"
+                          >
+                            <div className="font-medium">{cliente.nombre} {cliente.apellido}</div>
+                            <div className="text-gray-500">DNI: {cliente.dni} | {cliente.mail}</div>
+                          </button>
+                        ))
+                      ) : clienteSearchTerm.length >= 2 ? (
+                        <div className="px-2 py-1 text-xs text-gray-500">
+                          No se encontraron clientes
+                        </div>
+                      ) : (
+                        <div className="px-2 py-1 text-xs text-gray-500">
+                          Escribe al menos 2 caracteres para buscar
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowClienteModal(true)}
+                  className="h-7 px-2 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  + Nuevo
+                </button>
               </div>
             </div>
           </div>
@@ -503,6 +629,124 @@ const POS: React.FC = () => {
           </aside>
         </div>
       </main>
+
+      {/* Modal para crear nuevo cliente */}
+      {showClienteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Nuevo Cliente</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              
+              const clienteData = {
+                dni: formData.get('dni') as string,
+                cuit_cuil: formData.get('cuit_cuil') as string,
+                nombre: formData.get('nombre') as string,
+                apellido: formData.get('apellido') as string,
+                domicilio: formData.get('domicilio') as string,
+                telefono: formData.get('telefono') as string,
+                mail: formData.get('mail') as string,
+                estado: 'activo'
+              }
+              
+              console.log('🔍 Datos del cliente a crear:', clienteData)
+              
+              try {
+                const nuevoCliente = await clientesAPI.createCliente(clienteData)
+                if (nuevoCliente) {
+                  setClientes([...clientes, nuevoCliente])
+                  setSelectedCliente(nuevoCliente.id_cliente)
+                  setShowClienteModal(false)
+                }
+              } catch (error: any) {
+                console.error('❌ Error creando cliente:', error)
+                let errorMessage = 'Error al crear cliente'
+                
+                if (error.response?.data?.error) {
+                  const backendError = error.response.data.error
+                  if (backendError.includes('duplicada') || backendError.includes('unicidad')) {
+                    errorMessage = 'El DNI ya existe. Por favor, usa un DNI diferente.'
+                  } else {
+                    errorMessage = backendError
+                  }
+                } else if (error.message) {
+                  errorMessage = error.message
+                }
+                
+                alert(`Error al crear cliente: ${errorMessage}`)
+              }
+            }}>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <input
+                  name="nombre"
+                  placeholder="Nombre (máx 25)"
+                  maxLength={25}
+                  className="px-3 py-2 border border-gray-300 rounded text-sm"
+                  required
+                />
+                <input
+                  name="apellido"
+                  placeholder="Apellido (máx 25)"
+                  maxLength={25}
+                  className="px-3 py-2 border border-gray-300 rounded text-sm"
+                  required
+                />
+                <input
+                  name="dni"
+                  placeholder="DNI (máx 10)"
+                  maxLength={10}
+                  pattern="[0-9]{7,10}"
+                  className="px-3 py-2 border border-gray-300 rounded text-sm"
+                  required
+                />
+                <input
+                  name="cuit_cuil"
+                  placeholder="CUIT/CUIL (máx 13)"
+                  maxLength={13}
+                  className="px-3 py-2 border border-gray-300 rounded text-sm"
+                  required
+                />
+                <input
+                  name="telefono"
+                  placeholder="Teléfono (máx 13)"
+                  maxLength={13}
+                  className="px-3 py-2 border border-gray-300 rounded text-sm"
+                  required
+                />
+                <input
+                  name="mail"
+                  type="email"
+                  placeholder="Email (máx 35)"
+                  maxLength={35}
+                  className="px-3 py-2 border border-gray-300 rounded text-sm"
+                />
+                <input
+                  name="domicilio"
+                  placeholder="Domicilio (máx 30)"
+                  maxLength={30}
+                  className="px-3 py-2 border border-gray-300 rounded text-sm col-span-2"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 text-white py-2 px-4 rounded text-sm hover:bg-blue-600"
+                >
+                  Crear Cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowClienteModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded text-sm hover:bg-gray-400"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
