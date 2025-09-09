@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
 import db from './config/db';
 import authRoutes from './router/auth.routes';
 import empleadosRoutes from './router/RouterEmpleados';
@@ -16,10 +18,53 @@ import estadisticasRoutes from './router/RouterEstadisticas';
 import facturasRoutes from './router/RouterFacturas';
 import ventasRoutes from './router/RouterVentas';
 import marketingRoutes from './router/RouterMarketing';
+import coloresRoutes from './router/RouterColor';
+import tallasRoutes from './router/RouterTalla';
+import tipoTalleRoutes from './router/RouterTipoTalle';
+import imagenesRoutes from './router/RouterImagenes';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+
+// Configuración de multer para subida de archivos
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB límite
+        files: 6 // máximo 6 archivos
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten archivos de imagen (JPEG, JPG, PNG, GIF, WEBP)'));
+        }
+    }
+});
+
+// Crear directorio uploads si no existe
+import fs from 'fs';
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+
+// Middleware para servir archivos estáticos
+app.use('/uploads', express.static('uploads'));
 
 // Ruta raíz
 app.get('/', (req, res) => {
@@ -38,6 +83,9 @@ app.get('/', (req, res) => {
             pedidos: '/pedidos',
             categorias: '/productos/categorias',
             proveedores: '/proveedores',
+            colores: '/colores',
+            tallas: '/tallas',
+            tipoTalle: '/tipo-talle',
             estadisticas: '/estadisticas',
             facturas: '/facturas',
             ventas: '/ventas',
@@ -92,5 +140,17 @@ app.use('/api/ventas', ventasRoutes);
 
 // Rutas de marketing
 app.use('/api/marketing', marketingRoutes);
+
+// Rutas de colores
+app.use('/api/colores', coloresRoutes);
+
+// Rutas de tallas
+app.use('/api/tallas', tallasRoutes);
+
+// Rutas de tipos de talla
+app.use('/api/tipo-talle', tipoTalleRoutes);
+
+// Rutas de imágenes
+app.use('/api/imagenes', imagenesRoutes);
 
 export default app;

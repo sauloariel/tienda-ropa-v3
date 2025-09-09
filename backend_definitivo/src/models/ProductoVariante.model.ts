@@ -33,5 +33,8 @@ export class ProductoVariante extends Model {
 
   @Column(DataType.INTEGER)
   stock!: number;
+
+  @Column(DataType.DECIMAL(20, 2))
+  precio_venta?: number;
 }
 export default ProductoVariante;

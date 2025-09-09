@@ -1,43 +1,51 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { inputErrors } from '../middleware';
-import {createTipoTalle, getTiposTalle ,getTipoTalleById,updateTipoTalle, deleteTipoTalle
-} from '../controllers/TipoTalleController';
+import {
+  createTalla,
+  getTallas,
+  getTallaById,
+  updateTalla,
+  deleteTalla
+} from '../controllers/TallaController';
 
 const router = Router();
 
-// Crear TipoTalle
+// Crear Talla
 router.post('/',
   body('nombre')
-    .isString().notEmpty().withMessage('El nombre del tipo de talle es obligatorio')
+    .isString().notEmpty().withMessage('El nombre de la talla es obligatorio')
     .isLength({ max: 30 }).withMessage('El nombre no puede superar los 30 caracteres'),
+  body('id_tipo_talle')
+    .isInt().withMessage('El ID del tipo de talle es obligatorio'),
   inputErrors,
-  createTipoTalle
+  createTalla
 );
 
-// Obtener todos los tipos de talle
-router.get('/', getTiposTalle);
+// Obtener todas las tallas
+router.get('/', getTallas);
 
-// Obtener tipo de talle por ID
+// Obtener talla por ID
 router.get('/:id',
   param('id').isInt().withMessage('ID inválido'),
   inputErrors,
-  getTipoTalleById
+  getTallaById
 );
 
-// Actualizar tipo de talle por ID
+// Actualizar talla por ID
 router.put('/:id',
   param('id').isInt().withMessage('ID inválido'),
   body('nombre').optional().isString().isLength({ max: 30 }),
+  body('id_tipo_talle').optional().isInt(),
   inputErrors,
-  updateTipoTalle
+  updateTalla
 );
 
-// Eliminar tipo de talle por ID
+// Eliminar talla por ID
 router.delete('/:id',
   param('id').isInt().withMessage('ID inválido'),
   inputErrors,
-  deleteTipoTalle
+  deleteTalla
 );
 
 export default router;

@@ -14,6 +14,11 @@ export const createProducto = async (req: Request, res: Response) => {
     console.log('📦 Creando producto con datos:', productoData);
     console.log('🎨 Variantes recibidas:', variantes);
 
+    // Validar datos requeridos
+    if (!productoData.descripcion || !productoData.id_proveedor || !productoData.id_categoria) {
+      return res.status(400).json({ error: 'Faltan datos requeridos' });
+    }
+
     // Crear el producto principal
     const producto = await Productos.create(productoData);
     console.log('✅ Producto creado con ID:', producto.id_producto);
@@ -40,34 +45,28 @@ export const createProducto = async (req: Request, res: Response) => {
       }
     }
 
-    // Crear imágenes si se proporcionan
-    if (imagenes && Array.isArray(imagenes)) {
+    // Crear imágenes si se proporcionan y no están vacías
+    if (imagenes && Array.isArray(imagenes) && imagenes.length > 0) {
       console.log(`🖼️ Creando ${imagenes.length} imágenes...`);
 
       for (const imagen of imagenes) {
-        await Imagenes.create({
-          id_productos: producto.id_producto,
-          nombre_archivo: imagen.nombre_archivo,
-          ruta: imagen.ruta,
-          descripcion: imagen.descripcion,
-          imagen_bin: imagen.imagen_bin
-        });
+        if (imagen.nombre_archivo && imagen.ruta) {
+          await Imagenes.create({
+            id_productos: producto.id_producto,
+            nombre_archivo: imagen.nombre_archivo,
+            ruta: imagen.ruta,
+            descripcion: imagen.descripcion || 'Imagen del producto',
+            imagen_bin: imagen.imagen_bin || null
+          });
+        }
       }
     }
 
-    // Obtener el producto con relaciones
+    // Obtener el producto con relaciones (simplificado para debug)
     const productoConRelaciones = await Productos.findByPk(producto.id_producto, {
       include: [
         { model: Categorias, as: 'categoria' },
         { model: Proveedores, as: 'proveedor' },
-        {
-          model: ProductoVariante,
-          as: 'variantes',
-          include: [
-            { model: require('../models/Color.model').Colores, as: 'color' },
-            { model: require('../models/Talle.model').Tallas, as: 'talla' }
-          ]
-        },
         { model: Imagenes, as: 'imagenes' }
       ]
     });
@@ -89,15 +88,15 @@ export const createProducto = async (req: Request, res: Response) => {
 export const getProductos = async (req: Request, res: Response) => {
   try {
     const { buscar, categoria } = req.query;
-    
+
     // Construir condiciones de búsqueda
     const whereConditions: any = {};
-    
+
     // Filtro por categoría si se proporciona
     if (categoria) {
       whereConditions.id_categoria = categoria;
     }
-    
+
     // Filtro de búsqueda por descripción si se proporciona
     if (buscar) {
       whereConditions.descripcion = {
@@ -110,18 +109,10 @@ export const getProductos = async (req: Request, res: Response) => {
       include: [
         { model: Categorias, as: 'categoria' },
         { model: Proveedores, as: 'proveedor' },
-        {
-          model: ProductoVariante,
-          as: 'variantes',
-          include: [
-            { model: require('../models/Color.model').Colores, as: 'color' },
-            { model: require('../models/Talle.model').Tallas, as: 'talla' }
-          ]
-        },
         { model: Imagenes, as: 'imagenes' }
       ]
     });
-    
+
     console.log(`🔍 Búsqueda de productos - Query: "${buscar}", Categoría: ${categoria}, Resultados: ${productos.length}`);
     res.status(200).json(productos);
   } catch (error: any) {
@@ -200,20 +191,22 @@ export const updateProducto = async (req: Request, res: Response) => {
         }
       }
 
-      // Actualizar imágenes si se proporcionan
-      if (imagenes && Array.isArray(imagenes)) {
+      // Actualizar imágenes si se proporcionan y no están vacías
+      if (imagenes && Array.isArray(imagenes) && imagenes.length > 0) {
         // Eliminar imágenes existentes
         await Imagenes.destroy({ where: { id_productos: producto.id_producto } });
 
         // Crear nuevas imágenes
         for (const imagen of imagenes) {
-          await Imagenes.create({
-            id_productos: producto.id_producto,
-            nombre_archivo: imagen.nombre_archivo,
-            ruta: imagen.ruta,
-            descripcion: imagen.descripcion,
-            imagen_bin: imagen.imagen_bin
-          });
+          if (imagen.nombre_archivo && imagen.ruta) {
+            await Imagenes.create({
+              id_productos: producto.id_producto,
+              nombre_archivo: imagen.nombre_archivo,
+              ruta: imagen.ruta,
+              descripcion: imagen.descripcion || 'Imagen del producto',
+              imagen_bin: imagen.imagen_bin || null
+            });
+          }
         }
       }
 
