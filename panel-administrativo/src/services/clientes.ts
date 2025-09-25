@@ -1,4 +1,4 @@
-import { api } from './api'
+import simpleApi from './simpleApi'
 
 export interface Cliente {
     id_cliente: number
@@ -41,7 +41,7 @@ export const clientesAPI = {
     // Obtener todos los clientes
     getClientes: async (): Promise<Cliente[]> => {
         try {
-            const response = await api.get('/clientes')
+            const response = await simpleApi.get('/clientes')
             return response.data
         } catch (error) {
             console.error('Error obteniendo clientes:', error)
@@ -63,7 +63,7 @@ export const clientesAPI = {
     // Crear nuevo cliente
     createCliente: async (cliente: ClienteCreate): Promise<Cliente | null> => {
         try {
-            const response = await api.post('/clientes', cliente)
+            const response = await simpleApi.post('/clientes', cliente)
             return response.data
         } catch (error) {
             console.error('Error creando cliente:', error)
@@ -74,7 +74,7 @@ export const clientesAPI = {
     // Actualizar cliente
     updateCliente: async (id: number, cliente: ClienteUpdate): Promise<Cliente | null> => {
         try {
-            const response = await api.put(`/clientes/${id}`, cliente)
+            const response = await simpleApi.put(`/clientes/${id}`, cliente)
             return response.data
         } catch (error) {
             console.error('Error actualizando cliente:', error)
@@ -85,7 +85,7 @@ export const clientesAPI = {
     // Eliminar cliente
     deleteCliente: async (id: number): Promise<boolean> => {
         try {
-            await api.delete(`/clientes/${id}`)
+            await simpleApi.delete(`/clientes/${id}`)
             return true
         } catch (error) {
             console.error('Error eliminando cliente:', error)

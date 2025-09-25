@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { Clientes } from '../models/Clientes.model';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'tu_clave_secreta_super_segura';
-
-// Login de cliente
+// Login de cliente (simplificado)
 export const loginCliente = async (req: Request, res: Response) => {
     try {
+        console.log('🔍 Login request:', req.body);
+
         const { mail, password } = req.body;
 
         if (!mail || !password) {
@@ -39,25 +38,6 @@ export const loginCliente = async (req: Request, res: Response) => {
             });
         }
 
-        // Verificar que el cliente esté activo
-        if (cliente.estado !== 'activo') {
-            return res.status(401).json({
-                success: false,
-                message: 'Cuenta desactivada. Contacta al administrador.'
-            });
-        }
-
-        // Generar token JWT
-        const token = jwt.sign(
-            {
-                id_cliente: cliente.id_cliente,
-                mail: cliente.mail,
-                tipo: 'cliente'
-            },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
         // Retornar datos del cliente (sin password)
         const clienteData = {
             id_cliente: cliente.id_cliente,
@@ -74,12 +54,11 @@ export const loginCliente = async (req: Request, res: Response) => {
         res.json({
             success: true,
             message: 'Login exitoso',
-            cliente: clienteData,
-            token
+            cliente: clienteData
         });
 
     } catch (error) {
-        console.error('Error en login de cliente:', error);
+        console.error('❌ Error en login de cliente:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor'
@@ -87,33 +66,30 @@ export const loginCliente = async (req: Request, res: Response) => {
     }
 };
 
-// Registro de nuevo cliente
+// Registro de nuevo cliente (simplificado)
 export const registerCliente = async (req: Request, res: Response) => {
     try {
-        const { dni, cuit_cuil, nombre, apellido, domicilio, telefono, mail, password } = req.body;
+        console.log('🔍 Register request:', req.body);
+
+        const { mail, password, nombre, apellido, telefono, domicilio } = req.body;
 
         // Validar campos requeridos
-        if (!dni || !cuit_cuil || !nombre || !apellido || !domicilio || !telefono || !mail || !password) {
+        if (!mail || !password || !nombre || !apellido) {
             return res.status(400).json({
                 success: false,
-                message: 'Todos los campos son requeridos'
+                message: 'Email, contraseña, nombre y apellido son requeridos'
             });
         }
 
         // Verificar si el cliente ya existe
         const clienteExistente = await Clientes.findOne({
-            where: {
-                $or: [
-                    { mail: mail.toLowerCase() },
-                    { dni: dni }
-                ]
-            }
+            where: { mail: mail.toLowerCase() }
         });
 
         if (clienteExistente) {
             return res.status(400).json({
                 success: false,
-                message: 'Ya existe un cliente con este email o DNI'
+                message: 'Ya existe un cliente con este email'
             });
         }
 
@@ -121,29 +97,25 @@ export const registerCliente = async (req: Request, res: Response) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+        // Generar DNI y CUIT únicos
+        const timestamp = Date.now();
+        const dniUnico = timestamp.toString().slice(-8); // Últimos 8 dígitos del timestamp
+        const cuitUnico = `20${dniUnico}9`; // Formato CUIT argentino
+
         // Crear nuevo cliente
         const nuevoCliente = await Clientes.create({
-            dni,
-            cuit_cuil,
+            dni: dniUnico,
+            cuit_cuil: cuitUnico,
             nombre,
             apellido,
-            domicilio,
-            telefono,
+            domicilio: domicilio || 'Sin especificar',
+            telefono: telefono || 'Sin especificar',
             mail: mail.toLowerCase(),
             password: hashedPassword,
             estado: 'activo'
         });
 
-        // Generar token JWT
-        const token = jwt.sign(
-            {
-                id_cliente: nuevoCliente.id_cliente,
-                mail: nuevoCliente.mail,
-                tipo: 'cliente'
-            },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        console.log('✅ Cliente creado:', nuevoCliente.id_cliente);
 
         // Retornar datos del cliente (sin password)
         const clienteData = {
@@ -161,12 +133,11 @@ export const registerCliente = async (req: Request, res: Response) => {
         res.status(201).json({
             success: true,
             message: 'Cliente registrado exitosamente',
-            cliente: clienteData,
-            token
+            cliente: clienteData
         });
 
     } catch (error) {
-        console.error('Error en registro de cliente:', error);
+        console.error('❌ Error en registro de cliente:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor'
@@ -174,39 +145,30 @@ export const registerCliente = async (req: Request, res: Response) => {
     }
 };
 
-// Verificar token de cliente
+// Verificar si un cliente está logueado (simplificado)
 export const verifyClienteToken = async (req: Request, res: Response) => {
     try {
-        const token = req.headers.authorization?.replace('Bearer ', '');
+        const { mail } = req.body;
 
-        if (!token) {
-            return res.status(401).json({
+        if (!mail) {
+            return res.status(400).json({
                 success: false,
-                message: 'Token no proporcionado'
+                message: 'Email es requerido'
             });
         }
 
-        // Verificar token
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const cliente = await Clientes.findOne({
+            where: { mail: mail.toLowerCase() }
+        });
 
-        if (decoded.tipo !== 'cliente') {
-            return res.status(401).json({
+        if (!cliente) {
+            return res.status(404).json({
                 success: false,
-                message: 'Token inválido'
+                message: 'Cliente no encontrado'
             });
         }
 
-        // Buscar cliente
-        const cliente = await Clientes.findByPk(decoded.id_cliente);
-
-        if (!cliente || cliente.estado !== 'activo') {
-            return res.status(401).json({
-                success: false,
-                message: 'Cliente no encontrado o inactivo'
-            });
-        }
-
-        // Retornar datos del cliente
+        // Retornar datos del cliente (sin password)
         const clienteData = {
             id_cliente: cliente.id_cliente,
             dni: cliente.dni,
@@ -221,23 +183,22 @@ export const verifyClienteToken = async (req: Request, res: Response) => {
 
         res.json({
             success: true,
+            message: 'Cliente verificado',
             cliente: clienteData
         });
 
     } catch (error) {
-        console.error('Error verificando token de cliente:', error);
-        res.status(401).json({
+        console.error('Error en verificación de cliente:', error);
+        res.status(500).json({
             success: false,
-            message: 'Token inválido'
+            message: 'Error interno del servidor'
         });
     }
 };
 
-// Logout de cliente
+// Logout de cliente (simplificado)
 export const logoutCliente = async (req: Request, res: Response) => {
     try {
-        // En un sistema más robusto, aquí podrías invalidar el token
-        // Por ahora, simplemente confirmamos el logout
         res.json({
             success: true,
             message: 'Logout exitoso'
@@ -250,12 +211,3 @@ export const logoutCliente = async (req: Request, res: Response) => {
         });
     }
 };
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Receipt, CreditCard, DollarSign, QrCode, Banknote, X, Plus, Minus, Trash2, CheckCircle, User, Package, AlertTriangle } from 'lucide-react';
+import { Search, ShoppingCart, Receipt, CreditCard, DollarSign, X, Plus, Minus, Trash2, CheckCircle, User, Package, AlertTriangle, ExternalLink } from 'lucide-react';
 import { productosAPI, categoriasAPI } from '../services/api';
 import { crearFactura } from '../services/facturaService';
 import { stockService } from '../services/stockService';
@@ -14,6 +14,7 @@ import POSStats from './POSStats';
 import DescuentosManager from './DescuentosManager';
 import FacturaSessionInfo from './FacturaSessionInfo';
 import { useFacturaSession } from '../hooks/useFacturaSession';
+import { parsePrice } from '../utils/priceUtils';
 
 interface CartItem {
   producto: Producto;
@@ -74,7 +75,9 @@ const POSSystem: React.FC = () => {
     const matchesCategory = !selectedCategory || producto.id_categoria === selectedCategory;
     const matchesSearch = !searchQuery || 
       producto.descripcion.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    // Filtrar solo productos activos
+    const isActive = !producto.estado || producto.estado === 'ACTIVO';
+    return matchesCategory && matchesSearch && isActive;
   });
 
   // Agregar producto al carrito con validación de stock
@@ -99,7 +102,7 @@ const POSSystem: React.FC = () => {
     agregarItem({
       producto,
       cantidad: 1,
-      precioUnitario: producto.precio_venta
+      precioUnitario: parsePrice(producto.precio_venta)
     });
   };
 
@@ -147,7 +150,8 @@ const POSSystem: React.FC = () => {
     try {
       setProcessingFactura(true);
       
-      // Obtener datos de la sesión para la factura
+      
+      // Para efectivo, procesar normalmente
       const facturaData = obtenerDatosFactura();
 
       // Crear factura en el backend
@@ -178,7 +182,7 @@ const POSSystem: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Cargando sistema POS...</p>
+          <p className="text-gray-600 text-lg">Cargando sistema de inicio de sesión...</p>
         </div>
       </div>
     );
@@ -192,7 +196,7 @@ const POSSystem: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold flex items-center gap-3">
-                🏪 Sistema POS - Supermercado
+                🔐 Iniciar Sesión - Supermercado
                 <Receipt className="w-10 h-10" />
               </h1>
               <p className="text-blue-100 text-lg mt-2">Punto de Venta con Facturación Integrada</p>
@@ -476,22 +480,22 @@ const POSSystem: React.FC = () => {
               
               <div className="space-y-3 mb-6">
                 {[
-                  { value: 'efectivo', label: 'Efectivo', icon: DollarSign, color: 'bg-green-100 text-green-700' },
-                  { value: 'tarjeta', label: 'Tarjeta', icon: CreditCard, color: 'bg-blue-100 text-blue-700' },
-                  { value: 'transferencia', label: 'Transferencia', icon: Banknote, color: 'bg-purple-100 text-purple-700' },
-                  { value: 'qr', label: 'QR/Pago Móvil', icon: QrCode, color: 'bg-orange-100 text-orange-700' }
+                  { value: 'efectivo', label: 'Efectivo', icon: DollarSign, color: 'bg-green-100 text-green-700', description: 'Pago al entregarse el producto' }
                 ].map((method) => (
-                  <label key={method.value} className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
+                  <label key={method.value} className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value={method.value}
                       checked={session.metodoPago === method.value}
                       onChange={(e) => establecerMetodoPago(e.target.value)}
-                      className="mr-3"
+                      className="mr-4"
                     />
-                    <method.icon className="w-5 h-5 mr-3" />
-                    <span className="font-medium">{method.label}</span>
+                    <method.icon className="w-6 h-6 mr-4" />
+                    <div>
+                      <span className="font-medium text-gray-900">{method.label}</span>
+                      <p className="text-sm text-gray-600">{method.description}</p>
+                    </div>
                   </label>
                 ))}
               </div>

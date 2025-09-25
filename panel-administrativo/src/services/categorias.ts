@@ -1,4 +1,4 @@
-import { api } from './api';
+import simpleApi from './simpleApi';
 
 export interface Categoria {
     id_categoria: number;
@@ -23,7 +23,7 @@ export const categoriasAPI = {
     // Obtener todas las categorías
     getAll: async () => {
         try {
-            const response = await api.get('/categorias');
+            const response = await simpleApi.get('/categorias');
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, using offline data:', error.message);
@@ -63,7 +63,7 @@ export const categoriasAPI = {
     // Crear nueva categoría
     create: async (data: CategoriaCreate) => {
         try {
-            const response = await api.post('/categorias', data);
+            const response = await simpleApi.post('/categorias', data);
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, saving categoria offline:', error.message);
@@ -92,7 +92,7 @@ export const categoriasAPI = {
     // Actualizar categoría
     update: async (id: number, data: CategoriaUpdate) => {
         try {
-            const response = await api.put(`/categorias/${id}`, data);
+            const response = await simpleApi.put(`/categorias/${id}`, data);
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, updating offline data...');
@@ -119,7 +119,7 @@ export const categoriasAPI = {
     // Eliminar categoría
     delete: async (id: number) => {
         try {
-            const response = await api.delete(`/categorias/${id}`);
+            const response = await simpleApi.delete(`/categorias/${id}`);
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, deleting offline data...');

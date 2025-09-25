@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { 
-  Users, 
   Calendar,
-  Target,
-  Activity,
-  PieChart,
   RefreshCw
 } from 'lucide-react'
 import { estadisticasAPI } from '../services/estadisticas'
 import type { 
   VentasPorMes, 
   ProductoTopVentas, 
-  CategoriaTopVentas,
-  ClienteTopCompras,
-  ActividadReciente
+  CategoriaTopVentas
 } from '../services/estadisticas'
 import Chart from '../components/Chart'
 
@@ -24,37 +18,29 @@ const Estadisticas: React.FC = () => {
   const [ventasMensuales, setVentasMensuales] = useState<VentasPorMes[]>([])
   const [productosTop, setProductosTop] = useState<ProductoTopVentas[]>([])
   const [categoriasTop, setCategoriasTop] = useState<CategoriaTopVentas[]>([])
-  const [clientesTop, setClientesTop] = useState<ClienteTopCompras[]>([])
-  const [actividadReciente, setActividadReciente] = useState<ActividadReciente[]>([])
   const [conexionDB, setConexionDB] = useState<'conectado' | 'desconectado' | 'verificando'>('verificando')
 
-  // Cargar todas las estadísticas
+  // Cargar estadísticas para los 3 gráficos de barras
   const cargarEstadisticas = async () => {
     setLoading(true)
     setConexionDB('verificando')
     try {
-      console.log('🔄 Cargando estadísticas desde la base de datos...')
+      console.log('🔄 Cargando estadísticas para gráficos de barras...')
       const [
         ventas,
         productos,
-        categorias,
-        clientes,
-        actividad
+        categorias
       ] = await Promise.all([
         estadisticasAPI.getVentasPorMes(12),
         estadisticasAPI.getProductosTopVentas(10),
-        estadisticasAPI.getCategoriasTopVentas(5),
-        estadisticasAPI.getClientesTopCompras(10),
-        estadisticasAPI.getActividadReciente(20)
+        estadisticasAPI.getCategoriasTopVentas(5)
       ])
 
       setVentasMensuales(ventas)
       setProductosTop(productos)
       setCategoriasTop(categorias)
-      setClientesTop(clientes)
-      setActividadReciente(actividad)
       setConexionDB('conectado')
-      console.log('✅ Estadísticas cargadas exitosamente desde la base de datos')
+      console.log('✅ Estadísticas cargadas exitosamente')
     } catch (error) {
       console.error('❌ Error cargando estadísticas:', error)
       setConexionDB('desconectado')
@@ -159,176 +145,39 @@ const Estadisticas: React.FC = () => {
 
       
 
-      {/* 3 Gráficos Principales Conectados a la Base de Datos */}
+      {/* 3 Gráficos de Barras Principales */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Gráfico 1: Evolución de Ventas Mensuales */}
-        <div className="lg:col-span-2">
+        {/* Gráfico 1: Ventas Mensuales */}
+        <div>
           <Chart
             data={datosVentasMensuales}
-            title="📈 Evolución de Ventas Mensuales"
-            type="line"
+            title="📈 Ventas Mensuales"
+            type="bar"
             height={350}
           />
         </div>
 
-        {/* Gráfico 2: Distribución por Categorías */}
+        {/* Gráfico 2: Ventas por Categorías */}
         <div>
           <Chart
             data={datosCategorias}
-            title="🥧 Ventas por Categoría"
-            type="doughnut"
+            title="🏷️ Ventas por Categoría"
+            type="bar"
+            height={350}
+          />
+        </div>
+
+        {/* Gráfico 3: Productos Más Vendidos */}
+        <div>
+          <Chart
+            data={datosProductos}
+            title="🏆 Productos Más Vendidos"
+            type="bar"
             height={350}
           />
         </div>
       </div>
 
-      {/* Gráfico 3: Productos Más Vendidos */}
-      <div className="grid grid-cols-1 gap-6">
-        <Chart
-          data={datosProductos}
-          title="🏆 Top 10 Productos Más Vendidos"
-          type="bar"
-          height={400}
-        />
-      </div>
-
-      {/* Productos y Categorías Top */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Productos Más Vendidos */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Productos Más Vendidos</h3>
-            <Target className="h-5 w-5 text-blue-500" />
-          </div>
-          <div className="space-y-3">
-            {productosTop.map((producto, index) => (
-              <div key={producto.id_producto} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-blue-600">{index + 1}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-900">{producto.descripcion}</span>
-                    <div className="text-xs text-gray-500">
-                      Stock: {producto.stock} | ${producto.precio_venta}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">{producto.ventas} ventas</span>
-                  <span className="text-sm text-gray-400">({producto.porcentaje}%)</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Categorías Más Vendidas - Mejorado */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Categorías Más Vendidas</h3>
-            <PieChart className="h-5 w-5 text-green-500" />
-          </div>
-          <div className="space-y-4">
-            {categoriasTop.map((categoria, index) => (
-              <div key={categoria.id_categoria} className="relative">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 ${coloresCategorias[index % coloresCategorias.length]} rounded-full flex items-center justify-center`}>
-                      <span className="text-xs font-medium text-white">{index + 1}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-900">{categoria.nombre_categoria}</span>
-                      <div className="text-xs text-gray-500">
-                        {categoria.productos} productos en esta categoría
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-semibold text-gray-900">${categoria.ventas.toLocaleString()}</span>
-                    <div className="text-xs text-gray-500">{categoria.porcentaje}% del total</div>
-                  </div>
-                </div>
-                {/* Barra de progreso visual */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${coloresCategorias[index % coloresCategorias.length]}`}
-                    style={{ width: `${categoria.porcentaje}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Clientes Top y Actividad Reciente */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Clientes con Más Compras */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Clientes con Más Compras</h3>
-            <Users className="h-5 w-5 text-purple-500" />
-          </div>
-          <div className="space-y-3">
-            {clientesTop.map((cliente, index) => (
-              <div key={cliente.id_cliente} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-purple-600">{index + 1}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-900">{cliente.nombre}</span>
-                    <div className="text-xs text-gray-500">{cliente.email}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">
-                    ${cliente.total_compras.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Última: {new Date(cliente.ultima_compra).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Actividad Reciente */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Actividad Reciente</h3>
-            <Activity className="h-5 w-5 text-orange-500" />
-          </div>
-          <div className="space-y-3">
-            {actividadReciente.map((actividad) => (
-              <div key={actividad.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    actividad.tipo === 'order' ? 'bg-blue-500' :
-                    actividad.tipo === 'customer' ? 'bg-green-500' :
-                    actividad.tipo === 'product' ? 'bg-yellow-500' : 
-                    actividad.tipo === 'sale' ? 'bg-purple-500' : 'bg-orange-500'
-                  }`} />
-                  <div>
-                    <span className="text-sm text-gray-900">{actividad.accion}</span>
-                    <div className="text-xs text-gray-500">{actividad.detalles}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  {actividad.monto && (
-                    <div className="text-sm font-medium text-gray-900">
-                      ${actividad.monto.toLocaleString()}
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-500">{actividad.tiempo}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       
       

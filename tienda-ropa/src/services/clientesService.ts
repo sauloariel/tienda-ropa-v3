@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:4000';
 
 // Configurar axios para el servicio de clientes
 const clientesAPI = axios.create({
-    baseURL: `${API_BASE_URL}/clientes`,
+    baseURL: `${API_BASE_URL}/api/clientes`,
     headers: {
         'Content-Type': 'application/json',
     },

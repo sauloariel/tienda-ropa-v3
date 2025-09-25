@@ -1,4 +1,4 @@
-import { api } from './api';
+import simpleApi from './simpleApi';
 
 export interface SeguimientoPedido {
     id_pedido: number;
@@ -43,7 +43,7 @@ export const seguimientoAPI = {
     // Buscar pedido por número
     buscarPorNumero: async (numeroPedido: string) => {
         try {
-            const response = await api.get(`/pedidos/seguimiento/${numeroPedido}`);
+            const response = await simpleApi.get(`/pedidos/seguimiento/${numeroPedido}`);
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, using offline data:', error.message);

@@ -87,9 +87,36 @@ export const pedidosAPI = {
         return response.data;
     },
 
+    // Obtener pedidos de un cliente específico
+    getByCliente: async (clienteId: number) => {
+        const response = await api.get(`/pedidos/cliente/${clienteId}`);
+        return response.data;
+    },
+
     // Obtener historial de estados
     getHistorial: async (idPedido: number) => {
         const response = await api.get(`/pedidos/${idPedido}/historial`);
+        return response.data;
+    }
+};
+
+// Servicio de facturas
+export const facturasAPI = {
+    // Obtener facturas de un cliente específico
+    getByCliente: async (clienteId: number) => {
+        const response = await api.get(`/facturas/cliente/${clienteId}`);
+        return response.data;
+    },
+
+    // Obtener factura por ID
+    getById: async (facturaId: number) => {
+        const response = await api.get(`/facturas/${facturaId}`);
+        return response.data;
+    },
+
+    // Obtener todas las facturas
+    getAll: async () => {
+        const response = await api.get('/facturas');
         return response.data;
     }
 };

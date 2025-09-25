@@ -1,9 +1,9 @@
 import React from 'react';
 import { LogOut, User, Settings } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSimpleAuth } from '../contexts/SimpleAuthContext';
 
 const Logout: React.FC = () => {
-    const { usuario, logout } = useAuth();
+    const { user, logout } = useSimpleAuth();
 
     const handleLogout = async () => {
         if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
@@ -11,7 +11,7 @@ const Logout: React.FC = () => {
         }
     };
 
-    if (!usuario) return null;
+    if (!user) return null;
 
     return (
         <div className="relative group">
@@ -21,8 +21,8 @@ const Logout: React.FC = () => {
                     <User className="h-4 w-4 text-white" />
                 </div>
                 <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">{usuario.nombre}</p>
-                    <p className="text-xs text-gray-500">{usuario.rol}</p>
+                    <p className="text-sm font-medium text-gray-900">{user.nombre}</p>
+                    <p className="text-xs text-gray-500">{user.rol}</p>
                 </div>
             </button>
 

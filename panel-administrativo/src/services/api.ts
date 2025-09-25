@@ -25,6 +25,9 @@ export const pedidosAPI = {
     create: (data: any) => api.post('/pedidos', data),
     anular: (id: number) => api.put(`/pedidos/anular/${id}`),
     cambiarEstado: (id: number, estado: string) => api.put(`/pedidos/${id}/estado`, { estado }),
+    // Pedidos Web
+    post: (endpoint: string, data: any) => api.post(endpoint, data),
+    get: (endpoint: string) => api.get(endpoint),
 }
 
 // Login API
@@ -52,9 +55,20 @@ export const authAPI = {
     },
 }
 
-// Request interceptor for debugging
+// Request interceptor for debugging and adding auth token
 api.interceptors.request.use(
     (config) => {
+        // Agregar token de autenticación si existe
+        const token = localStorage.getItem('authToken');
+        console.log('🔑 Token encontrado en localStorage:', token ? token.substring(0, 20) + '...' : 'No hay token');
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+            console.log('✅ Token agregado al header Authorization');
+        } else {
+            console.log('❌ No se encontró token, request sin autenticación');
+        }
+
         console.log('API Request:', {
             method: config.method?.toUpperCase(),
             url: config.url,
@@ -93,29 +107,39 @@ api.interceptors.response.use(
         // No redirigir en errores de permisos o acceso a módulos
         if (error.response?.status === 401) {
             // Verificar si es un error de autenticación real
-            const currentUser = localStorage.getItem('user')
-            if (currentUser) {
+            const currentUser = localStorage.getItem('authUser')
+            const currentToken = localStorage.getItem('authToken')
+
+            console.log('🔍 Error 401 - Verificando autenticación:', {
+                hasUser: !!currentUser,
+                hasToken: !!currentToken,
+                path: window.location.pathname
+            });
+
+            if (currentUser && currentToken) {
                 try {
                     const userData = JSON.parse(currentUser)
                     // Solo redirigir si el usuario no tiene datos válidos
-                    if (!userData || !userData.id || !userData.role) {
-                        console.log('Invalid user data, redirecting to login...')
-                        localStorage.removeItem('user')
+                    if (!userData || !userData.id || !userData.rol) {
+                        console.log('❌ Invalid user data, redirecting to login...')
+                        localStorage.removeItem('authUser')
+                        localStorage.removeItem('authToken')
                         if (window.location.pathname !== '/login') {
                             window.location.href = '/login'
                         }
                     } else {
-                        console.log('User is authenticated, not redirecting to login')
+                        console.log('✅ User is authenticated, not redirecting to login')
                     }
                 } catch (parseError) {
-                    console.log('Error parsing user data, redirecting to login...')
-                    localStorage.removeItem('user')
+                    console.log('❌ Error parsing user data, redirecting to login...')
+                    localStorage.removeItem('authUser')
+                    localStorage.removeItem('authToken')
                     if (window.location.pathname !== '/login') {
                         window.location.href = '/login'
                     }
                 }
             } else {
-                console.log('No user data found, redirecting to login...')
+                console.log('❌ No user data or token found, redirecting to login...')
                 if (window.location.pathname !== '/login') {
                     window.location.href = '/login'
                 }

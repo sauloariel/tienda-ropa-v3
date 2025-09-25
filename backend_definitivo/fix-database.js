@@ -50,3 +50,5 @@ db.all("PRAGMA table_info(producto_variante);", (err, rows) => {
     db.close();
   }
 });
+
+

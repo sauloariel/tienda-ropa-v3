@@ -11,21 +11,21 @@ import { DetallePedidos } from './DetallePedidos.model';
 })
 export class Pedidos extends Model {
   @PrimaryKey
-  @Column(DataType.INTEGER)
+  @Column({ type: DataType.INTEGER, autoIncrement: true })
   id_pedido!: number;
 
   @ForeignKey(() => Clientes)
   @Column(DataType.INTEGER)
   id_cliente!: number;
 
-  @BelongsTo(() => Clientes)
+  @BelongsTo(() => Clientes, 'id_cliente')
   cliente!: Clientes;
 
   @ForeignKey(() => Empleados)
   @Column(DataType.INTEGER)
   id_empleados!: number;
 
-  @BelongsTo(() => Empleados)
+  @BelongsTo(() => Empleados, 'id_empleados')
   empleado!: Empleados;
 
   @Column(DataType.DATE)
@@ -45,6 +45,27 @@ export class Pedidos extends Model {
 
   @Column(DataType.STRING(255))
   payment_id?: string;
+
+  @Column(DataType.TEXT)
+  direccion_entrega?: string;
+
+  @Column(DataType.STRING(100))
+  horario_recepcion?: string;
+
+  @Column(DataType.TEXT)
+  descripcion_pedido?: string;
+
+  @Column(DataType.DECIMAL(10, 8))
+  latitud?: number;
+
+  @Column(DataType.DECIMAL(11, 8))
+  longitud?: number;
+
+  @Column(DataType.STRING(255))
+  telefono_contacto?: string;
+
+  @Column(DataType.TEXT)
+  notas_entrega?: string;
 
   @HasMany(() => DetallePedidos)
   detalle!: DetallePedidos[];

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, Phone, Mail, MapPin, CreditCard, ShoppingBag } from 'lucide-react';
 import { pedidosAPI, clientesAPI } from '../services/api';
+import { compraIntegradaService } from '../services/compraIntegradaService';
 import type { PedidoCreate, Cliente } from '../types/pedidos.types';
 import type { Producto } from '../types/productos.types';
 
@@ -31,6 +32,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     telefono: '',
     email: '',
     direccion: '',
+    horarioRecepcion: '',
+    descripcion: '',
     observaciones: ''
   });
   const [loading, setLoading] = useState(false);
@@ -74,31 +77,39 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         cliente = await clientesAPI.create(clienteData);
       }
 
-      // Crear pedido
-      const pedidoData: PedidoCreate = {
+      // Procesar compra integrada (venta + factura + pedido)
+      const compraData = {
         cliente_id: cliente.id_cliente,
         cliente_nombre: `${formData.nombre} ${formData.apellido}`.trim(),
         cliente_telefono: formData.telefono,
         cliente_email: formData.email || undefined,
         direccion_entrega: formData.direccion || undefined,
+        horario_recepcion: formData.horarioRecepcion || undefined,
+        descripcion_pedido: formData.descripcion || undefined,
         observaciones: formData.observaciones || undefined,
+        metodo_pago: 'transferencia', // Método por defecto para compras web
         items: items.map(item => ({
           id_producto: item.producto.id_producto,
           cantidad: item.cantidad,
           precio_unitario: item.precioUnitario,
+          subtotal: item.precioUnitario * item.cantidad,
           color: item.producto.variantes?.[0]?.color,
           talla: item.producto.variantes?.[0]?.talla
         }))
       };
 
-      const pedido = await pedidosAPI.create(pedidoData);
+      console.log('🛒 Procesando compra integrada:', compraData);
+      
+      const resultado = await compraIntegradaService.procesarCompra(compraData);
+      
+      console.log('✅ Compra procesada exitosamente:', resultado);
       
       setStep('success');
-      onSuccess(pedido.numero_pedido);
+      onSuccess(resultado.data.resumen.payment_id);
       
     } catch (err: any) {
-      console.error('Error creando pedido:', err);
-      setError(err.response?.data?.message || 'Error al procesar el pedido. Inténtalo de nuevo.');
+      console.error('Error procesando compra:', err);
+      setError(err.message || 'Error al procesar la compra. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -112,6 +123,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       telefono: '',
       email: '',
       direccion: '',
+      horarioRecepcion: '',
+      descripcion: '',
       observaciones: ''
     });
     setError(null);
@@ -199,29 +212,78 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Dirección de entrega
-                  </label>
-                  <input
-                    type="text"
-                    name="direccion"
-                    value={formData.direccion}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Observaciones
-                  </label>
-                  <textarea
-                    name="observaciones"
-                    value={formData.observaciones}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                
+                {/* Información de entrega */}
+                <div className="mt-6">
+                  <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Información de Entrega
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Dirección de entrega *
+                      </label>
+                      <input
+                        type="text"
+                        name="direccion"
+                        value={formData.direccion}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Calle, número, piso, departamento"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Horario de recepción *
+                      </label>
+                      <select
+                        name="horarioRecepcion"
+                        value={formData.horarioRecepcion}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar horario</option>
+                        <option value="9:00-12:00">9:00 - 12:00</option>
+                        <option value="12:00-15:00">12:00 - 15:00</option>
+                        <option value="15:00-18:00">15:00 - 18:00</option>
+                        <option value="18:00-21:00">18:00 - 21:00</option>
+                        <option value="Cualquier horario">Cualquier horario</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Descripción del pedido *
+                    </label>
+                    <textarea
+                      name="descripcion"
+                      value={formData.descripcion}
+                      onChange={handleInputChange}
+                      required
+                      rows={3}
+                      placeholder="Describe los productos que necesitas, colores, tallas, etc."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Observaciones adicionales
+                    </label>
+                    <textarea
+                      name="observaciones"
+                      value={formData.observaciones}
+                      onChange={handleInputChange}
+                      rows={2}
+                      placeholder="Instrucciones especiales para la entrega..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -300,6 +362,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 };
 
 export default CheckoutModal;
+
+
+
 
 
 

@@ -9,23 +9,23 @@ export class DetallePedidos extends Model {
   @Column(DataType.INTEGER({ unsigned: true }))
   id_pedido!: number;
 
-  @BelongsTo(() => Pedidos)
+  @BelongsTo(() => Pedidos, 'id_pedido')
   pedido!: Pedidos;
 
   @ForeignKey(() => Productos)
   @Column(DataType.INTEGER)
   id_producto!: number;
 
-  @BelongsTo(() => Productos)
+  @BelongsTo(() => Productos, 'id_producto')
   producto!: Productos;
 
-  @Column(DataType.DECIMAL(10,2))
+  @Column(DataType.DECIMAL(10, 2))
   precio_venta!: number;
 
   @Column(DataType.INTEGER)
   cantidad!: number;
 
-  @Column(DataType.DECIMAL(10,2))
+  @Column(DataType.DECIMAL(10, 2))
   descuento?: number;
 }
 export default DetallePedidos;

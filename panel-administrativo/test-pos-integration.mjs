@@ -97,3 +97,6 @@ async function testPOSIntegration() {
 // Ejecutar pruebas
 testPOSIntegration();
 
+
+
+

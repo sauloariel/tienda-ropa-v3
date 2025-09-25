@@ -1,4 +1,4 @@
-import { api } from './http'
+import simpleApi from './simpleApi'
 
 export interface Proveedor {
     id_proveedor: number
@@ -26,7 +26,7 @@ export const proveedoresAPI = {
     // Obtener todos los proveedores
     getProveedores: async (): Promise<Proveedor[]> => {
         try {
-            const response = await api.get('/proveedores')
+            const response = await simpleApi.get('/proveedores')
             return response.data
         } catch (error) {
             console.error('Error obteniendo proveedores:', error)
@@ -48,7 +48,7 @@ export const proveedoresAPI = {
     // Crear nuevo proveedor
     createProveedor: async (proveedor: ProveedorCreate): Promise<Proveedor | null> => {
         try {
-            const response = await api.post('/proveedores', proveedor)
+            const response = await simpleApi.post('/proveedores', proveedor)
             return response.data
         } catch (error) {
             console.error('Error creando proveedor:', error)
@@ -59,7 +59,7 @@ export const proveedoresAPI = {
     // Actualizar proveedor
     updateProveedor: async (id: number, proveedor: ProveedorUpdate): Promise<Proveedor | null> => {
         try {
-            const response = await api.put(`/proveedores/${id}`, proveedor)
+            const response = await simpleApi.put(`/proveedores/${id}`, proveedor)
             return response.data
         } catch (error) {
             console.error('Error actualizando proveedor:', error)
@@ -70,7 +70,7 @@ export const proveedoresAPI = {
     // Eliminar proveedor
     deleteProveedor: async (id: number): Promise<boolean> => {
         try {
-            await api.delete(`/proveedores/${id}`)
+            await simpleApi.delete(`/proveedores/${id}`)
             return true
         } catch (error) {
             console.error('Error eliminando proveedor:', error)
@@ -78,6 +78,9 @@ export const proveedoresAPI = {
         }
     }
 }
+
+
+
 
 
 

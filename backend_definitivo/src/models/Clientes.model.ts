@@ -11,25 +11,25 @@ export class Clientes extends Model {
 
   @Unique
   @Column(DataType.STRING(10))
-  dni!: string;
+  dni?: string;
 
   @Column(DataType.STRING(13))
-  cuit_cuil!: string;
+  cuit_cuil?: string;
 
   @Column(DataType.STRING(25))
-  nombre!: string;
+  nombre?: string;
 
   @Column(DataType.STRING(25))
-  apellido!: string;
+  apellido?: string;
 
   @Column(DataType.STRING(30))
-  domicilio!: string;
+  domicilio?: string;
 
   @Column(DataType.STRING(13))
-  telefono!: string;
+  telefono?: string;
 
   @Column(DataType.STRING(35))
-  mail!: string;
+  mail?: string;
 
   @Column(DataType.STRING(8))
   estado?: string;

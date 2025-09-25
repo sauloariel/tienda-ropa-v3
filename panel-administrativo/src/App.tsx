@@ -1,7 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import RoleGuard from './components/RoleGuard';
+import { SimpleAuthProvider } from './contexts/SimpleAuthContext';
+import { SimpleProtectedRoute } from './components/SimpleProtectedRoute';
 import Layout from './components/Layout';
 import RedirectToFirstModule from './components/RedirectToFirstModule';
 import Login from './pages/Login';
@@ -16,91 +15,77 @@ import Ventas from './pages/Ventas';
 import Estadisticas from './pages/Estadisticas';
 import Marketing from './pages/Marketing';
 import Proveedores from './pages/Proveedores';
-import Facturas from './pages/Facturas';
 
 export default function App() {
   return (
-    <AuthProvider>
+    <SimpleAuthProvider>
       <Routes>
         <Route path="/login" element={<Login/>} />
         <Route path="/unauthorized" element={<Unauthorized/>} />
 
         {/* Rutas protegidas con Layout */}
         <Route path="/" element={
-          <ProtectedRoute>
+          <SimpleProtectedRoute allowedRoles={['Admin','Vendedor','Inventario','Marketing']}>
             <Layout />
-          </ProtectedRoute>
+          </SimpleProtectedRoute>
         }>
           <Route path="pos" element={
-            <RoleGuard allow={['Admin','Vendedor']} ruta="/pos">
+            <SimpleProtectedRoute allowedRoles={['Admin','Vendedor']}>
               <POS />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="productos" element={
-            <RoleGuard allow={['Admin','Inventario']} ruta="/productos">
+            <SimpleProtectedRoute allowedRoles={['Admin','Inventario']}>
               <Productos />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
-          {/* Categorías integradas en productos */}
-          {/* <Route path="categorias" element={
-            <RoleGuard allow={['Admin','Inventario']} ruta="/categorias">
-              <Categorias />
-            </RoleGuard>
-          }/> */}
-
           <Route path="pedidos" element={
-            <RoleGuard allow={['Admin','Vendedor','Marketing']} ruta="/pedidos">
+            <SimpleProtectedRoute allowedRoles={['Admin','Vendedor','Marketing']}>
               <Pedidos />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="clientes" element={
-            <RoleGuard allow={['Admin','Vendedor']} ruta="/clientes">
+            <SimpleProtectedRoute allowedRoles={['Admin','Vendedor']}>
               <Clientes />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="empleados" element={
-            <RoleGuard allow={['Admin']} ruta="/empleados">
+            <SimpleProtectedRoute allowedRoles={['Admin']}>
               <Empleados />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="ventas" element={
-            <RoleGuard allow={['Admin','Vendedor']} ruta="/ventas">
+            <SimpleProtectedRoute allowedRoles={['Admin','Vendedor']}>
               <Ventas />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="estadisticas" element={
-            <RoleGuard allow={['Admin','Vendedor','Inventario','Marketing']} ruta="/estadisticas">
+            <SimpleProtectedRoute allowedRoles={['Admin','Vendedor','Inventario','Marketing']}>
               <Estadisticas />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="marketing" element={
-            <RoleGuard allow={['Admin','Marketing']} ruta="/marketing">
+            <SimpleProtectedRoute allowedRoles={['Admin','Marketing']}>
               <Marketing />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route path="proveedores" element={
-            <RoleGuard allow={['Admin']} ruta="/proveedores">
+            <SimpleProtectedRoute allowedRoles={['Admin']}>
               <Proveedores />
-            </RoleGuard>
-          }/>
-
-          <Route path="facturas" element={
-            <RoleGuard allow={['Admin','Vendedor']} ruta="/facturas">
-              <Facturas />
-            </RoleGuard>
+            </SimpleProtectedRoute>
           }/>
 
           <Route index element={<RedirectToFirstModule />} />
         </Route>
       </Routes>
-    </AuthProvider>
+    </SimpleAuthProvider>
   );
 }

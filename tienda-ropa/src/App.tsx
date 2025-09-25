@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { productosAPI, categoriasAPI } from './services/api';
 import type { Producto, Categoria } from './types/productos.types';
+import { parsePrice } from './utils/priceUtils';
 import ProductCard from './components/ProductCard';
-import CategoryFilter from './components/CategoryFilter';
-import ColorFilter from './components/ColorFilter';
-import SearchBar from './components/SearchBar';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import POSSystem from './components/POSSystem';
-import AppNavigation from './components/AppNavigation';
 import Cart from './components/Cart';
 import ClientCart from './components/ClientCart';
 import ClientLogin from './components/ClientLogin';
-import CheckoutModal from './components/CheckoutModal';
+import CheckoutFlow from './components/CheckoutFlow';
 import OrderTracking from './components/OrderTracking';
+import ProductDebug from './components/ProductDebug';
+import ClientPanel from './components/ClientPanel';
+import Pagination from './components/Pagination';
+import CartModal from './components/CartModal';
+import { usePagination } from './hooks/usePagination';
+import { useURLFilters } from './hooks/useURLFilters';
 import { ClientAuthProvider, useClientAuth } from './contexts/ClientAuthContext';
 
 interface CartItem {
@@ -30,14 +33,21 @@ function AppContent() {
   const [categorias, setCategoria] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Usar filtros sincronizados con URL
+  const { 
+    filters: { categoria: selectedCategory, busqueda: searchQuery, pagina },
+    changeCategory,
+    changeSearch,
+    changePage
+  } = useURLFilters();
   
   // Estados del carrito
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [favorites, setFavorites] = useState<number[]>([]);
 
   // Cargar productos y categorías al montar el componente
   useEffect(() => {
@@ -71,7 +81,7 @@ function AppContent() {
     loadData();
   }, []);
 
-  // Filtrar productos por categoría, colores y búsqueda
+  // Filtrar productos por categoría, búsqueda y estado activo
   const filteredProductos = productos.filter(producto => {
     // Filtrar por categoría
     const matchesCategory = !selectedCategory || producto.id_categoria === selectedCategory;
@@ -80,66 +90,60 @@ function AppContent() {
     const matchesSearch = !searchQuery || 
       producto.descripcion.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Filtrar por colores
-    const matchesColors = selectedColors.length === 0 || 
-      producto.variantes?.some(variante => 
-        variante.color?.nombre && selectedColors.includes(variante.color.nombre)
-      ) || false;
+    // Filtrar solo productos activos
+    const isActive = !producto.estado || producto.estado === 'ACTIVO';
     
-    return matchesCategory && matchesSearch && matchesColors;
+    return matchesCategory && matchesSearch && isActive;
   });
 
-  const handleCategoryChange = (categoryId: number | null) => {
-    setSelectedCategory(categoryId);
+  // Paginación - 15 productos por página
+  const {
+    currentItems: paginatedProductos,
+    currentPage: currentPageFromPagination,
+    totalPages,
+    totalItems,
+    goToPage: goToPageFromPagination,
+    nextPage,
+    prevPage,
+    canGoNext,
+    canGoPrev,
+    startIndex,
+    endIndex
+  } = usePagination({
+    items: filteredProductos,
+    itemsPerPage: 15,
+    initialPage: pagina
+  });
+
+  // Sincronizar página de URL con paginación
+  const currentPage = pagina;
+  const goToPage = (page: number) => {
+    changePage(page);
   };
 
-  const handleColorChange = (colors: string[]) => {
-    setSelectedColors(colors);
-  };
+  // Las funciones de manejo ahora vienen del hook useURLFilters
+  const handleCategoryChange = changeCategory;
+  const handleSearch = changeSearch;
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  // Obtener todos los colores disponibles de los productos
-  const availableColors = productos.reduce((colors: string[], producto) => {
-    if (producto.variantes) {
-      producto.variantes.forEach(variante => {
-        if (variante.color?.nombre && !colors.includes(variante.color.nombre)) {
-          colors.push(variante.color.nombre);
-        }
-      });
-    }
-    return colors;
-  }, []);
 
   const handleViewChange = (view: 'tienda' | 'pos' | 'seguimiento') => {
     setCurrentView(view);
   };
 
+  // Función para parsear precios
+  const parsePrice = (price: any): number => {
+    if (typeof price === 'number') return price;
+    if (typeof price === 'string') {
+      const parsed = parseFloat(price.replace(/[^\d.-]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
   // Funciones del carrito
   const addToCart = (producto: Producto) => {
-    // Validar que el producto sea válido
-    if (!producto || !producto.id_producto || !producto.descripcion) {
-      console.error('Producto inválido para agregar al carrito:', producto);
-      return;
-    }
-
-    // Asegurar que el precio sea un número válido
-    const precioValido = typeof producto.precio_venta === 'number' && !isNaN(producto.precio_venta) 
-      ? producto.precio_venta 
-      : 0;
-
-    console.log('Agregando producto al carrito:', {
-      id: producto.id_producto,
-      descripcion: producto.descripcion,
-      precio_venta: producto.precio_venta,
-      precioValido: precioValido
-    });
-
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.producto.id_producto === producto.id_producto);
-      
       if (existingItem) {
         return prevItems.map(item =>
           item.producto.id_producto === producto.id_producto
@@ -150,31 +154,28 @@ function AppContent() {
         return [...prevItems, {
           producto,
           cantidad: 1,
-          precioUnitario: precioValido
+          precioUnitario: parsePrice(producto.precio_venta)
         }];
       }
     });
   };
 
-  const updateCartQuantity = (productoId: number, cantidad: number) => {
-    if (cantidad <= 0) {
-      removeFromCart(productoId);
-      return;
+  const updateCartQuantity = (productId: number, quantity: number) => {
+    if (quantity <= 0) {
+      setCartItems(items => items.filter(item => item.producto.id_producto !== productId));
+    } else {
+      setCartItems(items =>
+        items.map(item =>
+          item.producto.id_producto === productId
+            ? { ...item, cantidad: quantity }
+            : item
+        )
+      );
     }
-
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.producto.id_producto === productoId
-          ? { ...item, cantidad }
-          : item
-      )
-    );
   };
 
-  const removeFromCart = (productoId: number) => {
-    setCartItems(prevItems =>
-      prevItems.filter(item => item.producto.id_producto !== productoId)
-    );
+  const removeFromCart = (productId: number) => {
+    setCartItems(items => items.filter(item => item.producto.id_producto !== productId));
   };
 
   const clearCart = () => {
@@ -182,6 +183,7 @@ function AppContent() {
   };
 
   const handleCheckout = () => {
+    setShowCartModal(false);
     setShowCheckout(true);
   };
 
@@ -189,15 +191,25 @@ function AppContent() {
     setLastOrderNumber(numeroPedido);
     setShowCheckout(false);
     clearCart();
-    // Mostrar mensaje de éxito o redirigir
+    // Mostrar mensaje de éxito
     alert(`¡Pedido confirmado! Número: ${numeroPedido}`);
   };
 
+  // Funciones de favoritos
+  const toggleFavorite = (productId: number) => {
+    setFavorites(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
   const cartTotal = cartItems.reduce((total, item) => {
-    const precioValido = typeof item.precioUnitario === 'number' && !isNaN(item.precioUnitario) ? item.precioUnitario : 0;
-    const cantidadValida = typeof item.cantidad === 'number' && !isNaN(item.cantidad) ? item.cantidad : 0;
-    return total + (precioValido * cantidadValida);
+    const precio = parsePrice(item.precioUnitario);
+    return total + (precio * item.cantidad);
   }, 0);
+  const favoritesCount = favorites.length;
+
 
   // Renderizar vista de la tienda web
   const renderTiendaWeb = () => {
@@ -231,44 +243,54 @@ function AppContent() {
     }
 
     return (
-      <>
-        <Header />
+      <div className="min-h-screen relative">
+        {/* Imagen de fondo */}
+        <div 
+          className="fixed inset-0 z-0"
+          style={{
+            backgroundImage: 'url(/images/background-fashion.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.3
+          }}
+        />
         
-        <main className="container mx-auto px-4 py-8">
+        {/* Contenido principal con overlay */}
+        <div className="relative z-10 bg-white/80 backdrop-blur-sm min-h-screen">
+          <Header 
+            onLoginClick={() => handleViewChange('pos')}
+            onViewChange={handleViewChange}
+            currentView={currentView}
+            isAuthenticated={isAuthenticated}
+            userInfo={isAuthenticated ? { nombre: 'Usuario', apellido: 'Cliente' } : undefined}
+            onSearch={handleSearch}
+            categorias={categorias}
+            onCategoryChange={handleCategoryChange}
+            selectedCategory={selectedCategory}
+            cartItems={cartItems}
+            onCartClick={() => setShowCartModal(true)}
+            favoritesCount={favoritesCount}
+            onFavoritesClick={() => console.log('Favoritos clickeado')}
+          />
+          
+          <main className="container mx-auto px-4 py-8">
           {/* Hero Section */}
-          <section className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-              Tienda de Ropa
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Descubre las últimas tendencias en moda. Ropa de calidad para todos los estilos.
-            </p>
-            
-            {/* Barra de búsqueda */}
-            <SearchBar onSearch={handleSearch} />
+          <section className="text-center mb-12 py-16">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/20">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                MaruchiModa
+              </h1>
+              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto font-medium">
+                Descubre las últimas tendencias en moda. Ropa de calidad para todos los estilos.
+              </p>
+              
+            </div>
           </section>
 
-          {/* Filtros y Productos */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar con filtros */}
-            <aside className="lg:col-span-1 space-y-6">
-              <CategoryFilter 
-                categorias={categorias}
-                selectedCategory={selectedCategory}
-                onCategoryChange={handleCategoryChange}
-              />
-              
-              {availableColors.length > 0 && (
-                <ColorFilter
-                  colores={availableColors}
-                  selectedColors={selectedColors}
-                  onColorChange={handleColorChange}
-                />
-              )}
-            </aside>
-
-            {/* Lista de productos */}
-            <div className="lg:col-span-2">
+          {/* Lista de productos */}
+          <div className="max-w-7xl mx-auto">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   {selectedCategory 
@@ -277,7 +299,7 @@ function AppContent() {
                   }
                 </h2>
                 <span className="text-gray-600">
-                  {filteredProductos.length} producto{filteredProductos.length !== 1 ? 's' : ''}
+                  {totalItems} producto{totalItems !== 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -295,47 +317,68 @@ function AppContent() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredProductos.map((producto) => (
-                    <ProductCard 
-                      key={producto.id_producto} 
-                      producto={producto}
-                      onAddToCart={addToCart}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {paginatedProductos.map((producto) => (
+                      <ProductCard 
+                        key={producto.id_producto} 
+                        producto={producto}
+                        onAddToCart={addToCart}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Componente de paginación */}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                    onPrev={prevPage}
+                    onNext={nextPage}
+                    canGoPrev={canGoPrev}
+                    canGoNext={canGoNext}
+                    startIndex={startIndex}
+                    endIndex={endIndex}
+                    totalItems={totalItems}
+                  />
+                </>
               )}
-            </div>
-
-            {/* Carrito de compras */}
-            <aside className="lg:col-span-1">
-              <Cart
-                items={cartItems}
-                total={cartTotal}
-                onUpdateQuantity={updateCartQuantity}
-                onRemoveItem={removeFromCart}
-                onClearCart={clearCart}
-                onCheckout={handleCheckout}
-              />
-            </aside>
+              </div>
           </div>
-        </main>
+          </main>
 
-        <Footer />
-      </>
+          <Footer />
+        </div>
+
+        {/* Modal del carrito */}
+        <CartModal
+          isOpen={showCartModal}
+          onClose={() => setShowCartModal(false)}
+          items={cartItems}
+          onUpdateQuantity={updateCartQuantity}
+          onRemoveItem={removeFromCart}
+          onClearCart={clearCart}
+          onCheckout={handleCheckout}
+        />
+      </div>
     );
   };
 
-  // Renderizar vista del sistema POS
+  // Renderizar vista del sistema POS (acceso libre para empleados)
   const renderPOSSystem = () => {
-    // Si no está autenticado, mostrar login de clientes
-    if (!isAuthenticated) {
-      return <ClientLogin />;
-    }
-    
-    // Si está autenticado, mostrar el carrito de compras para clientes
     return (
       <div className="min-h-screen bg-gray-50">
+        <Header 
+          onLoginClick={() => handleViewChange('pos')}
+          onViewChange={handleViewChange}
+          currentView={currentView}
+          isAuthenticated={isAuthenticated}
+          userInfo={isAuthenticated ? { nombre: 'Usuario', apellido: 'Cliente' } : undefined}
+          onSearch={handleSearch}
+          categorias={categorias}
+          onCategoryChange={handleCategoryChange}
+          selectedCategory={selectedCategory}
+        />
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Lista de productos */}
@@ -373,30 +416,50 @@ function AppContent() {
 
   // Renderizar vista de seguimiento de pedidos
   const renderSeguimiento = () => {
-    return <OrderTracking />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header 
+          onLoginClick={() => handleViewChange('pos')}
+          onViewChange={handleViewChange}
+          currentView={currentView}
+          isAuthenticated={isAuthenticated}
+          userInfo={isAuthenticated ? { nombre: 'Usuario', apellido: 'Cliente' } : undefined}
+          onSearch={handleSearch}
+          categorias={categorias}
+          onCategoryChange={handleCategoryChange}
+          selectedCategory={selectedCategory}
+        />
+        <OrderTracking />
+      </div>
+    );
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navegación principal */}
-      <AppNavigation 
-        currentView={currentView} 
-        onViewChange={handleViewChange} 
-      />
-      
       {/* Contenido según la vista seleccionada */}
       {currentView === 'tienda' && renderTiendaWeb()}
-      {currentView === 'pos' && renderPOSSystem()}
+      {currentView === 'pos' && (isAuthenticated ? 
+        <ClientPanel 
+          onViewChange={handleViewChange}
+          currentView={currentView}
+          isAuthenticated={isAuthenticated}
+          userInfo={isAuthenticated ? { nombre: 'Usuario', apellido: 'Cliente' } : undefined}
+        /> 
+        : <ClientLogin />
+      )}
       {currentView === 'seguimiento' && renderSeguimiento()}
 
       {/* Modal de checkout */}
-      <CheckoutModal
+      <CheckoutFlow
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
         items={cartItems}
         total={cartTotal}
         onSuccess={handleCheckoutSuccess}
       />
+
+      {/* Debug de productos */}
+      <ProductDebug />
     </div>
   );
 }

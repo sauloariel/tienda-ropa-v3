@@ -1,9 +1,16 @@
-import { api } from './http'
+import simpleApi from './simpleApi'
 
 export interface Cliente {
     id: number
     nombre: string
     apellido: string
+}
+
+export interface Empleado {
+    id: number
+    nombre: string
+    apellido: string
+    usuario: string
 }
 
 export interface Factura {
@@ -13,6 +20,8 @@ export interface Factura {
     total: number
     cliente_id?: number
     cliente?: Cliente
+    empleado_id?: number
+    empleado?: Empleado
     estado: string
     metodo_pago: string
     created_at?: string
@@ -24,6 +33,7 @@ export interface FacturaCreate {
     fecha: string
     total: number
     cliente_id?: number | null
+    empleado_id?: number | null
     metodo_pago: string
     estado?: string
 }
@@ -33,6 +43,7 @@ export interface FacturaUpdate {
     fecha?: string
     total?: number
     cliente_id?: number | null
+    empleado_id?: number | null
     metodo_pago?: string
     estado?: string
 }
@@ -41,16 +52,16 @@ export const facturasAPI = {
     // Obtener todas las facturas
     getFacturas: async (): Promise<Factura[]> => {
         try {
-            const response = await api.get('/facturas')
+            const response = await simpleApi.get('/facturas')
             console.log('📋 Facturas API Response:', response.data)
 
-            // Verificar si la respuesta es un array o un objeto con datos
-            if (Array.isArray(response.data)) {
+            // La API devuelve { success: true, facturas: [...] }
+            if (response.data && response.data.success && Array.isArray(response.data.facturas)) {
+                return response.data.facturas
+            } else if (Array.isArray(response.data)) {
                 return response.data
             } else if (response.data && Array.isArray(response.data.data)) {
                 return response.data.data
-            } else if (response.data && response.data.facturas && Array.isArray(response.data.facturas)) {
-                return response.data.facturas
             } else {
                 console.warn('⚠️ Formato de respuesta inesperado:', response.data)
                 return []
@@ -64,7 +75,7 @@ export const facturasAPI = {
     // Obtener factura por ID
     getFacturaById: async (id: number): Promise<Factura | null> => {
         try {
-            const response = await api.get(`/facturas/${id}`)
+            const response = await simpleApi.get(`/facturas/${id}`)
             return response.data
         } catch (error) {
             console.error('Error obteniendo factura:', error)
@@ -75,7 +86,7 @@ export const facturasAPI = {
     // Crear nueva factura
     createFactura: async (factura: FacturaCreate): Promise<Factura | null> => {
         try {
-            const response = await api.post('/facturas', factura)
+            const response = await simpleApi.post('/facturas', factura)
             return response.data
         } catch (error) {
             console.error('Error creando factura:', error)
@@ -86,7 +97,7 @@ export const facturasAPI = {
     // Actualizar factura
     updateFactura: async (id: number, factura: FacturaUpdate): Promise<Factura | null> => {
         try {
-            const response = await api.put(`/facturas/${id}`, factura)
+            const response = await simpleApi.put(`/facturas/${id}`, factura)
             return response.data
         } catch (error) {
             console.error('Error actualizando factura:', error)
@@ -97,7 +108,7 @@ export const facturasAPI = {
     // Eliminar factura
     deleteFactura: async (id: number): Promise<boolean> => {
         try {
-            await api.delete(`/facturas/${id}`)
+            await simpleApi.delete(`/facturas/${id}`)
             return true
         } catch (error) {
             console.error('Error eliminando factura:', error)
@@ -108,7 +119,7 @@ export const facturasAPI = {
     // Descargar factura en PDF
     downloadFactura: async (id: number): Promise<void> => {
         try {
-            const response = await api.get(`/facturas/${id}/download`, {
+            const response = await simpleApi.get(`/facturas/${id}/download`, {
                 responseType: 'blob'
             })
 

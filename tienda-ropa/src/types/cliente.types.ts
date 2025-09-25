@@ -1,4 +1,4 @@
-// Tipos para el sistema de clientes
+// Tipos para el sistema de clientes (simplificado)
 
 export interface Cliente {
     id_cliente: number;
@@ -21,24 +21,13 @@ export interface LoginResponse {
     success: boolean;
     message: string;
     cliente?: Cliente;
-    token?: string;
 }
 
 export interface RegisterRequest {
-    dni: string;
-    cuit_cuil: string;
-    nombre: string;
-    apellido: string;
-    domicilio: string;
-    telefono: string;
     mail: string;
     password: string;
+    nombre: string;
+    apellido: string;
+    telefono?: string;
+    domicilio?: string;
 }
-
-
-
-
-
-
-
-

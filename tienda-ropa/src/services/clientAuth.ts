@@ -21,12 +21,12 @@ clientAuthAPI.interceptors.response.use(
     }
 );
 
-// Servicios de autenticación para clientes
+// Servicios de autenticación para clientes (simplificado)
 export const clientAuthService = {
     // Login del cliente
     login: async (mail: string, password: string): Promise<LoginResponse> => {
         try {
-            const response = await clientAuthAPI.post('/clientes/auth/login', {
+            const response = await clientAuthAPI.post('/api/clientes/auth/login', {
                 mail,
                 password
             });
@@ -40,7 +40,7 @@ export const clientAuthService = {
     // Registro de nuevo cliente
     register: async (clienteData: RegisterRequest): Promise<LoginResponse> => {
         try {
-            const response = await clientAuthAPI.post('/clientes/auth/register', clienteData);
+            const response = await clientAuthAPI.post('/api/clientes/auth/register', clienteData);
             return response.data;
         } catch (error: any) {
             console.error('Error en registro de cliente:', error);
@@ -48,15 +48,13 @@ export const clientAuthService = {
         }
     },
 
-    // Verificar token del cliente
-    verifyToken: async (token: string): Promise<{ success: boolean; cliente?: Cliente }> => {
+    // Verificar cliente por email (simplificado)
+    verifyClient: async (mail: string): Promise<{ success: boolean; cliente?: Cliente }> => {
         try {
-            const response = await clientAuthAPI.get('/clientes/auth/verify', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await clientAuthAPI.post('/api/clientes/auth/verify', { mail });
             return response.data;
         } catch (error: any) {
-            console.error('Error al verificar token:', error);
+            console.error('Error al verificar cliente:', error);
             return { success: false };
         }
     },
@@ -64,7 +62,7 @@ export const clientAuthService = {
     // Logout del cliente
     logout: async (): Promise<void> => {
         try {
-            await clientAuthAPI.post('/clientes/auth/logout');
+            await clientAuthAPI.post('/api/clientes/auth/logout');
         } catch (error: any) {
             console.error('Error en logout:', error);
         }

@@ -18,7 +18,7 @@ import {
 import { empleadosAPI } from '../services/api'
 import { rolesAPI, type Rol } from '../services/roles'
 import { loguinAPI, type LoguinUser } from '../services/loguin'
-import { useAuth } from '../contexts/AuthContext'
+import { useSimpleAuth } from '../contexts/SimpleAuthContext'
 import { Navigate } from 'react-router-dom'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -58,8 +58,8 @@ interface LoginUserFormData {
 }
 
 const Empleados: React.FC = () => {
-  const { usuario } = useAuth()
-  const isAdmin = usuario?.rol === 'Admin'
+  const { user } = useSimpleAuth()
+  const isAdmin = user?.rol === 'Admin'
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)

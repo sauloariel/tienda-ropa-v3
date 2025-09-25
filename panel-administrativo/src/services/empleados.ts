@@ -1,4 +1,4 @@
-import { api } from './api';
+import simpleApi from './simpleApi';
 
 export type EmpleadoCreate = {
   cuil: string;
@@ -52,7 +52,7 @@ export const empleadosAPI = {
   getAll: async () => {
     try {
       console.log('Attempting to fetch empleados from backend...');
-      const response = await api.get('/empleados');
+      const response = await simpleApi.get('/empleados');
       console.log('Backend empleados response:', response);
       return response;
     } catch (error: any) {
@@ -70,13 +70,13 @@ export const empleadosAPI = {
   // Get employee by ID
   getById: async (id: number) => {
     try {
-      const response = await api.get(`/empleados/${id}`);
+      const response = await simpleApi.get(`/empleados/${id}`);
       return response;
     } catch (error: any) {
       console.log('Backend unavailable, searching offline data...');
       const empleadosOffline = getEmpleadosFromStorage();
       const empleado = empleadosOffline.find(emp => emp.id_empleado === id);
-      
+
       if (empleado) {
         return {
           data: empleado,
@@ -94,26 +94,26 @@ export const empleadosAPI = {
   create: async (data: EmpleadoCreate) => {
     try {
       console.log('Attempting to create empleado in backend...');
-      const response = await api.post('/empleados', data);
+      const response = await simpleApi.post('/empleados', data);
       console.log('Backend create response:', response);
       return response;
     } catch (error: any) {
       console.log('Backend unavailable, saving empleado offline:', error.message);
-      
+
       // Create offline employee
       const nuevoEmpleado: Empleado = {
         ...data,
         id_empleado: generateOfflineId(),
         fecha_creacion: new Date().toISOString()
       };
-      
+
       // Save to local storage
       const empleadosOffline = getEmpleadosFromStorage();
       empleadosOffline.push(nuevoEmpleado);
       saveEmpleadosToStorage(empleadosOffline);
-      
+
       console.log('Empleado saved offline:', nuevoEmpleado);
-      
+
       return {
         data: nuevoEmpleado,
         status: 201,
@@ -126,18 +126,18 @@ export const empleadosAPI = {
   // Update employee
   update: async (id: number, data: Partial<EmpleadoCreate>) => {
     try {
-      const response = await api.put(`/empleados/${id}`, data);
+      const response = await simpleApi.put(`/empleados/${id}`, data);
       return response;
     } catch (error: any) {
       console.log('Backend unavailable, updating offline data...');
-      
+
       const empleadosOffline = getEmpleadosFromStorage();
       const index = empleadosOffline.findIndex(emp => emp.id_empleado === id);
-      
+
       if (index !== -1) {
         empleadosOffline[index] = { ...empleadosOffline[index], ...data };
         saveEmpleadosToStorage(empleadosOffline);
-        
+
         return {
           data: empleadosOffline[index],
           status: 200,
@@ -153,17 +153,17 @@ export const empleadosAPI = {
   // Delete employee
   delete: async (id: number) => {
     try {
-      const response = await api.delete(`/empleados/${id}`);
+      const response = await simpleApi.delete(`/empleados/${id}`);
       return response;
     } catch (error: any) {
       console.log('Backend unavailable, deleting from offline data...');
-      
+
       const empleadosOffline = getEmpleadosFromStorage();
       const filteredEmpleados = empleadosOffline.filter(emp => emp.id_empleado !== id);
-      
+
       if (filteredEmpleados.length < empleadosOffline.length) {
         saveEmpleadosToStorage(filteredEmpleados);
-        
+
         return {
           data: { message: 'Empleado eliminado (Offline Mode)' },
           status: 200,

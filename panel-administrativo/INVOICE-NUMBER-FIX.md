@@ -179,3 +179,6 @@ npm run test-invoice
 
 **🎉 El sistema ahora carga correctamente el número de factura para cada nueva venta!**
 
+
+
+

@@ -3,8 +3,11 @@ import { Op } from "sequelize";
 import { Productos } from "../models/Productos.model";
 import { Categorias } from "../models/Categorias.model";
 import { Proveedores } from "../models/Proveedores.model";
+import { Temporadas } from "../models/Temporadas.model";
 import { ProductoVariante } from "../models/ProductoVariante.model";
 import { Imagenes } from "../models/Imagenes.model";
+import { Colores } from "../models/Color.model";
+import { Tallas } from "../models/Talle.model";
 
 // Crear producto
 export const createProducto = async (req: Request, res: Response) => {
@@ -32,16 +35,24 @@ export const createProducto = async (req: Request, res: Response) => {
 
         const varianteData = {
           id_producto: producto.id_producto,
-          id_talle: parseInt(variante.id_talle),
           id_color: parseInt(variante.id_color),
-          stock: parseInt(variante.stock),
-          precio_venta: variante.precio_venta || producto.precio_venta
+          stock: parseInt(variante.stock)
         };
+
+        // Solo agregar id_talla si existe en la variante
+        if (variante.id_talle && variante.id_talle > 0) {
+          varianteData.id_talla = parseInt(variante.id_talle);
+        }
 
         console.log('📊 Datos de variante a crear:', varianteData);
 
-        const nuevaVariante = await ProductoVariante.create(varianteData);
-        console.log('✅ Variante creada:', nuevaVariante.toJSON());
+        try {
+          const nuevaVariante = await ProductoVariante.create(varianteData);
+          console.log('✅ Variante creada:', nuevaVariante.toJSON());
+        } catch (error) {
+          console.error('❌ Error creando variante:', error.message);
+          // Continuar con la siguiente variante
+        }
       }
     }
 
@@ -87,7 +98,7 @@ export const createProducto = async (req: Request, res: Response) => {
 // Obtener todos los productos con relaciones
 export const getProductos = async (req: Request, res: Response) => {
   try {
-    const { buscar, categoria } = req.query;
+    const { buscar, categoria, incluirInactivos } = req.query;
 
     // Construir condiciones de búsqueda
     const whereConditions: any = {};
@@ -104,17 +115,44 @@ export const getProductos = async (req: Request, res: Response) => {
       };
     }
 
+    // Solo agregar filtro de estado activo si no se solicita incluir inactivos
+    if (incluirInactivos !== 'true') {
+      whereConditions.estado = 'ACTIVO';
+    }
+
     const productos = await Productos.findAll({
-      where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
+      where: whereConditions,
       include: [
         { model: Categorias, as: 'categoria' },
         { model: Proveedores, as: 'proveedor' },
-        { model: Imagenes, as: 'imagenes' }
+        { model: Temporadas, as: 'temporada' },
+        { model: Imagenes, as: 'imagenes' },
+        {
+          model: ProductoVariante,
+          as: 'variantes',
+          attributes: ['id_variante', 'id_producto', 'id_color', 'id_talla', 'stock'],
+          include: [
+            { model: require('../models/Color.model').Colores, as: 'color' },
+            { model: require('../models/Talle.model').Tallas, as: 'talla' }
+          ]
+        }
       ]
     });
 
+    // Calcular stock total basado en variantes para productos que las tengan
+    const productosConStockCalculado = productos.map(producto => {
+      if (producto.variantes && producto.variantes.length > 0) {
+        const stockTotal = producto.variantes.reduce((sum, variante) => sum + (variante.stock || 0), 0);
+        return {
+          ...producto.toJSON(),
+          stock: stockTotal
+        };
+      }
+      return producto.toJSON();
+    });
+
     console.log(`🔍 Búsqueda de productos - Query: "${buscar}", Categoría: ${categoria}, Resultados: ${productos.length}`);
-    res.status(200).json(productos);
+    res.status(200).json(productosConStockCalculado);
   } catch (error: any) {
     console.error("Error al obtener productos", error);
     res.status(500).json({ error: error.message });
@@ -131,6 +169,7 @@ export const getProductoById = async (req: Request, res: Response) => {
         {
           model: ProductoVariante,
           as: 'variantes',
+          attributes: ['id_variante', 'id_producto', 'id_color', 'id_talla', 'stock'],
           include: [
             { model: require('../models/Color.model').Colores, as: 'color' },
             { model: require('../models/Talle.model').Tallas, as: 'talla' }
@@ -140,7 +179,13 @@ export const getProductoById = async (req: Request, res: Response) => {
       ]
     });
     if (producto) {
-      res.status(200).json(producto);
+      // Calcular stock total basado en variantes si las tiene
+      let productoConStock = producto.toJSON();
+      if (producto.variantes && producto.variantes.length > 0) {
+        const stockTotal = producto.variantes.reduce((sum, variante) => sum + (variante.stock || 0), 0);
+        productoConStock.stock = stockTotal;
+      }
+      res.status(200).json(productoConStock);
     } else {
       res.status(404).json({ error: "Producto no encontrado" });
     }
@@ -178,16 +223,24 @@ export const updateProducto = async (req: Request, res: Response) => {
 
           const varianteData = {
             id_producto: producto.id_producto,
-            id_talle: parseInt(variante.id_talle),
             id_color: parseInt(variante.id_color),
-            stock: parseInt(variante.stock),
-            precio_venta: variante.precio_venta || producto.precio_venta
+            stock: parseInt(variante.stock)
           };
+
+          // Solo agregar id_talla si existe en la variante
+          if (variante.id_talle && variante.id_talle > 0) {
+            varianteData.id_talla = parseInt(variante.id_talle);
+          }
 
           console.log('📊 Datos de variante a crear:', varianteData);
 
-          const nuevaVariante = await ProductoVariante.create(varianteData);
-          console.log('✅ Variante creada:', nuevaVariante.toJSON());
+          try {
+            const nuevaVariante = await ProductoVariante.create(varianteData);
+            console.log('✅ Variante creada:', nuevaVariante.toJSON());
+          } catch (error) {
+            console.error('❌ Error creando variante:', error.message);
+            // Continuar con la siguiente variante
+          }
         }
       }
 
@@ -219,8 +272,8 @@ export const updateProducto = async (req: Request, res: Response) => {
             model: ProductoVariante,
             as: 'variantes',
             include: [
-              { model: require('../models/Color.model').Colores, as: 'color' },
-              { model: require('../models/Talle.model').Tallas, as: 'talla' }
+              { model: Colores, as: 'color' },
+              { model: Tallas, as: 'talla' }
             ]
           },
           { model: Imagenes, as: 'imagenes' }

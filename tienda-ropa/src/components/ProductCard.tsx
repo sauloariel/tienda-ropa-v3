@@ -32,6 +32,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
     : [];
   const imagenPrincipal = imagenesProducto.length > 0 ? imagenesProducto[0] : null;
 
+  // Construir la URL completa de la imagen
+  const getImageUrl = (ruta: string) => {
+    if (ruta.startsWith('http')) {
+      return ruta; // URL completa ya
+    }
+    if (ruta.startsWith('/uploads/')) {
+      return `http://localhost:4000${ruta}`; // Agregar el dominio del backend
+    }
+    if (ruta.startsWith('/images/')) {
+      return ruta; // Imágenes locales del frontend
+    }
+    return ruta; // Fallback
+  };
+
   // Obtener el nombre de la categoría
   const nombreCategoria = producto.categoria?.nombre_categoria || 'Sin categoría';
 
@@ -49,9 +63,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         {imagenPrincipal ? (
           <img
-            src={imagenPrincipal.ruta || imagenPrincipal.url}
+            src={getImageUrl(imagenPrincipal.ruta || imagenPrincipal.url || '')}
             alt={producto.descripcion}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              console.error('Error cargando imagen:', imagenPrincipal.ruta);
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200">

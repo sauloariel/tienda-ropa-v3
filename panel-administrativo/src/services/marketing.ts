@@ -1,4 +1,4 @@
-import { api } from './http';
+import simpleApi from './simpleApi';
 
 // Tipos para marketing
 export interface Promocion {
@@ -61,7 +61,7 @@ export const marketingAPI = {
         search?: string;
     }): Promise<Promocion[]> => {
         try {
-            const response = await api.get('/marketing/promociones', { params });
+            const response = await simpleApi.get('/marketing/promociones', { params });
             return response.data;
         } catch (error) {
             console.error('Error obteniendo promociones:', error);
@@ -102,7 +102,7 @@ export const marketingAPI = {
     // Obtener promoción por ID
     getPromocionById: async (id: number): Promise<Promocion> => {
         try {
-            const response = await api.get(`/marketing/promociones/${id}`);
+            const response = await simpleApi.get(`/marketing/promociones/${id}`);
             return response.data;
         } catch (error) {
             console.error('Error obteniendo promoción:', error);
@@ -113,7 +113,7 @@ export const marketingAPI = {
     // Crear nueva promoción
     createPromocion: async (data: CreatePromocionData): Promise<Promocion> => {
         try {
-            const response = await api.post('/marketing/promociones', data);
+            const response = await simpleApi.post('/marketing/promociones', data);
             return response.data;
         } catch (error: any) {
             console.error('Error creando promoción:', error);
@@ -124,7 +124,7 @@ export const marketingAPI = {
     // Actualizar promoción
     updatePromocion: async (id: number, data: Partial<CreatePromocionData>): Promise<Promocion> => {
         try {
-            const response = await api.put(`/marketing/promociones/${id}`, data);
+            const response = await simpleApi.put(`/marketing/promociones/${id}`, data);
             return response.data;
         } catch (error: any) {
             console.error('Error actualizando promoción:', error);
@@ -135,7 +135,7 @@ export const marketingAPI = {
     // Eliminar promoción
     deletePromocion: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/marketing/promociones/${id}`);
+            await simpleApi.delete(`/marketing/promociones/${id}`);
         } catch (error: any) {
             console.error('Error eliminando promoción:', error);
             throw new Error(error.response?.data?.error || 'Error al eliminar la promoción');
@@ -145,7 +145,7 @@ export const marketingAPI = {
     // Cambiar estado de promoción
     togglePromocionEstado: async (id: number, estado: 'ACTIVA' | 'INACTIVA' | 'EXPIRADA'): Promise<Promocion> => {
         try {
-            const response = await api.patch(`/marketing/promociones/${id}/estado`, { estado });
+            const response = await simpleApi.patch(`/marketing/promociones/${id}/estado`, { estado });
             return response.data;
         } catch (error: any) {
             console.error('Error cambiando estado de promoción:', error);
@@ -156,7 +156,7 @@ export const marketingAPI = {
     // Obtener estadísticas de marketing
     getMarketingStats: async (): Promise<MarketingStats> => {
         try {
-            const response = await api.get('/marketing/stats');
+            const response = await simpleApi.get('/marketing/stats');
             return response.data;
         } catch (error) {
             console.error('Error obteniendo estadísticas de marketing:', error);
@@ -175,7 +175,7 @@ export const marketingAPI = {
     // Obtener promociones por vencer
     getPromocionesPorVencer: async (dias: number = 7): Promise<Promocion[]> => {
         try {
-            const response = await api.get(`/marketing/promociones-por-vencer?dias=${dias}`);
+            const response = await simpleApi.get(`/marketing/promociones-por-vencer?dias=${dias}`);
             return response.data;
         } catch (error) {
             console.error('Error obteniendo promociones por vencer:', error);
@@ -186,7 +186,7 @@ export const marketingAPI = {
     // Obtener promociones expiradas
     getPromocionesExpiradas: async (): Promise<Promocion[]> => {
         try {
-            const response = await api.get('/marketing/promociones-expiradas');
+            const response = await simpleApi.get('/marketing/promociones-expiradas');
             return response.data;
         } catch (error) {
             console.error('Error obteniendo promociones expiradas:', error);
@@ -197,7 +197,7 @@ export const marketingAPI = {
     // Validar código de descuento
     validateCodigoDescuento: async (codigo: string, montoCompra?: number): Promise<ValidateCodigoResponse> => {
         try {
-            const response = await api.post('/marketing/validate-codigo', {
+            const response = await simpleApi.post('/marketing/validate-codigo', {
                 codigo,
                 monto_compra: montoCompra
             });
@@ -214,7 +214,7 @@ export const marketingAPI = {
     // Usar código de descuento
     usarCodigoDescuento: async (codigo: string): Promise<void> => {
         try {
-            await api.post('/marketing/usar-codigo', { codigo });
+            await simpleApi.post('/marketing/usar-codigo', { codigo });
         } catch (error: any) {
             console.error('Error usando código de descuento:', error);
             throw new Error(error.response?.data?.error || 'Error al usar el código de descuento');

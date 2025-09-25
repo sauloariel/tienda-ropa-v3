@@ -45,11 +45,35 @@ export const uploadMultipleImagenes = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No se proporcionaron archivos' });
     }
 
-    const { id_producto } = req.body;
+    const { id_producto, replace_existing } = req.body;
     const files = req.files as Express.Multer.File[];
 
     if (!id_producto) {
       return res.status(400).json({ error: 'ID del producto es requerido' });
+    }
+
+    // Si se especifica reemplazar, eliminar imágenes existentes
+    if (replace_existing === 'true') {
+      console.log(`🗑️ Eliminando imágenes existentes del producto ${id_producto}`);
+
+      // Obtener imágenes existentes para eliminar archivos del sistema
+      const imagenesExistentes = await Imagenes.findAll({
+        where: { id_productos: parseInt(id_producto) }
+      });
+
+      // Eliminar archivos del sistema de archivos
+      const fs = require('fs');
+      for (const imagen of imagenesExistentes) {
+        const filePath = path.join(process.cwd(), 'uploads', imagen.nombre_archivo || '');
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️ Archivo eliminado: ${filePath}`);
+        }
+      }
+
+      // Eliminar registros de la base de datos
+      await Imagenes.destroy({ where: { id_productos: parseInt(id_producto) } });
+      console.log(`🗑️ Registros de imágenes eliminados de la base de datos`);
     }
 
     const imagenes = [];

@@ -30,7 +30,10 @@ const Ventas = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await facturasAPI.getFacturas();
+        const response = await facturasAPI.getFacturas();
+        
+        // La API devuelve { success: true, facturas: [...] }
+        const data = response?.facturas || response;
         
         // Asegurar que siempre tengamos un array
         if (Array.isArray(data)) {
@@ -124,14 +127,17 @@ const Ventas = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Ventas</h1>
-          <p className="text-gray-600">Administra y analiza todas las facturas del sistema</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="w-full px-2 py-6 space-y-8">
+        {/* Header Principal */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Gestión de Ventas</h1>
+              <p className="text-lg text-gray-600 mt-2">Administra y analiza todas las facturas del sistema</p>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Mensaje de error */}
       {error && (
@@ -140,208 +146,401 @@ const Ventas = () => {
         </div>
       )}
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <span className="text-2xl">📈</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Total Ventas
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {totalVentas}
-                  </dd>
-                  <dd className="text-sm text-gray-600 mt-1">
-                    Ventas realizadas hoy
-                  </dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Ventas</dt>
+                  <dd className="text-lg font-semibold text-gray-900">{totalVentas}</dd>
                 </dl>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <span className="text-2xl">💰</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Ingresos Totales
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dt className="text-sm font-medium text-gray-500 truncate">Ingresos Totales</dt>
+                  <dd className="text-lg font-semibold text-gray-900">
                     ${(typeof totalIngresos === 'number' ? totalIngresos : 0).toFixed(2)}
-                  </dd>
-                  <dd className="text-sm text-gray-600 mt-1">
-                    Ingresos del día
                   </dd>
                 </dl>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <span className="text-2xl">❌</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Ventas Anuladas
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {ventasAnuladas}
-                  </dd>
-                  <dd className="text-sm text-gray-600 mt-1">
-                    Ventas canceladas
-                  </dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Ventas Anuladas</dt>
+                  <dd className="text-lg font-semibold text-gray-900">{ventasAnuladas}</dd>
                 </dl>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Filtros */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">🔍 Filtros de Búsqueda</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por ID o método de pago..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
+        {/* Filtros y búsqueda */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6 z-30">
+          <div className="px-8 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-lg font-medium text-gray-900">Filtros y Búsqueda</h3>
+            <p className="text-sm text-gray-600 mt-1">Encuentra facturas específicas</p>
+          </div>
+        
+          <div className="p-8">
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Buscar Facturas
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por ID o método de pago..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    aria-label="Buscar facturas"
+                  />
+                </div>
+              </div>
+              
+              <div className="lg:w-64">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtrar por Estado
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                  aria-label="Filtrar por estado"
+                >
+                  <option value="todos">📊 Todos los estados</option>
+                  <option value="activa">🟢 Activa</option>
+                  <option value="pagada">🔵 Pagada</option>
+                  <option value="anulada">🔴 Anulada</option>
+                  <option value="pendiente">🟡 Pendiente</option>
+                </select>
+              </div>
+
+              <div className="lg:w-64">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtrar por Pago
+                </label>
+                <select
+                  value={filterPayment}
+                  onChange={(e) => setFilterPayment(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                  aria-label="Filtrar por método de pago"
+                >
+                  <option value="todos">💳 Todos los métodos</option>
+                  <option value="efectivo">💵 Efectivo</option>
+                  <option value="tarjeta">💳 Tarjeta</option>
+                  <option value="transferencia">🏦 Transferencia</option>
+                  <option value="qr">📱 QR</option>
+                </select>
+              </div>
             </div>
-
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="todos">Todos los estados</option>
-              <option value="activa">Activa</option>
-              <option value="pagada">Pagada</option>
-              <option value="anulada">Anulada</option>
-              <option value="pendiente">Pendiente</option>
-            </select>
-
-            <select
-              value={filterPayment}
-              onChange={(e) => setFilterPayment(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="todos">Todos los métodos</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="qr">QR</option>
-            </select>
-
-            <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              <Filter className="h-4 w-4 mr-2" />
-              Aplicar Filtros
-            </button>
           </div>
         </div>
-      </div>
 
-      {/* Tabla de Ventas */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">📋 Lista de Facturas</h3>
+        {/* Tabla de Ventas */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-lg font-medium text-gray-900">Lista de Facturas</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {filteredFacturas.length} factura{filteredFacturas.length !== 1 ? 's' : ''} encontrada{filteredFacturas.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Número Factura
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Método de Pago
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Factura</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Cliente</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Total</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Pago</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Estado</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Fecha</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredFacturas.map((factura) => (
-                  <tr key={factura.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {factura.numeroFactura}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(factura.fecha)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                      ${(typeof factura.total === 'number' ? factura.total : parseFloat(factura.total) || 0).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentColor(factura.metodo_pago)}`}>
-                        {factura.metodo_pago}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(factura.estado)}`}>
-                        {factura.estado}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedFactura(factura);
-                            setShowModal(true);
-                          }}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Ver Detalles
-                        </button>
-                        
-                        <button
-                          onClick={() => facturasAPI.downloadFactura(factura.id)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <FileText className="h-3 w-3 mr-1" />
-                          Descargar
-                        </button>
+                {filteredFacturas.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center">
+                      <div className="text-gray-500">
+                        <div className="text-lg font-medium mb-2">No se encontraron facturas</div>
+                        <div className="text-sm">Intenta ajustar los filtros de búsqueda</div>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredFacturas.map((factura) => (
+                    <tr key={factura.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            #{factura.id}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate" title={factura.numeroFactura}>
+                            {factura.numeroFactura}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate" title={factura.cliente ? `${factura.cliente.nombre} ${factura.cliente.apellido}` : 'Cliente N/A'}>
+                            {factura.cliente ? `${factura.cliente.nombre} ${factura.cliente.apellido}` : 'Cliente N/A'}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate" title={factura.cliente?.mail || 'Email N/A'}>
+                            {factura.cliente?.mail || 'Email N/A'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="text-sm font-medium text-gray-900 text-right">
+                          ${(typeof factura.total === 'number' ? factura.total : parseFloat(factura.total) || 0).toFixed(2)}
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="text-center">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentColor(factura.metodo_pago)}`}>
+                          {factura.metodo_pago}
+                        </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="text-center">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(factura.estado)}`}>
+                          {factura.estado}
+                        </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="text-sm text-gray-500 text-center">
+                        {formatDate(factura.fecha)}
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="flex items-center justify-center">
+                          <button
+                            onClick={() => {
+                              try {
+                                console.log('Abriendo factura:', factura);
+                                const facturaWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+                                if (facturaWindow) {
+                                  facturaWindow.document.write(`
+                                    <!DOCTYPE html>
+                                    <html>
+                                    <head>
+                                      <title>Factura #${factura.numeroFactura || factura.id}</title>
+                                      <meta charset="UTF-8">
+                                      <style>
+                                        body { 
+                                          font-family: Arial, sans-serif; 
+                                          margin: 20px; 
+                                          background: white; 
+                                          line-height: 1.4;
+                                        }
+                                        .header { 
+                                          text-align: center; 
+                                          border-bottom: 2px solid #333; 
+                                          padding-bottom: 20px; 
+                                          margin-bottom: 30px; 
+                                        }
+                                        .company-info { margin-bottom: 20px; }
+                                        .invoice-details { 
+                                          display: flex; 
+                                          justify-content: space-between; 
+                                          margin-bottom: 30px; 
+                                        }
+                                        .client-info, .invoice-info { width: 45%; }
+                                        .table { 
+                                          width: 100%; 
+                                          border-collapse: collapse; 
+                                          margin-bottom: 30px; 
+                                        }
+                                        .table th, .table td { 
+                                          border: 1px solid #ddd; 
+                                          padding: 12px; 
+                                          text-align: left; 
+                                        }
+                                        .table th { 
+                                          background-color: #f5f5f5; 
+                                          font-weight: bold; 
+                                        }
+                                        .total-section { 
+                                          text-align: right; 
+                                          margin-top: 20px; 
+                                        }
+                                        .total-amount { 
+                                          font-size: 18px; 
+                                          font-weight: bold; 
+                                          color: #333; 
+                                        }
+                                        .status-badge { 
+                                          display: inline-block; 
+                                          padding: 4px 12px; 
+                                          border-radius: 20px; 
+                                          font-size: 12px; 
+                                          font-weight: bold;
+                                          text-transform: uppercase;
+                                        }
+                                        .status-activa { background-color: #d4edda; color: #155724; }
+                                        .status-pagada { background-color: #cce5ff; color: #004085; }
+                                        .status-anulada { background-color: #f8d7da; color: #721c24; }
+                                        .status-pendiente { background-color: #fff3cd; color: #856404; }
+                                        .payment-badge {
+                                          display: inline-block;
+                                          padding: 4px 12px;
+                                          border-radius: 20px;
+                                          font-size: 12px;
+                                          font-weight: bold;
+                                          text-transform: uppercase;
+                                        }
+                                        .payment-efectivo { background-color: #d4edda; color: #155724; }
+                                        .payment-tarjeta { background-color: #cce5ff; color: #004085; }
+                                        .payment-transferencia { background-color: #e2d9f3; color: #6f42c1; }
+                                        .payment-qr { background-color: #ffeaa7; color: #d63031; }
+                                        .no-print { 
+                                          margin-top: 30px; 
+                                          text-align: center; 
+                                        }
+                                        .btn {
+                                          background: #007bff; 
+                                          color: white; 
+                                          border: none; 
+                                          padding: 10px 20px; 
+                                          border-radius: 5px; 
+                                          cursor: pointer; 
+                                          margin: 0 5px;
+                                          font-size: 14px;
+                                        }
+                                        .btn:hover { opacity: 0.8; }
+                                        .btn-secondary { background: #6c757d; }
+                                        .btn-success { background: #28a745; }
+                                        @media print {
+                                          body { margin: 0; }
+                                          .no-print { display: none; }
+                                        }
+                                      </style>
+                                    </head>
+                                    <body>
+                                      <div class="header">
+                                        <h1>FACTURA</h1>
+                                        <div class="company-info">
+                                          <h2>Panel Administrativo v2.0</h2>
+                                          <p>Sistema de Gestión Comercial</p>
+                                        </div>
+                                      </div>
+                                      
+                                      <div class="invoice-details">
+                                        <div class="client-info">
+                                          <h3>Cliente:</h3>
+                                          <p><strong>${factura.cliente ? (factura.cliente.nombre || '') + ' ' + (factura.cliente.apellido || '') : 'Cliente General'}</strong></p>
+                                          ${factura.cliente && factura.cliente.email ? `<p>Email: ${factura.cliente.email}</p>` : ''}
+                                        </div>
+                                        <div class="invoice-info">
+                                          <h3>Datos de la Factura:</h3>
+                                          <p><strong>Número:</strong> ${factura.numeroFactura || 'F' + factura.id}</p>
+                                          <p><strong>Fecha:</strong> ${new Date(factura.fecha).toLocaleDateString('es-ES')}</p>
+                                          <p><strong>Estado:</strong> <span class="status-badge status-${factura.estado}">${factura.estado}</span></p>
+                                          <p><strong>Método de Pago:</strong> <span class="payment-badge payment-${factura.metodo_pago}">${factura.metodo_pago}</span></p>
+                                          ${factura.empleado ? `
+                                            <p><strong>Empleado:</strong> ${factura.empleado.nombre || ''} ${factura.empleado.apellido || ''}</p>
+                                            <p><strong>Usuario:</strong> ${factura.empleado.usuario || 'N/A'}</p>
+                                          ` : `
+                                            <p><strong>Empleado:</strong> No disponible</p>
+                                          `}
+                                        </div>
+                                      </div>
+                                      
+                                      <table class="table">
+                                        <thead>
+                                          <tr>
+                                            <th>Producto</th>
+                                            <th>Cantidad</th>
+                                            <th>Precio Unit.</th>
+                                            <th>Subtotal</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          ${factura.detalles && factura.detalles.length > 0 ? 
+                                            factura.detalles.map(detalle => {
+                                              const subtotal = parseFloat(detalle.subtotal) || 0;
+                                              const cantidad = parseFloat(detalle.cantidad) || 0;
+                                              const precioUnitario = cantidad > 0 ? subtotal / cantidad : 0;
+                                              return `
+                                                <tr>
+                                                  <td>${detalle.producto ? detalle.producto.descripcion : 'Producto'}</td>
+                                                  <td>${cantidad}</td>
+                                                  <td>$${precioUnitario.toFixed(2)}</td>
+                                                  <td>$${subtotal.toFixed(2)}</td>
+                                                </tr>
+                                              `;
+                                            }).join('') : 
+                                            '<tr><td colspan="4" style="text-align: center;">No hay detalles disponibles</td></tr>'
+                                          }
+                                        </tbody>
+                                      </table>
+                                      
+                                      <div class="total-section">
+                                        <p class="total-amount">Total: $${(typeof factura.total === 'number' ? factura.total : parseFloat(factura.total) || 0).toFixed(2)}</p>
+                                      </div>
+                                      
+                                      <div class="no-print">
+                                        <button onclick="window.print()" class="btn">
+                                          🖨️ Imprimir
+                                        </button>
+                                        <button onclick="window.close()" class="btn btn-secondary">
+                                          ❌ Cerrar
+                                        </button>
+                                        <button onclick="window.location.href='/api/facturas/${factura.id}/pdf'" class="btn btn-success">
+                                          📄 Descargar PDF
+                                        </button>
+                                      </div>
+                                    </body>
+                                    </html>
+                                  `);
+                                  facturaWindow.document.close();
+                                  console.log('Factura abierta correctamente');
+                                } else {
+                                  alert('No se pudo abrir la ventana. Verifica que los popups estén habilitados.');
+                                }
+                              } catch (error) {
+                                console.error('Error al abrir la factura:', error);
+                                alert('Error al abrir la factura: ' + error.message);
+                              }
+                            }}
+                            className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
+                            title="Ver e imprimir factura"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
             
-            {filteredFacturas.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No se encontraron facturas con los filtros aplicados</p>
-              </div>
-            )}
           </div>
         </div>
       </div>

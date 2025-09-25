@@ -1,4 +1,4 @@
-import { api } from './api'
+import simpleApi from './simpleApi'
 
 export interface Producto {
     id_producto: number
@@ -114,7 +114,7 @@ export const productosAPI = {
     // Obtener todos los productos con relaciones
     getProductos: async (): Promise<Producto[]> => {
         try {
-            const response = await api.get('/productos')
+            const response = await simpleApi.get('/productos')
             return response.data
         } catch (error) {
             console.error('Error obteniendo productos:', error)
@@ -125,7 +125,7 @@ export const productosAPI = {
     // Obtener producto por ID
     getProductoById: async (id: number): Promise<Producto | null> => {
         try {
-            const response = await api.get(`/productos/${id}`)
+            const response = await simpleApi.get(`/productos/${id}`)
             return response.data
         } catch (error) {
             console.error('Error obteniendo producto:', error)
@@ -136,7 +136,7 @@ export const productosAPI = {
     // Buscar productos
     search: async (query: string): Promise<Producto[]> => {
         try {
-            const response = await api.get(`/productos?buscar=${encodeURIComponent(query)}`)
+            const response = await simpleApi.get(`/productos?buscar=${encodeURIComponent(query)}`)
             return response.data
         } catch (error) {
             console.error('Error buscando productos:', error)
@@ -147,7 +147,7 @@ export const productosAPI = {
     // Crear nuevo producto
     createProducto: async (producto: ProductoCreate): Promise<Producto | null> => {
         try {
-            const response = await api.post('/productos', producto)
+            const response = await simpleApi.post('/productos', producto)
             return response.data
         } catch (error) {
             console.error('Error creando producto:', error)
@@ -158,7 +158,7 @@ export const productosAPI = {
     // Actualizar producto
     updateProducto: async (id: number, producto: ProductoUpdate): Promise<Producto | null> => {
         try {
-            const response = await api.put(`/productos/${id}`, producto)
+            const response = await simpleApi.put(`/productos/${id}`, producto)
             return response.data
         } catch (error) {
             console.error('Error actualizando producto:', error)
@@ -169,7 +169,7 @@ export const productosAPI = {
     // Eliminar producto
     deleteProducto: async (id: number): Promise<boolean> => {
         try {
-            await api.delete(`/productos/${id}`)
+            await simpleApi.delete(`/productos/${id}`)
             return true
         } catch (error) {
             console.error('Error eliminando producto:', error)
@@ -180,7 +180,7 @@ export const productosAPI = {
     // Obtener categorías
     getCategorias: async (): Promise<Categoria[]> => {
         try {
-            const response = await api.get('/productos/categorias/all')
+            const response = await simpleApi.get('/productos/categorias/all')
             return response.data
         } catch (error) {
             console.error('Error obteniendo categorías:', error)
@@ -191,7 +191,7 @@ export const productosAPI = {
     // Crear categoría
     createCategoria: async (categoriaData: Omit<Categoria, 'id_categoria'>): Promise<Categoria> => {
         try {
-            const response = await api.post('/productos/categorias', categoriaData)
+            const response = await simpleApi.post('/productos/categorias', categoriaData)
             return response.data
         } catch (error) {
             console.error('Error creando categoría:', error)
@@ -202,7 +202,7 @@ export const productosAPI = {
     // Actualizar categoría
     updateCategoria: async (id: number, categoriaData: Partial<Categoria>): Promise<Categoria> => {
         try {
-            const response = await api.put(`/productos/categorias/${id}`, categoriaData)
+            const response = await simpleApi.put(`/productos/categorias/${id}`, categoriaData)
             return response.data
         } catch (error) {
             console.error('Error actualizando categoría:', error)
@@ -213,7 +213,7 @@ export const productosAPI = {
     // Eliminar categoría
     deleteCategoria: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/productos/categorias/${id}`)
+            await simpleApi.delete(`/productos/categorias/${id}`)
         } catch (error) {
             console.error('Error eliminando categoría:', error)
             throw error
@@ -223,7 +223,7 @@ export const productosAPI = {
     // Crear proveedor
     createProveedor: async (proveedorData: Omit<Proveedor, 'id_proveedor'>): Promise<Proveedor> => {
         try {
-            const response = await api.post('/proveedores', proveedorData)
+            const response = await simpleApi.post('/proveedores', proveedorData)
             return response.data
         } catch (error) {
             console.error('Error creando proveedor:', error)
@@ -234,7 +234,7 @@ export const productosAPI = {
     // Actualizar proveedor
     updateProveedor: async (id: number, proveedorData: Partial<Proveedor>): Promise<Proveedor> => {
         try {
-            const response = await api.put(`/proveedores/${id}`, proveedorData)
+            const response = await simpleApi.put(`/proveedores/${id}`, proveedorData)
             return response.data
         } catch (error) {
             console.error('Error actualizando proveedor:', error)
@@ -245,7 +245,7 @@ export const productosAPI = {
     // Eliminar proveedor
     deleteProveedor: async (id: number): Promise<void> => {
         try {
-            await api.delete(`/proveedores/${id}`)
+            await simpleApi.delete(`/proveedores/${id}`)
         } catch (error) {
             console.error('Error eliminando proveedor:', error)
             throw error
@@ -255,7 +255,7 @@ export const productosAPI = {
     // Obtener proveedores
     getProveedores: async (): Promise<Proveedor[]> => {
         try {
-            const response = await api.get('/proveedores')
+            const response = await simpleApi.get('/proveedores')
             return response.data
         } catch (error) {
             console.error('Error obteniendo proveedores:', error)
@@ -266,7 +266,7 @@ export const productosAPI = {
     // Obtener colores
     getColores: async (): Promise<Color[]> => {
         try {
-            const response = await api.get('/colores')
+            const response = await simpleApi.get('/colores')
             return response.data
         } catch (error) {
             console.error('Error obteniendo colores:', error)
@@ -277,7 +277,7 @@ export const productosAPI = {
     // Obtener tipos de talla
     getTiposTalle: async (): Promise<TipoTalle[]> => {
         try {
-            const response = await api.get('/tipo-talle')
+            const response = await simpleApi.get('/tipo-talle')
             return response.data
         } catch (error) {
             console.error('Error obteniendo tipos de talla:', error)
@@ -288,7 +288,7 @@ export const productosAPI = {
     // Obtener tallas
     getTallas: async (): Promise<Talla[]> => {
         try {
-            const response = await api.get('/tallas')
+            const response = await simpleApi.get('/tallas')
             return response.data
         } catch (error) {
             console.error('Error obteniendo tallas:', error)
@@ -310,7 +310,7 @@ export const productosAPI = {
     // Obtener imágenes
     getImagenes: async (): Promise<Imagen[]> => {
         try {
-            const response = await api.get('/imagenes')
+            const response = await simpleApi.get('/imagenes')
             return response.data
         } catch (error) {
             console.error('Error obteniendo imágenes:', error)

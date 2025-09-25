@@ -234,3 +234,6 @@ npm run dev
 
 **🎉 El POS refactorizado está listo para producción con todas las mejoras implementadas!**
 
+
+
+

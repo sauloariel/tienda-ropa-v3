@@ -2,6 +2,7 @@ import { Table, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, Belongs
 import { Model } from 'sequelize-typescript';
 import Clientes from './Clientes.model';
 import DetalleFactura from './DetalleFactura.model';
+import Empleados from './Empleados.model';
 
 @Table({ tableName: 'facturas', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' })
 export class Factura extends Model {
@@ -25,6 +26,13 @@ export class Factura extends Model {
 
     @BelongsTo(() => Clientes)
     cliente?: Clientes;
+
+    @ForeignKey(() => Empleados)
+    @Column(DataType.INTEGER)
+    id_empleado?: number;
+
+    @BelongsTo(() => Empleados)
+    empleado?: Empleados;
 
     @Column(DataType.STRING(20))
     estado!: string; // 'activa', 'anulada'

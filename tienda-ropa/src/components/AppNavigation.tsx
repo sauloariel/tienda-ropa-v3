@@ -3,9 +3,14 @@ import React from 'react';
 interface AppNavigationProps {
   currentView: 'tienda' | 'pos' | 'seguimiento';
   onViewChange: (view: 'tienda' | 'pos' | 'seguimiento') => void;
+  isAuthenticated?: boolean;
+  userInfo?: {
+    nombre: string;
+    apellido: string;
+  };
 }
 
-const AppNavigation: React.FC<AppNavigationProps> = ({ currentView, onViewChange }) => {
+const AppNavigation: React.FC<AppNavigationProps> = ({ currentView, onViewChange, isAuthenticated = false, userInfo }) => {
   return (
     <div className="bg-white shadow-md border-b border-gray-200">
       <div className="container mx-auto px-4">
@@ -14,8 +19,17 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ currentView, onViewChange
           <div className="flex items-center space-x-3">
             <div className="text-2xl">🏪</div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Supermercado</h1>
-              <p className="text-sm text-gray-600">Sistema de Gestión</p>
+              {isAuthenticated && userInfo ? (
+                <>
+                  <h1 className="text-xl font-bold text-gray-900">Panel de Cliente</h1>
+                  <p className="text-sm text-gray-600">Bienvenido, {userInfo.nombre} {userInfo.apellido}</p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-xl font-bold text-gray-900">Supermercado</h1>
+                  <p className="text-sm text-gray-600">Sistema de Gestión</p>
+                </>
+              )}
             </div>
           </div>
 
@@ -40,7 +54,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ currentView, onViewChange
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              💰 Sistema POS
+              {isAuthenticated ? '👤 Mi Panel' : '🔐 Iniciar Sesión'}
             </button>
 
             <button

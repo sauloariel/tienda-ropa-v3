@@ -9,163 +9,44 @@ import { Op } from 'sequelize';
 // Estadísticas generales del dashboard
 export const getEstadisticasGenerales = async (req: Request, res: Response) => {
     try {
-        const { periodo = '30' } = req.query;
-        const dias = parseInt(periodo as string);
-        const fechaLimite = new Date();
-        fechaLimite.setDate(fechaLimite.getDate() - dias);
+        console.log('🔍 Iniciando consulta de estadísticas generales...');
 
-        // Obtener estadísticas del período actual
-        const [
-            ventasActuales,
-            clientesNuevos,
-            productosVendidos,
-            pedidosCompletados
-        ] = await Promise.all([
-            // Ventas totales del período
-            DetallePedidos.findAll({
-                include: [{
-                    model: Pedidos,
-                    where: {
-                        fecha_pedido: { [Op.gte]: fechaLimite },
-                        estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
-                    },
-                    attributes: []
-                }],
-                attributes: [
-                    [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'total']
-                ]
-            }),
+        // Primero probar una consulta simple
+        const totalPedidos = await Pedidos.count();
+        console.log('✅ Total de pedidos:', totalPedidos);
 
-            // Clientes nuevos del período
-            Pedidos.count({
-                where: {
-                    fecha_pedido: { [Op.gte]: fechaLimite }
-                },
-                distinct: true,
-                col: 'id_cliente'
-            }),
+        const totalProductos = await Productos.count();
+        console.log('✅ Total de productos:', totalProductos);
 
-            // Productos vendidos del período
-            DetallePedidos.findAll({
-                include: [{
-                    model: Pedidos,
-                    where: {
-                        fecha_pedido: { [Op.gte]: fechaLimite },
-                        estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
-                    },
-                    attributes: []
-                }],
-                attributes: [
-                    [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('cantidad')), 'total']
-                ]
-            }),
+        const totalClientes = await Clientes.count();
+        console.log('✅ Total de clientes:', totalClientes);
 
-            // Pedidos completados del período
-            Pedidos.count({
-                where: {
-                    fecha_pedido: { [Op.gte]: fechaLimite },
-                    estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
-                }
-            })
-        ]);
+        const totalDetallePedidos = await DetallePedidos.count();
+        console.log('✅ Total de detalles de pedidos:', totalDetallePedidos);
 
-        // Obtener estadísticas del período anterior para comparación
-        const fechaLimiteAnterior = new Date(fechaLimite);
-        fechaLimiteAnterior.setDate(fechaLimiteAnterior.getDate() - dias);
-
-        const [
-            ventasAnteriores,
-            clientesAnteriores,
-            productosAnteriores,
-            pedidosAnteriores
-        ] = await Promise.all([
-            DetallePedidos.findAll({
-                include: [{
-                    model: Pedidos,
-                    where: {
-                        fecha_pedido: {
-                            [Op.and]: [
-                                { [Op.gte]: fechaLimiteAnterior },
-                                { [Op.lt]: fechaLimite }
-                            ]
-                        },
-                        estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
-                    },
-                    attributes: []
-                }],
-                attributes: [
-                    [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'total']
-                ]
-            }),
-
-            Pedidos.count({
-                where: {
-                    fecha_pedido: {
-                        [Op.and]: [
-                            { [Op.gte]: fechaLimiteAnterior },
-                            { [Op.lt]: fechaLimite }
-                        ]
-                    }
-                },
-                distinct: true,
-                col: 'id_cliente'
-            }),
-
-            DetallePedidos.findAll({
-                include: [{
-                    model: Pedidos,
-                    where: {
-                        fecha_pedido: {
-                            [Op.and]: [
-                                { [Op.gte]: fechaLimiteAnterior },
-                                { [Op.lt]: fechaLimite }
-                            ]
-                        },
-                        estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
-                    },
-                    attributes: []
-                }],
-                attributes: [
-                    [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('cantidad')), 'total']
-                ]
-            }),
-
-            Pedidos.count({
-                where: {
-                    fecha_pedido: {
-                        [Op.and]: [
-                            { [Op.gte]: fechaLimiteAnterior },
-                            { [Op.lt]: fechaLimite }
-                        ]
-                    },
-                    estado: { [Op.in]: ['COMPLETADO', 'ENTREGADO'] }
-                }
-            })
-        ]);
-
-        // Calcular valores y cambios porcentuales
-        const ventasTotales = parseFloat(ventasActuales[0]?.getDataValue('total') || '0');
-        const ventasAnterior = parseFloat(ventasAnteriores[0]?.getDataValue('total') || '0');
-        const cambioVentas = ventasAnterior > 0 ? ((ventasTotales - ventasAnterior) / ventasAnterior) * 100 : 0;
-
-        const cambioClientes = clientesAnteriores > 0 ? ((clientesNuevos - clientesAnteriores) / clientesAnteriores) * 100 : 0;
-        const cambioProductos = productosAnteriores[0]?.getDataValue('total') > 0 ?
-            ((parseFloat(productosVendidos[0]?.getDataValue('total') || '0') - parseFloat(productosAnteriores[0]?.getDataValue('total') || '0')) / parseFloat(productosAnteriores[0]?.getDataValue('total') || '1')) * 100 : 0;
-        const cambioPedidos = pedidosAnteriores > 0 ? ((pedidosCompletados - pedidosAnteriores) / pedidosAnteriores) * 100 : 0;
-
+        // Retornar datos básicos por ahora
         res.json({
-            ventasTotales,
-            clientesNuevos,
-            productosVendidos: parseFloat(productosVendidos[0]?.getDataValue('total') || '0'),
-            pedidosCompletados,
-            cambioVentas: Math.round(cambioVentas * 100) / 100,
-            cambioClientes: Math.round(cambioClientes * 100) / 100,
-            cambioProductos: Math.round(cambioProductos * 100) / 100,
-            cambioPedidos: Math.round(cambioPedidos * 100) / 100
+            ventasTotales: 0,
+            clientesNuevos: totalClientes,
+            productosVendidos: totalDetallePedidos,
+            pedidosCompletados: totalPedidos,
+            cambioVentas: 0,
+            cambioClientes: 0,
+            cambioProductos: 0,
+            cambioPedidos: 0,
+            debug: {
+                totalPedidos,
+                totalProductos,
+                totalClientes,
+                totalDetallePedidos
+            }
         });
     } catch (error) {
-        console.error('Error obteniendo estadísticas generales:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        console.error('❌ Error obteniendo estadísticas generales:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            details: error instanceof Error ? error.message : 'Error desconocido'
+        });
     }
 };
 
@@ -185,7 +66,9 @@ export const getVentasMensuales = async (req: Request, res: Response) => {
             }],
             attributes: [
                 [DetallePedidos.sequelize.fn('DATE_FORMAT', DetallePedidos.sequelize.col('Pedido.fecha_pedido'), '%Y-%m'), 'mes'],
-                [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'ventas'],
+                [DetallePedidos.sequelize.fn('SUM',
+                    DetallePedidos.sequelize.literal('(precio_venta * cantidad) - COALESCE(descuento, 0)')
+                ), 'ventas'],
                 [DetallePedidos.sequelize.fn('COUNT', DetallePedidos.sequelize.col('Pedido.id_pedido')), 'pedidos']
             ],
             group: [DetallePedidos.sequelize.fn('DATE_FORMAT', DetallePedidos.sequelize.col('Pedido.fecha_pedido'), '%Y-%m')],
@@ -281,10 +164,14 @@ export const getCategoriasTopVentas = async (req: Request, res: Response) => {
                 attributes: []
             }],
             attributes: [
-                [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'ventas']
+                [DetallePedidos.sequelize.fn('SUM',
+                    DetallePedidos.sequelize.literal('(precio_venta * cantidad) - COALESCE(descuento, 0)')
+                ), 'ventas']
             ],
             group: ['producto.categoria.id_categoria'],
-            order: [[DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'DESC']],
+            order: [[DetallePedidos.sequelize.fn('SUM',
+                DetallePedidos.sequelize.literal('(precio_venta * cantidad) - COALESCE(descuento, 0)')
+            ), 'DESC']],
             limit: numLimite
         });
 
@@ -438,7 +325,9 @@ export const getResumenFinanciero = async (req: Request, res: Response) => {
                 attributes: []
             }],
             attributes: [
-                [DetallePedidos.sequelize.fn('SUM', DetallePedidos.sequelize.col('subtotal')), 'total']
+                [DetallePedidos.sequelize.fn('SUM',
+                    DetallePedidos.sequelize.literal('(precio_venta * cantidad) - COALESCE(descuento, 0)')
+                ), 'total']
             ]
         });
 

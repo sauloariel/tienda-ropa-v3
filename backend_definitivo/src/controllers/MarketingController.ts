@@ -1,33 +1,54 @@
 import { Request, Response } from 'express';
-import { Promociones } from '../models/Promociones.model';
-import { Op } from 'sequelize';
+import { QueryTypes } from 'sequelize';
+import db from '../config/db';
 
 // Obtener todas las promociones
 export const getPromociones = async (req: Request, res: Response) => {
     try {
         const { estado, tipo, search } = req.query;
 
-        const whereClause: any = {};
+        let whereConditions = '1=1';
+        const replacements: any = {};
 
         if (estado && estado !== 'TODOS') {
-            whereClause.estado = estado;
+            whereConditions += ' AND estado = :estado';
+            replacements.estado = estado;
         }
 
         if (tipo && tipo !== 'TODOS') {
-            whereClause.tipo = tipo;
+            whereConditions += ' AND tipo = :tipo';
+            replacements.tipo = tipo;
         }
 
         if (search) {
-            whereClause[Op.or] = [
-                { nombre: { [Op.iLike]: `%${search}%` } },
-                { descripcion: { [Op.iLike]: `%${search}%` } },
-                { codigo_descuento: { [Op.iLike]: `%${search}%` } }
-            ];
+            whereConditions += ' AND (nombre ILIKE :search OR descripcion ILIKE :search OR codigo_descuento ILIKE :search)';
+            replacements.search = `%${search}%`;
         }
 
-        const promociones = await Promociones.findAll({
-            where: whereClause,
-            order: [['fecha_inicio', 'DESC']]
+        const query = `
+            SELECT 
+                id_promocion,
+                nombre,
+                descripcion,
+                tipo,
+                valor,
+                codigo_descuento,
+                fecha_inicio,
+                fecha_fin,
+                minimo_compra,
+                uso_maximo,
+                uso_actual,
+                estado,
+                created_at,
+                updated_at
+            FROM promociones 
+            WHERE ${whereConditions}
+            ORDER BY fecha_inicio DESC
+        `;
+
+        const promociones = await db.query(query, {
+            replacements,
+            type: QueryTypes.SELECT
         });
 
         res.json(promociones);
@@ -42,13 +63,36 @@ export const getPromocionById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        const promocion = await Promociones.findByPk(id);
+        const query = `
+            SELECT 
+                id_promocion,
+                nombre,
+                descripcion,
+                tipo,
+                valor,
+                codigo_descuento,
+                fecha_inicio,
+                fecha_fin,
+                minimo_compra,
+                uso_maximo,
+                uso_actual,
+                estado,
+                created_at,
+                updated_at
+            FROM promociones 
+            WHERE id_promocion = :id
+        `;
 
-        if (!promocion) {
+        const promociones = await db.query(query, {
+            replacements: { id },
+            type: QueryTypes.SELECT
+        });
+
+        if (promociones.length === 0) {
             return res.status(404).json({ error: 'Promoción no encontrada' });
         }
 
-        res.json(promocion);
+        res.json(promociones[0]);
     } catch (error) {
         console.error('Error obteniendo promoción:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -71,7 +115,7 @@ export const createPromocion = async (req: Request, res: Response) => {
             estado = 'ACTIVA'
         } = req.body;
 
-        // Validaciones
+        // Validaciones básicas
         if (!nombre || !tipo || !valor || !fecha_inicio || !fecha_fin) {
             return res.status(400).json({
                 error: 'Faltan campos requeridos: nombre, tipo, valor, fecha_inicio, fecha_fin'
@@ -101,21 +145,35 @@ export const createPromocion = async (req: Request, res: Response) => {
             });
         }
 
-        const promocion = await Promociones.create({
-            nombre,
-            descripcion,
-            tipo,
-            valor,
-            codigo_descuento,
-            fecha_inicio,
-            fecha_fin,
-            minimo_compra,
-            uso_maximo,
-            uso_actual: 0,
-            estado
+        const query = `
+            INSERT INTO promociones (
+                nombre, descripcion, tipo, valor, codigo_descuento,
+                fecha_inicio, fecha_fin, minimo_compra, uso_maximo,
+                uso_actual, estado, created_at, updated_at
+            ) VALUES (
+                :nombre, :descripcion, :tipo, :valor, :codigo_descuento,
+                :fecha_inicio, :fecha_fin, :minimo_compra, :uso_maximo,
+                0, :estado, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) RETURNING *
+        `;
+
+        const result = await db.query(query, {
+            replacements: {
+                nombre,
+                descripcion,
+                tipo,
+                valor,
+                codigo_descuento,
+                fecha_inicio,
+                fecha_fin,
+                minimo_compra,
+                uso_maximo,
+                estado
+            },
+            type: QueryTypes.INSERT
         });
 
-        res.status(201).json(promocion);
+        res.status(201).json(result[0][0]);
     } catch (error) {
         console.error('Error creando promoción:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -128,16 +186,23 @@ export const updatePromocion = async (req: Request, res: Response) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        const promocion = await Promociones.findByPk(id);
+        // Verificar que la promoción existe
+        const checkQuery = 'SELECT * FROM promociones WHERE id_promocion = :id';
+        const existingPromocion = await db.query(checkQuery, {
+            replacements: { id },
+            type: QueryTypes.SELECT
+        });
 
-        if (!promocion) {
+        if (existingPromocion.length === 0) {
             return res.status(404).json({ error: 'Promoción no encontrada' });
         }
 
+        const existing = existingPromocion[0] as any;
+
         // Validar fechas si se están actualizando
         if (updateData.fecha_inicio || updateData.fecha_fin) {
-            const inicio = new Date(updateData.fecha_inicio || promocion.fecha_inicio);
-            const fin = new Date(updateData.fecha_fin || promocion.fecha_fin);
+            const inicio = new Date(updateData.fecha_inicio || existing.fecha_inicio);
+            const fin = new Date(updateData.fecha_fin || existing.fecha_fin);
 
             if (inicio >= fin) {
                 return res.status(400).json({
@@ -146,9 +211,54 @@ export const updatePromocion = async (req: Request, res: Response) => {
             }
         }
 
-        await promocion.update(updateData);
+        // Validar valor según tipo si se está actualizando
+        if (updateData.tipo || updateData.valor !== undefined) {
+            const tipo = updateData.tipo || existing.tipo;
+            const valor = updateData.valor !== undefined ? updateData.valor : existing.valor;
 
-        res.json(promocion);
+            if (tipo === 'PORCENTAJE' && (valor < 0 || valor > 100)) {
+                return res.status(400).json({
+                    error: 'El porcentaje debe estar entre 0 y 100'
+                });
+            }
+
+            if (tipo === 'MONTO_FIJO' && valor < 0) {
+                return res.status(400).json({
+                    error: 'El monto fijo debe ser mayor a 0'
+                });
+            }
+        }
+
+        // Construir query de actualización dinámicamente
+        const updateFields = [];
+        const replacements: any = { id };
+
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] !== undefined) {
+                updateFields.push(`${key} = :${key}`);
+                replacements[key] = updateData[key];
+            }
+        });
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ error: 'No hay campos para actualizar' });
+        }
+
+        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+
+        const updateQuery = `
+            UPDATE promociones 
+            SET ${updateFields.join(', ')}
+            WHERE id_promocion = :id
+            RETURNING *
+        `;
+
+        const result = await db.query(updateQuery, {
+            replacements,
+            type: QueryTypes.UPDATE
+        });
+
+        res.json((result as any)[0][0]);
     } catch (error) {
         console.error('Error actualizando promoción:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -160,13 +270,15 @@ export const deletePromocion = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        const promocion = await Promociones.findByPk(id);
+        const query = 'DELETE FROM promociones WHERE id_promocion = :id RETURNING *';
+        const result = await db.query(query, {
+            replacements: { id },
+            type: QueryTypes.DELETE
+        });
 
-        if (!promocion) {
+        if ((result as any)[0].length === 0) {
             return res.status(404).json({ error: 'Promoción no encontrada' });
         }
-
-        await promocion.destroy();
 
         res.json({ message: 'Promoción eliminada exitosamente' });
     } catch (error) {
@@ -181,15 +293,23 @@ export const togglePromocionEstado = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { estado } = req.body;
 
-        const promocion = await Promociones.findByPk(id);
+        const query = `
+            UPDATE promociones 
+            SET estado = :estado, updated_at = CURRENT_TIMESTAMP
+            WHERE id_promocion = :id
+            RETURNING *
+        `;
 
-        if (!promocion) {
+        const result = await db.query(query, {
+            replacements: { id, estado },
+            type: QueryTypes.UPDATE
+        });
+
+        if ((result as any)[0].length === 0) {
             return res.status(404).json({ error: 'Promoción no encontrada' });
         }
 
-        await promocion.update({ estado });
-
-        res.json(promocion);
+        res.json((result as any)[0][0]);
     } catch (error) {
         console.error('Error cambiando estado de promoción:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -199,41 +319,22 @@ export const togglePromocionEstado = async (req: Request, res: Response) => {
 // Obtener estadísticas de marketing
 export const getMarketingStats = async (req: Request, res: Response) => {
     try {
-        const [
-            total_promociones,
-            promociones_activas,
-            promociones_inactivas,
-            promociones_expiradas,
-            total_uso
-        ] = await Promise.all([
-            Promociones.count(),
-            Promociones.count({ where: { estado: 'ACTIVA' } }),
-            Promociones.count({ where: { estado: 'INACTIVA' } }),
-            Promociones.count({ where: { estado: 'EXPIRADA' } }),
-            Promociones.sum('uso_actual')
-        ]);
+        const query = `
+            SELECT 
+                COUNT(*) as total_promociones,
+                COUNT(CASE WHEN estado = 'ACTIVA' THEN 1 END) as promociones_activas,
+                COUNT(CASE WHEN estado = 'INACTIVA' THEN 1 END) as promociones_inactivas,
+                COUNT(CASE WHEN estado = 'EXPIRADA' THEN 1 END) as promociones_expiradas,
+                COUNT(CASE WHEN estado = 'ACTIVA' AND fecha_fin BETWEEN NOW() AND NOW() + INTERVAL '7 days' THEN 1 END) as promociones_por_vencer,
+                COALESCE(SUM(uso_actual), 0) as total_uso
+            FROM promociones
+        `;
 
-        // Promociones por vencer (próximos 7 días)
-        const fechaLimite = new Date();
-        fechaLimite.setDate(fechaLimite.getDate() + 7);
-
-        const promociones_por_vencer = await Promociones.count({
-            where: {
-                fecha_fin: {
-                    [Op.between]: [new Date(), fechaLimite]
-                },
-                estado: 'ACTIVA'
-            }
+        const result = await db.query(query, {
+            type: QueryTypes.SELECT
         });
 
-        res.json({
-            total_promociones,
-            promociones_activas,
-            promociones_inactivas,
-            promociones_expiradas,
-            promociones_por_vencer,
-            total_uso: total_uso || 0
-        });
+        res.json(result[0]);
     } catch (error) {
         console.error('Error obteniendo estadísticas de marketing:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -244,17 +345,16 @@ export const getMarketingStats = async (req: Request, res: Response) => {
 export const getPromocionesPorVencer = async (req: Request, res: Response) => {
     try {
         const { dias = 7 } = req.query;
-        const fechaLimite = new Date();
-        fechaLimite.setDate(fechaLimite.getDate() + parseInt(dias as string));
 
-        const promociones = await Promociones.findAll({
-            where: {
-                fecha_fin: {
-                    [Op.between]: [new Date(), fechaLimite]
-                },
-                estado: 'ACTIVA'
-            },
-            order: [['fecha_fin', 'ASC']]
+        const query = `
+            SELECT * FROM promociones 
+            WHERE estado = 'ACTIVA' 
+            AND fecha_fin BETWEEN NOW() AND NOW() + INTERVAL '${dias} days'
+            ORDER BY fecha_fin ASC
+        `;
+
+        const promociones = await db.query(query, {
+            type: QueryTypes.SELECT
         });
 
         res.json(promociones);
@@ -267,14 +367,15 @@ export const getPromocionesPorVencer = async (req: Request, res: Response) => {
 // Obtener promociones expiradas
 export const getPromocionesExpiradas = async (req: Request, res: Response) => {
     try {
-        const promociones = await Promociones.findAll({
-            where: {
-                fecha_fin: {
-                    [Op.lt]: new Date()
-                },
-                estado: 'ACTIVA'
-            },
-            order: [['fecha_fin', 'DESC']]
+        const query = `
+            SELECT * FROM promociones 
+            WHERE estado = 'ACTIVA' 
+            AND fecha_fin < NOW()
+            ORDER BY fecha_fin DESC
+        `;
+
+        const promociones = await db.query(query, {
+            type: QueryTypes.SELECT
         });
 
         res.json(promociones);
@@ -293,21 +394,27 @@ export const validateCodigoDescuento = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Código de descuento requerido' });
         }
 
-        const promocion = await Promociones.findOne({
-            where: {
-                codigo_descuento: codigo,
-                estado: 'ACTIVA',
-                fecha_inicio: { [Op.lte]: new Date() },
-                fecha_fin: { [Op.gte]: new Date() }
-            }
+        const query = `
+            SELECT * FROM promociones 
+            WHERE codigo_descuento = :codigo
+            AND estado = 'ACTIVA'
+            AND fecha_inicio <= NOW()
+            AND fecha_fin >= NOW()
+        `;
+
+        const promociones = await db.query(query, {
+            replacements: { codigo },
+            type: QueryTypes.SELECT
         });
 
-        if (!promocion) {
+        if (promociones.length === 0) {
             return res.status(404).json({
                 valid: false,
                 error: 'Código de descuento no válido o expirado'
             });
         }
+
+        const promocion = promociones[0] as any;
 
         // Verificar monto mínimo si aplica
         if (promocion.minimo_compra && monto_compra < promocion.minimo_compra) {
@@ -340,7 +447,7 @@ export const validateCodigoDescuento = async (req: Request, res: Response) => {
                 nombre: promocion.nombre,
                 tipo: promocion.tipo,
                 valor: promocion.valor,
-                descuento: Math.min(descuento, monto_compra) // No puede ser mayor al monto de compra
+                descuento: Math.min(descuento, monto_compra)
             }
         });
     } catch (error) {
@@ -354,18 +461,21 @@ export const usarCodigoDescuento = async (req: Request, res: Response) => {
     try {
         const { codigo } = req.body;
 
-        const promocion = await Promociones.findOne({
-            where: { codigo_descuento: codigo }
+        const query = `
+            UPDATE promociones 
+            SET uso_actual = uso_actual + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE codigo_descuento = :codigo
+            RETURNING *
+        `;
+
+        const result = await db.query(query, {
+            replacements: { codigo },
+            type: QueryTypes.UPDATE
         });
 
-        if (!promocion) {
+        if ((result as any)[0].length === 0) {
             return res.status(404).json({ error: 'Código de descuento no encontrado' });
         }
-
-        // Incrementar uso actual
-        await promocion.update({
-            uso_actual: promocion.uso_actual + 1
-        });
 
         res.json({ message: 'Código de descuento utilizado exitosamente' });
     } catch (error) {

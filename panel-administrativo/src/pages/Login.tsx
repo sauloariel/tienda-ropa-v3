@@ -1,19 +1,42 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSimpleAuth } from '../contexts/SimpleAuthContext';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useSimpleAuth();
+  const navigate = useNavigate();
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr(''); setLoading(true);
-    try { await login(usuario, password); }
-    catch (e:any){ setErr(e.message ?? 'Error de login'); }
-    finally { setLoading(false); }
+    setErr(''); 
+    setLoading(true);
+    
+    try { 
+      const result = await login(usuario, password);
+      if (result.success) {
+        // El useEffect se encargará de la redirección
+        console.log('✅ Login exitoso, redirigiendo...');
+      } else {
+        setErr(result.message || 'Error de login');
+      }
+    }
+    catch (e: any) { 
+      setErr(e.message ?? 'Error de login'); 
+    }
+    finally { 
+      setLoading(false); 
+    }
   };
 
   return (

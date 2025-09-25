@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { productosAPI, categoriasAPI } from '../services/api';
 import { crearFactura } from '../services/facturaService';
+import { parsePrice } from '../utils/priceUtils';
 import { useDebounce } from '../hooks/useDebounce';
 import { formatCurrency, formatNumber, validateStock } from '../config/api';
 import type { Producto, Categoria } from '../types/productos.types';
@@ -147,7 +148,7 @@ const POS: React.FC = () => {
       setCart(prev => [...prev, {
         producto,
         cantidad: 1,
-        precioUnitario: producto.precio_venta
+        precioUnitario: parsePrice(producto.precio_venta)
       }]);
     }
 
@@ -291,7 +292,7 @@ const POS: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Cargando sistema POS...</p>
+          <p className="text-gray-600 text-lg">Cargando sistema de inicio de sesión...</p>
         </div>
       </div>
     );
@@ -320,7 +321,7 @@ const POS: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold flex items-center gap-3">
-                🏪 Sistema POS
+                🔐 Iniciar Sesión
                 <Receipt className="w-10 h-10" />
               </h1>
               <p className="text-blue-100 text-lg mt-2">Punto de Venta con Facturación Integrada</p>
@@ -760,4 +761,6 @@ const POS: React.FC = () => {
 };
 
 export default POS;
+
+
 

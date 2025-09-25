@@ -14,15 +14,15 @@ import {
   DollarSign,
   Receipt,
   Key,
-  Tag
+  Tag,
+  Settings
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { obtenerPermisosRol } from '../types/auth.types';
+import { useSimpleAuth } from '../contexts/SimpleAuthContext';
 import Logout from './Logout';
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { usuario, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useSimpleAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,19 +39,48 @@ const Layout: React.FC = () => {
   }
 
   // Si no está autenticado, redirigir al login
-  if (!isAuthenticated || !usuario) {
+  if (!isAuthenticated || !user) {
     navigate('/login');
     return null;
   }
 
-  // Obtener navegación basada en permisos del rol
+  // Obtener navegación basada en el rol del usuario
   const getNavigation = () => {
-    const permisos = obtenerPermisosRol(usuario.rol);
-    return permisos.map(permiso => ({
-      name: permiso.nombre,
-      href: permiso.ruta,
-      icon: getIconForRoute(permiso.ruta),
-      description: permiso.descripcion
+    const rolePermissions: { [key: string]: Array<{name: string, href: string, description: string}> } = {
+      'Admin': [
+        { name: 'POS', href: '/pos', description: 'Punto de venta' },
+        { name: 'Productos', href: '/productos', description: 'Gestión de productos' },
+        { name: 'Pedidos', href: '/pedidos', description: 'Gestión de pedidos' },
+        { name: 'Clientes', href: '/clientes', description: 'Gestión de clientes' },
+        { name: 'Empleados', href: '/empleados', description: 'Gestión de empleados' },
+        { name: 'Ventas', href: '/ventas', description: 'Historial de ventas' },
+        { name: 'Estadísticas', href: '/estadisticas', description: 'Reportes y métricas' },
+        { name: 'Marketing', href: '/marketing', description: 'Campañas y promociones' },
+      ],
+      'Vendedor': [
+        { name: 'POS', href: '/pos', description: 'Punto de venta' },
+        { name: 'Productos', href: '/productos', description: 'Gestión de productos' },
+        { name: 'Pedidos', href: '/pedidos', description: 'Gestión de pedidos' },
+        { name: 'Clientes', href: '/clientes', description: 'Gestión de clientes' },
+        { name: 'Ventas', href: '/ventas', description: 'Historial de ventas' }
+      ],
+      'Inventario': [
+        { name: 'Productos', href: '/productos', description: 'Gestión de productos' },
+        { name: 'Pedidos', href: '/pedidos', description: 'Gestión de pedidos' },
+        { name: 'Estadísticas', href: '/estadisticas', description: 'Reportes y métricas' }
+      ],
+      'Marketing': [
+        { name: 'Marketing', href: '/marketing', description: 'Campañas y promociones' },
+        { name: 'Estadísticas', href: '/estadisticas', description: 'Reportes y métricas' }
+      ]
+    };
+
+    const permissions = rolePermissions[user.rol] || [];
+    return permissions.map(permiso => ({
+      name: permiso.name,
+      href: permiso.href,
+      icon: getIconForRoute(permiso.href),
+      description: permiso.description
     }));
   };
 

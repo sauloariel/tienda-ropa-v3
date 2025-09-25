@@ -500,11 +500,12 @@ const Clientes: React.FC = () => {
 
       {/* Edit Modal */}
       {showEditModal && editingCliente && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Cliente</h3>
-              
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+              <h3 className="text-lg font-bold text-gray-900">Editar Cliente</h3>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
               <form onSubmit={(e) => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget)
@@ -527,112 +528,115 @@ const Clientes: React.FC = () => {
                 
                 handleUpdate(clienteData)
               }}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">DNI</label>
-                    <input
-                      type="text"
-                      name="dni"
-                      defaultValue={editingCliente.dni}
-                      className="input-field"
-                      required
-                    />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Columna izquierda */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+                      <input
+                        type="text"
+                        name="dni"
+                        defaultValue={editingCliente.dni}
+                        className="input-field"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">CUIT/CUIL</label>
+                      <input
+                        type="text"
+                        name="cuit_cuil"
+                        defaultValue={editingCliente.cuit_cuil}
+                        className="input-field"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                      <input
+                        type="text"
+                        name="nombre"
+                        defaultValue={editingCliente.nombre}
+                        className="input-field"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                      <input
+                        type="text"
+                        name="apellido"
+                        defaultValue={editingCliente.apellido}
+                        className="input-field"
+                        required
+                      />
+                    </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">CUIT/CUIL</label>
-                    <input
-                      type="text"
-                      name="cuit_cuil"
-                      defaultValue={editingCliente.cuit_cuil}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                    <input
-                      type="text"
-                      name="nombre"
-                      defaultValue={editingCliente.nombre}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Apellido</label>
-                    <input
-                      type="text"
-                      name="apellido"
-                      defaultValue={editingCliente.apellido}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Domicilio</label>
-                    <input
-                      type="text"
-                      name="domicilio"
-                      defaultValue={editingCliente.domicilio}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                    <input
-                      type="text"
-                      name="telefono"
-                      defaultValue={editingCliente.telefono}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      name="mail"
-                      defaultValue={editingCliente.mail}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Estado</label>
-                    <select
-                      name="estado"
-                      defaultValue={editingCliente.estado || 'ACTIVO'}
-                      className="input-field"
-                    >
-                      <option value="ACTIVO">Activo</option>
-                      <option value="INACTIVO">Inactivo</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
-                    <input
-                      type="password"
-                      name="password"
-                      className="input-field"
-                      minLength={6}
-                      placeholder="Dejar vacío para mantener la actual"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Solo completar si se desea cambiar la contraseña.
-                    </p>
+                  {/* Columna derecha */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Domicilio</label>
+                      <input
+                        type="text"
+                        name="domicilio"
+                        defaultValue={editingCliente.domicilio}
+                        className="input-field"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                      <input
+                        type="text"
+                        name="telefono"
+                        defaultValue={editingCliente.telefono}
+                        className="input-field"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        name="mail"
+                        defaultValue={editingCliente.mail}
+                        className="input-field"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                      <select
+                        name="estado"
+                        defaultValue={editingCliente.estado || 'ACTIVO'}
+                        className="input-field"
+                      >
+                        <option value="ACTIVO">Activo</option>
+                        <option value="INACTIVO">Inactivo</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex justify-end space-x-3 mt-6">
+                {/* Contraseña en ancho completo */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
+                  <input
+                    type="password"
+                    name="password"
+                    className="input-field"
+                    minLength={6}
+                    placeholder="Dejar vacío para mantener la actual"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Solo completar si se desea cambiar la contraseña.
+                  </p>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-4">
                   <button
                     type="button"
                     onClick={() => {

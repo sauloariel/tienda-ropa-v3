@@ -209,6 +209,346 @@ const POS: React.FC = () => {
     return getTotal() + getIVA()
   }
 
+  const imprimirFactura = () => {
+    if (cart.length === 0) {
+      alert('No hay productos en la factura para imprimir')
+      return
+    }
+
+    // Crear ventana de impresión
+    const ventanaImpresion = window.open('', '_blank', 'width=800,height=600')
+    
+    if (!ventanaImpresion) {
+      alert('No se pudo abrir la ventana de impresión. Verifica que los pop-ups estén habilitados.')
+      return
+    }
+
+    const clienteSeleccionado = selectedCliente ? clientes.find(c => c.id_cliente === selectedCliente) : null
+    const subtotal = getTotal()
+    const iva = getIVA()
+    const total = getTotalConIVA()
+
+    ventanaImpresion.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Factura ${numeroFactura}</title>
+        <style>
+          @media print {
+            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+          }
+          
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            color: black;
+          }
+          
+          .factura-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            padding: 30px;
+            background: white;
+          }
+          
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          
+          .empresa-info {
+            margin-bottom: 20px;
+          }
+          
+          .empresa-info h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+          }
+          
+          .empresa-info h2 {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 15px 0;
+            color: #333;
+          }
+          
+          .empresa-details {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #666;
+          }
+          
+          .factura-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+          }
+          
+          .factura-info div {
+            text-align: left;
+          }
+          
+          .factura-info .right {
+            text-align: right;
+          }
+          
+          .factura-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #333;
+          }
+          
+          .factura-info p {
+            margin: 5px 0;
+            font-size: 14px;
+          }
+          
+          .cliente-info {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-left: 4px solid #007bff;
+          }
+          
+          .cliente-info h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+          }
+          
+          .cliente-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+          }
+          
+          .cliente-details div {
+            display: flex;
+            justify-content: space-between;
+          }
+          
+          .cliente-details .label {
+            font-weight: bold;
+            color: #555;
+          }
+          
+          .productos-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            border: 1px solid #000;
+          }
+          
+          .productos-table th {
+            background: #333;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #000;
+          }
+          
+          .productos-table td {
+            padding: 10px 8px;
+            border: 1px solid #000;
+            font-size: 14px;
+          }
+          
+          .productos-table tr:nth-child(even) {
+            background: #f8f9fa;
+          }
+          
+          .productos-table .cantidad {
+            text-align: center;
+          }
+          
+          .productos-table .precio, .productos-table .subtotal {
+            text-align: right;
+          }
+          
+          .totales {
+            margin-top: 30px;
+            text-align: right;
+          }
+          
+          .totales table {
+            margin-left: auto;
+            border-collapse: collapse;
+            min-width: 300px;
+          }
+          
+          .totales td {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+          }
+          
+          .totales .label {
+            background: #f8f9fa;
+            font-weight: bold;
+            text-align: left;
+          }
+          
+          .totales .valor {
+            text-align: right;
+            background: white;
+          }
+          
+          .total-final {
+            background: #333 !important;
+            color: white !important;
+            font-weight: bold;
+            font-size: 16px;
+          }
+          
+          .footer {
+            margin-top: 40px;
+            text-align: center;
+            border-top: 2px solid #000;
+            padding-top: 20px;
+          }
+          
+          .footer p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+          }
+          
+          .metodo-pago {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+          }
+          
+          .metodo-pago strong {
+            color: #2e7d32;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="factura-container">
+          <!-- Header -->
+          <div class="header">
+            <div class="empresa-info">
+              <h1>MARUCHI MODA</h1>
+              <h2>FACTURA</h2>
+              <div class="empresa-details">
+                <p><strong>CUIT:</strong> 20-12345678-9</p>
+                <p><strong>Dirección:</strong> Calle Falsa 123, Posadas</p>
+                <p><strong>Teléfono:</strong> 3764-123456</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información de la Factura -->
+          <div class="factura-info">
+            <div>
+              <h3>Información de la Factura</h3>
+              <p><strong>Número:</strong> ${numeroFactura}</p>
+              <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-AR')}</p>
+              <p><strong>Estado:</strong> Activa</p>
+            </div>
+            <div class="right">
+              <h3>Método de Pago</h3>
+              <div class="metodo-pago">
+                <p><strong>${selectedPaymentMethod.toUpperCase()}</strong></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información del Cliente -->
+          <div class="cliente-info">
+            <h3>Datos del Cliente</h3>
+            ${clienteSeleccionado ? `
+              <div class="cliente-details">
+                <div><span class="label">Nombre:</span> <span>${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}</span></div>
+                <div><span class="label">DNI:</span> <span>${clienteSeleccionado.dni}</span></div>
+                <div><span class="label">Email:</span> <span>${clienteSeleccionado.mail || 'N/A'}</span></div>
+                <div><span class="label">Teléfono:</span> <span>${clienteSeleccionado.telefono}</span></div>
+                <div><span class="label">Domicilio:</span> <span>${clienteSeleccionado.domicilio}</span></div>
+                <div><span class="label">CUIT/CUIL:</span> <span>${clienteSeleccionado.cuit_cuil}</span></div>
+              </div>
+            ` : `
+              <p><strong>Cliente:</strong> Consumidor Final</p>
+            `}
+          </div>
+
+          <!-- Tabla de Productos -->
+          <table class="productos-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th class="cantidad">Cant.</th>
+                <th class="precio">P. Unit.</th>
+                <th class="subtotal">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cart.map(item => `
+                <tr>
+                  <td>${item.product.descripcion}</td>
+                  <td class="cantidad">${item.quantity}</td>
+                  <td class="precio">$${Number(item.product.precio_venta).toFixed(2)}</td>
+                  <td class="subtotal">$${(Number(item.product.precio_venta) * item.quantity).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- Totales -->
+          <div class="totales">
+            <table>
+              <tr>
+                <td class="label">Subtotal (sin IVA):</td>
+                <td class="valor">$${subtotal.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td class="label">IVA 21%:</td>
+                <td class="valor">$${iva.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td class="label total-final">TOTAL:</td>
+                <td class="valor total-final">$${total.toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Footer -->
+          <div class="footer">
+            <p><strong>¡Gracias por su compra!</strong></p>
+            <p>Esta factura fue generada automáticamente por el sistema POS</p>
+            <p>Para consultas, contacte al: 3764-123456</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `)
+
+    ventanaImpresion.document.close()
+    
+    // Esperar a que se cargue el contenido y luego imprimir
+    ventanaImpresion.onload = () => {
+      ventanaImpresion.focus()
+      ventanaImpresion.print()
+    }
+  }
+
   const handleCheckout = async () => {
     if (cart.length === 0) return
     
@@ -279,7 +619,7 @@ const POS: React.FC = () => {
           {/* Toolbar */}
           <div className="flex items-center justify-between mb-4">
             <div className="brand">
-              <h2 className="text-lg font-bold text-gray-900">TU COMERCIO</h2>
+              <h2 className="text-lg font-bold text-gray-900">MARUCHI MODA</h2>
               <p className="text-sm text-gray-500">
                 CUIT 20-12345678-9 · Calle Falsa 123, Posadas · 3764-123456
               </p>
@@ -294,7 +634,7 @@ const POS: React.FC = () => {
                 🧹 Nueva factura
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={() => imprimirFactura()}
                 className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 🖨️ Imprimir / PDF
@@ -304,42 +644,13 @@ const POS: React.FC = () => {
 
           {/* Header Factura */}
           <div className="flex items-start justify-between mb-4">
-            <div className="inline-block px-3 py-1 text-xs font-bold text-blue-600 bg-blue-100 rounded-lg">
-              FACTURA
-            </div>
-            <div className="text-right text-sm text-gray-500">
-              <div className="flex items-center justify-end gap-2">
-                <span>N.º F-{loadingNumero ? (
-                  <span className="inline-block w-16 h-4 bg-gray-200 rounded animate-pulse"></span>
-                ) : errorNumero ? (
-                  <span className="text-red-500">Error</span>
-                ) : (
-                  numeroFactura || Math.floor(Math.random() * 900000) + 100000
-                )}</span>
-                <button
-                  onClick={refreshNumeroFactura}
-                  disabled={loadingNumero}
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  title="Actualizar número de factura"
-                >
-                  <RefreshCw className={`w-3 h-3 ${loadingNumero ? 'animate-spin' : ''}`} />
-                </button>
+            <div className="flex flex-col">
+              <div className="inline-block px-3 py-1 text-xs font-bold text-blue-600 bg-blue-100 rounded-lg">
+                FACTURA
               </div>
-              <div>Fecha: {new Date().toLocaleString('es-AR')}</div>
-              <div className="flex items-center gap-2 mt-1">
-                <span>Pago:</span>
-                <select
-                  value={selectedPaymentMethod}
-                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                  className="h-7 px-2 text-xs border border-gray-300 rounded"
-                >
-                  <option value="efectivo">💵 Efectivo</option>
-                  <option value="tarjeta">💳 Tarjeta</option>
-                  <option value="transferencia">🏦 Transferencia</option>
-                  <option value="qr">📱 QR / Pago móvil</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 mt-1 relative">
+              
+              {/* Cliente justo debajo de FACTURA */}
+              <div className="flex items-center gap-2 relative mt-2">
                 <span>Cliente:</span>
                 <div className="relative flex-1 max-w-xs cliente-search-container">
                   <input
@@ -418,6 +729,43 @@ const POS: React.FC = () => {
                 >
                   + Nuevo
                 </button>
+              </div>
+            </div>
+            
+            {/* Información del lado derecho */}
+            <div className="text-right text-sm text-gray-500">
+              <div className="flex items-center justify-end gap-2">
+                <span>N.º F-{loadingNumero ? (
+                  <span className="inline-block w-16 h-4 bg-gray-200 rounded animate-pulse"></span>
+                ) : errorNumero ? (
+                  <span className="text-red-500">Error</span>
+                ) : (
+                  numeroFactura || Math.floor(Math.random() * 900000) + 100000
+                )}</span>
+                <button
+                  onClick={refreshNumeroFactura}
+                  disabled={loadingNumero}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  title="Actualizar número de factura"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingNumero ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              <div>Fecha: {new Date().toLocaleString('es-AR')}</div>
+              
+              {/* Pago a la derecha */}
+              <div className="flex items-center gap-2 mt-1">
+                <span>Pago:</span>
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                  className="h-7 px-2 text-xs border border-gray-300 rounded"
+                >
+                  <option value="efectivo">💵 Efectivo</option>
+                  <option value="tarjeta">💳 Tarjeta</option>
+                  <option value="transferencia">🏦 Transferencia</option>
+                  <option value="qr">📱 QR / Pago móvil</option>
+                </select>
               </div>
             </div>
           </div>

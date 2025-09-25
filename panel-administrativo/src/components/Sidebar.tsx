@@ -1,7 +1,7 @@
-import { useAuth } from '../contexts/AuthContext';
+import { useSimpleAuth } from '../contexts/SimpleAuthContext';
 
 export default function Sidebar() {
-  const { hasRole } = useAuth();
+  const { hasRole } = useSimpleAuth();
   
   return (
     <nav>
@@ -11,7 +11,6 @@ export default function Sidebar() {
       {hasRole('Administrador', 'Marketing') && <a href="/marketing">Marketing</a>}
       {hasRole('Administrador') && <a href="/empleados">Empleados</a>}
       {hasRole('Administrador') && <a href="/proveedores">Proveedores</a>}
-      {hasRole('Administrador', 'Vendedor') && <a href="/facturas">Facturas</a>}
     </nav>
   );
 }

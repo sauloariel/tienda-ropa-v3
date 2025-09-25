@@ -4,15 +4,15 @@ import { Loguin } from '../models/Loguin.model';
 import { Empleados } from '../models/Empleados.model';
 import { Roles } from '../models/Roles.model';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_jwt_super_seguro_2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'mi_jwt_secret_super_seguro_para_desarrollo_2024';
 
-// Extender la interfaz Request para incluir el usuario
+// Interfaz para el usuario autenticado
 export interface AuthUser {
     id: number;
     usuario: string;
-    rol: string;
     nombre: string;
-    empleado_id: number;
+    id_empleado: number;
+    rol: string;
     rol_id: number;
 }
 
@@ -27,61 +27,74 @@ declare global {
 // Middleware de autenticación
 export const authRequired = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('🔐 Auth - Iniciando validación');
+
         const header = req.headers.authorization;
+        console.log('🔐 Authorization header:', header ? header.substring(0, 20) + '...' : 'No header');
+
         if (!header?.startsWith('Bearer ')) {
-            return res.status(401).json({ message: 'No autenticado' });
+            console.log('❌ No Bearer token found');
+            return res.status(401).json({ message: 'Token requerido' });
         }
 
         const token = header.slice(7);
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        console.log('🔐 Token extraído:', token.substring(0, 20) + '...');
 
-        // Verificar que el usuario existe y está activo
+        // Decodificar el token
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        console.log('🔐 Token decodificado:', { id: decoded.id, usuario: decoded.usuario });
+
+        // Buscar el usuario en la base de datos
         const loguinData = await Loguin.findOne({
-            where: { id_loguin: decoded.id },
-            include: [
-                {
-                    model: Empleados,
-                    as: 'empleado',
-                    attributes: ['id_empleado', 'nombre', 'apellido', 'estado']
-                },
-                {
-                    model: Roles,
-                    as: 'rol',
-                    attributes: ['id_rol', 'descripcion']
-                }
-            ]
+            where: { id_loguin: decoded.id }
         });
 
-        if (!loguinData || loguinData.empleado?.estado !== 'ACTIVO') {
+        if (!loguinData) {
+            console.log('❌ Usuario no encontrado en la base de datos');
             return res.status(401).json({ message: 'Usuario no válido' });
         }
 
+        // Buscar el empleado asociado
+        const empleadoData = await Empleados.findByPk(loguinData.id_empleado);
+        
+        if (!empleadoData) {
+            console.log('❌ Empleado no encontrado');
+            return res.status(401).json({ message: 'Empleado no válido' });
+        }
+
+        // Buscar el rol asociado
+        const rolData = await Roles.findByPk(loguinData.id_rol);
+
+        console.log('🔐 Usuario encontrado:', {
+            found: !!loguinData,
+            id: loguinData?.id_loguin,
+            usuario: loguinData?.usuario,
+            empleado_estado: empleadoData?.estado,
+            empleado_id: empleadoData?.id_empleado,
+            rol: rolData?.descripcion,
+            rol_id: rolData?.id_rol
+        });
+
+        // Verificar que el usuario existe y está activo
+        if (!loguinData || empleadoData?.estado !== 'ACTIVO') {
+            console.log('❌ Usuario no válido o inactivo');
+            return res.status(401).json({ message: 'Usuario no válido' });
+        }
+
+        // Crear objeto de usuario
         req.user = {
             id: loguinData.id_loguin,
             usuario: loguinData.usuario,
-            rol: loguinData.rol?.descripcion || 'Usuario',
-            nombre: `${loguinData.empleado?.nombre || ''} ${loguinData.empleado?.apellido || ''}`.trim(),
-            empleado_id: loguinData.empleado?.id_empleado || 0,
-            rol_id: loguinData.rol?.id_rol || 0
+            nombre: `${empleadoData?.nombre || ''} ${empleadoData?.apellido || ''}`.trim(),
+            id_empleado: empleadoData?.id_empleado || 0,
+            rol: rolData?.descripcion || 'Usuario',
+            rol_id: rolData?.id_rol || 0
         };
 
+        console.log('✅ Usuario autenticado exitosamente:', req.user);
         next();
     } catch (error) {
+        console.log('❌ Error en autenticación:', error);
         return res.status(401).json({ message: 'Token inválido' });
     }
-};
-
-// Middleware para verificar roles (opcional)
-export const authorizeRoles = (...roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        if (!req.user) {
-            return res.status(401).json({ message: 'No autenticado' });
-        }
-
-        if (!roles.includes(req.user.rol)) {
-            return res.status(403).json({ message: 'Sin permiso' });
-        }
-
-        next();
-    };
 };

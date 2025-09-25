@@ -1,4 +1,4 @@
-import { pedidosAPI } from './api'
+import simpleApi from './simpleApi'
 
 export interface Pedido {
     id_pedido: number
@@ -10,6 +10,9 @@ export interface Pedido {
     anulacion: boolean
     venta_web: boolean
     payment_id?: string
+    direccion_entrega?: string
+    horario_recepcion?: string
+    descripcion_pedido?: string
     cliente?: {
         id_cliente: number
         nombre: string
@@ -28,6 +31,13 @@ export interface PedidoDetalle {
     id_producto: number
     cantidad: number
     precio_venta: number
+    producto?: {
+        id_producto: number
+        nombre: string
+        descripcion: string
+        precio: number
+        imagen_principal: string
+    }
 }
 
 export interface PedidoCreate {
@@ -40,6 +50,64 @@ export interface PedidoCreate {
         precio_venta: number
     }[]
 }
+
+// API de pedidos usando simpleApi
+export const pedidosAPI = {
+    // Obtener todos los pedidos
+    getAll: async () => {
+        try {
+            const response = await simpleApi.get('/pedidos');
+            return response;
+        } catch (error) {
+            console.error('Error obteniendo pedidos:', error);
+            throw error;
+        }
+    },
+
+    // Obtener pedido por ID
+    getById: async (id: number) => {
+        try {
+            const response = await simpleApi.get(`/pedidos/${id}`);
+            return response;
+        } catch (error) {
+            console.error('Error obteniendo pedido:', error);
+            throw error;
+        }
+    },
+
+    // Crear nuevo pedido
+    create: async (pedidoData: PedidoCreate) => {
+        try {
+            const response = await simpleApi.post('/pedidos', pedidoData);
+            return response;
+        } catch (error) {
+            console.error('Error creando pedido:', error);
+            throw error;
+        }
+    },
+
+    // Anular pedido
+    anular: async (id: number) => {
+        try {
+            const response = await simpleApi.put(`/pedidos/${id}/anular`);
+            return response;
+        } catch (error) {
+            console.error('Error anulando pedido:', error);
+            throw error;
+        }
+    },
+
+    // Cambiar estado del pedido
+    cambiarEstado: async (id: number, estado: string) => {
+        try {
+            const response = await simpleApi.put(`/pedidos/${id}/estado`, { estado });
+            return response;
+        } catch (error) {
+            console.error('Error cambiando estado del pedido:', error);
+            throw error;
+        }
+    }
+};
 
 export const pedidosService = {
     // Obtener todos los pedidos

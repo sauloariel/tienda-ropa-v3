@@ -1,13 +1,13 @@
 // Configuración centralizada de la API
 export const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
     timeout: 10000,
     endpoints: {
-        facturas: '/api/facturas',
-        productos: '/api/productos',
-        categorias: '/api/productos/categorias',
-        clientes: '/api/clientes',
-        ventas: '/api/ventas'
+        facturas: '/facturas',
+        productos: '/productos',
+        categorias: '/productos/categorias',
+        clientes: '/clientes',
+        ventas: '/ventas'
     }
 };
 
@@ -41,4 +41,7 @@ export const validateStock = (producto: any, cantidad: number): { valid: boolean
 
     return { valid: true };
 };
+
+
+
 

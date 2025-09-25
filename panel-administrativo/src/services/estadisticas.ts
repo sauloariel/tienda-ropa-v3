@@ -1,4 +1,4 @@
-import { api } from './http'
+import simpleApi from './simpleApi'
 
 // Tipos para las estadísticas
 export interface EstadisticasGenerales {
@@ -66,7 +66,7 @@ export const estadisticasAPI = {
     // Obtener estadísticas generales del dashboard
     getEstadisticasGenerales: async (periodo: string = '30'): Promise<EstadisticasGenerales> => {
         try {
-            const response = await api.get(`/estadisticas/generales?periodo=${periodo}`)
+            const response = await simpleApi.get(`/estadisticas/generales?periodo=${periodo}`)
             console.log('✅ Estadísticas generales obtenidas desde la base de datos:', response.data)
             return response.data
         } catch (error) {
@@ -88,7 +88,7 @@ export const estadisticasAPI = {
     // Obtener ventas por mes
     getVentasPorMes: async (meses: number = 12): Promise<VentasPorMes[]> => {
         try {
-            const response = await api.get(`/estadisticas/ventas-mensuales?meses=${meses}`)
+            const response = await simpleApi.get(`/estadisticas/ventas-mensuales?meses=${meses}`)
             console.log('✅ Ventas mensuales obtenidas desde la base de datos:', response.data)
             return response.data
         } catch (error) {
@@ -108,7 +108,7 @@ export const estadisticasAPI = {
     // Obtener productos más vendidos
     getProductosTopVentas: async (limite: number = 10): Promise<ProductoTopVentas[]> => {
         try {
-            const response = await api.get(`/estadisticas/productos-top?limite=${limite}`)
+            const response = await simpleApi.get(`/estadisticas/productos-top?limite=${limite}`)
             console.log('✅ Productos top obtenidos desde la base de datos:', response.data)
             return response.data
         } catch (error) {
@@ -126,7 +126,7 @@ export const estadisticasAPI = {
     // Obtener categorías más vendidas
     getCategoriasTopVentas: async (limite: number = 5): Promise<CategoriaTopVentas[]> => {
         try {
-            const response = await api.get(`/estadisticas/categorias-top?limite=${limite}`)
+            const response = await simpleApi.get(`/estadisticas/categorias-top?limite=${limite}`)
             console.log('✅ Categorías top obtenidas desde la base de datos:', response.data)
             return response.data
         } catch (error) {
@@ -143,7 +143,7 @@ export const estadisticasAPI = {
     // Obtener clientes con más compras
     getClientesTopCompras: async (limite: number = 10): Promise<ClienteTopCompras[]> => {
         try {
-            const response = await api.get(`/estadisticas/clientes-top?limite=${limite}`)
+            const response = await simpleApi.get(`/estadisticas/clientes-top?limite=${limite}`)
             console.log('✅ Clientes top obtenidos desde la base de datos:', response.data)
             return response.data
         } catch (error) {
@@ -160,7 +160,7 @@ export const estadisticasAPI = {
     // Obtener actividad reciente
     getActividadReciente: async (limite: number = 20): Promise<ActividadReciente[]> => {
         try {
-            const response = await api.get(`/estadisticas/actividad-reciente?limite=${limite}`)
+            const response = await simpleApi.get(`/estadisticas/actividad-reciente?limite=${limite}`)
             console.log('✅ Actividad reciente obtenida desde la base de datos:', response.data)
             return response.data
         } catch (error) {
@@ -178,7 +178,7 @@ export const estadisticasAPI = {
     // Obtener resumen financiero
     getResumenFinanciero: async (periodo: string = '30'): Promise<ResumenFinanciero> => {
         try {
-            const response = await api.get(`/estadisticas/resumen-financiero?periodo=${periodo}`)
+            const response = await simpleApi.get(`/estadisticas/resumen-financiero?periodo=${periodo}`)
             console.log('✅ Resumen financiero obtenido desde la base de datos:', response.data)
             return response.data
         } catch (error) {

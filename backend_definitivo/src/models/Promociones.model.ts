@@ -50,10 +50,10 @@ export class Promociones extends Model {
     })
     estado!: 'ACTIVA' | 'INACTIVA' | 'EXPIRADA';
 
-    @Column(DataType.DATE)
+    @Column({ type: DataType.DATE, field: 'created_at' })
     createdAt?: Date;
 
-    @Column(DataType.DATE)
+    @Column({ type: DataType.DATE, field: 'updated_at' })
     updatedAt?: Date;
 }
 

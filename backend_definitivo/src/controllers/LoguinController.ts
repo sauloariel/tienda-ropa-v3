@@ -26,19 +26,7 @@ export const loginEmpleado = async (req: Request, res: Response) => {
 
     // Buscar el usuario en la tabla loguin
     const loguinData = await Loguin.findOne({
-      where: { usuario },
-      include: [
-        {
-          model: Empleados,
-          as: 'empleado',
-          attributes: ['id_empleado', 'nombre', 'apellido', 'mail', 'telefono', 'estado']
-        },
-        {
-          model: Roles,
-          as: 'rol',
-          attributes: ['id_rol', 'descripcion']
-        }
-      ]
+      where: { usuario }
     });
 
     if (!loguinData) {
@@ -48,8 +36,21 @@ export const loginEmpleado = async (req: Request, res: Response) => {
       });
     }
 
+    // Buscar el empleado asociado
+    const empleadoData = await Empleados.findByPk(loguinData.id_empleado);
+
+    if (!empleadoData) {
+      return res.status(401).json({
+        success: false,
+        message: 'Empleado no encontrado'
+      });
+    }
+
+    // Buscar el rol asociado
+    const rolData = await Roles.findByPk(loguinData.id_rol);
+
     // Verificar si el empleado está activo
-    if (loguinData.empleado?.estado?.toUpperCase() !== 'ACTIVO') {
+    if (empleadoData.estado?.toUpperCase() !== 'ACTIVO') {
       return res.status(401).json({
         success: false,
         message: 'Cuenta de empleado inactiva'
@@ -69,10 +70,10 @@ export const loginEmpleado = async (req: Request, res: Response) => {
     const payload = {
       id: loguinData.id_loguin,
       usuario: loguinData.usuario,
-      empleado_id: loguinData.empleado?.id_empleado,
-      rol_id: loguinData.rol?.id_rol,
-      rol: loguinData.rol?.descripcion,
-      nombre: `${loguinData.empleado?.nombre || ''} ${loguinData.empleado?.apellido || ''}`.trim()
+      empleado_id: empleadoData.id_empleado,
+      rol_id: rolData?.id_rol || 0,
+      rol: rolData?.descripcion || 'Usuario',
+      nombre: `${empleadoData.nombre || ''} ${empleadoData.apellido || ''}`.trim()
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
@@ -86,13 +87,13 @@ export const loginEmpleado = async (req: Request, res: Response) => {
     // Preparar respuesta del usuario
     const usuarioResponse = {
       id: loguinData.id_loguin,
-      nombre: `${loguinData.empleado?.nombre || ''} ${loguinData.empleado?.apellido || ''}`.trim(),
+      nombre: `${empleadoData.nombre || ''} ${empleadoData.apellido || ''}`.trim(),
       usuario: loguinData.usuario,
-      email: loguinData.empleado?.mail || `${loguinData.usuario}@empresa.com`,
-      rol: loguinData.rol?.descripcion || 'Usuario',
-      activo: loguinData.empleado?.estado?.toUpperCase() === 'ACTIVO',
-      empleado_id: loguinData.empleado?.id_empleado,
-      rol_id: loguinData.rol?.id_rol
+      email: empleadoData.mail || `${loguinData.usuario}@empresa.com`,
+      rol: rolData?.descripcion || 'Usuario',
+      activo: empleadoData.estado?.toUpperCase() === 'ACTIVO',
+      empleado_id: empleadoData.id_empleado,
+      rol_id: rolData?.id_rol || 0
     };
 
     res.json({

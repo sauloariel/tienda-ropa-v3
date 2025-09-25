@@ -25,6 +25,50 @@ router.post('/',
 // Obtener todos los productos
 router.get('/', getProductos);
 
+// ==================== RUTAS DE CATEGORÍAS ====================
+// IMPORTANTE: Estas rutas deben ir ANTES de /:id para evitar conflictos
+
+// Obtener todas las categorías
+router.get('/categorias', getCategorias);
+
+// Ruta específica para evitar conflictos
+router.get('/categorias/all', getCategorias);
+
+// Crear categoría
+router.post('/categorias',
+  body('nombre_categoria').isString().notEmpty().withMessage('El nombre de la categoría es obligatorio'),
+  body('descripcion').optional().isString().withMessage('La descripción debe ser texto'),
+  body('estado').optional().isString().isLength({ max: 8 }).withMessage('El estado no puede superar 8 caracteres'),
+  inputErrors,
+  createCategoria
+);
+
+// Obtener categoría por ID
+router.get('/categorias/:id',
+  param('id').isInt().withMessage('ID de categoría inválido'),
+  inputErrors,
+  getCategoriaById
+);
+
+// Actualizar categoría por ID
+router.put('/categorias/:id',
+  param('id').isInt().withMessage('ID de categoría inválido'),
+  body('nombre_categoria').optional().isString().notEmpty().withMessage('El nombre de la categoría no puede estar vacío'),
+  body('descripcion').optional().isString().withMessage('La descripción debe ser texto'),
+  body('estado').optional().isString().isLength({ max: 8 }).withMessage('El estado no puede superar 8 caracteres'),
+  inputErrors,
+  updateCategoria
+);
+
+// Eliminar categoría por ID
+router.delete('/categorias/:id',
+  param('id').isInt().withMessage('ID de categoría inválido'),
+  inputErrors,
+  deleteCategoria
+);
+
+// ==================== RUTAS DE PRODUCTOS ====================
+
 // Obtener un producto por ID
 router.get('/:id',
   param('id').isInt().withMessage('ID inválido'),
@@ -57,53 +101,6 @@ router.delete('/:id',
   param('id').isInt().withMessage('ID inválido'),
   inputErrors,
   deleteProducto
-);
-
-// ==================== RUTAS DE CATEGORÍAS ====================
-
-// Obtener todas las categorías (DEBE ir antes de la ruta con parámetros)
-router.get('/categorias', getCategorias);
-
-// Ruta específica para evitar conflictos
-router.get('/categorias/all', getCategorias);
-
-// Crear categoría
-router.post('/categorias',
-  body('nombre_categoria')
-    .isString().notEmpty().withMessage('El nombre de la categoría es obligatorio')
-    .isLength({ max: 50 }).withMessage('El nombre no puede superar 50 caracteres'),
-  body('descripcion')
-    .isString().notEmpty().withMessage('La descripción es obligatoria')
-    .isLength({ max: 50 }).withMessage('La descripción no puede superar 50 caracteres'),
-  body('estado')
-    .optional()
-    .isString().isLength({ max: 8 }).withMessage('El estado no puede superar 8 caracteres'),
-  inputErrors,
-  createCategoria
-);
-
-// Obtener categoría por ID
-router.get('/categorias/:id',
-  param('id').isInt().withMessage('ID de categoría inválido'),
-  inputErrors,
-  getCategoriaById
-);
-
-// Actualizar categoría por ID
-router.put('/categorias/:id',
-  param('id').isInt().withMessage('ID de categoría inválido'),
-  body('nombre_categoria').optional().isString().isLength({ max: 50 }),
-  body('descripcion').optional().isString().isLength({ max: 50 }),
-  body('estado').optional().isString().isLength({ max: 8 }),
-  inputErrors,
-  updateCategoria
-);
-
-// Eliminar categoría por ID
-router.delete('/categorias/:id',
-  param('id').isInt().withMessage('ID de categoría inválido'),
-  inputErrors,
-  deleteCategoria
 );
 
 export default router;

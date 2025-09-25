@@ -5,6 +5,8 @@ import Factura from '../models/Factura.model';
 import DetalleFactura from '../models/DetalleFactura.model';
 import Productos from '../models/Productos.model';
 import Clientes from '../models/Clientes.model';
+import Empleados from '../models/Empleados.model';
+import { SimpleUser } from '../middleware/simpleRoleAuth';
 import db from '../config/db';
 
 // Validaciones para crear factura
@@ -101,12 +103,23 @@ export const createFactura = async (req: Request, res: Response) => {
         // Generar número de factura único
         const numeroFactura = await generarNumeroFactura();
 
+        // Obtener el id_empleado del usuario logueado
+        const id_empleado = req.user?.id_empleado || null;
+
+        console.log('👤 Usuario logueado:', {
+            id: req.user?.id,
+            usuario: req.user?.usuario,
+            id_empleado: id_empleado,
+            nombre: req.user?.nombre
+        });
+
         // Crear la factura principal
         const factura = await Factura.create({
             numeroFactura,
             fecha: new Date(),
             total: parseFloat(total),
             cliente_id: cliente_id || null,
+            id_empleado: id_empleado,
             estado: 'activa',
             metodo_pago
         });
@@ -154,6 +167,10 @@ export const createFactura = async (req: Request, res: Response) => {
                 {
                     model: Clientes,
                     as: 'cliente'
+                },
+                {
+                    model: Empleados,
+                    as: 'empleado'
                 }
             ]
         });
@@ -213,6 +230,10 @@ export const getFacturas = async (req: Request, res: Response) => {
                 {
                     model: Clientes,
                     as: 'cliente'
+                },
+                {
+                    model: Empleados,
+                    as: 'empleado'
                 }
             ],
             order: [['fecha', 'DESC']]
@@ -250,6 +271,10 @@ export const getFacturaById = async (req: Request, res: Response) => {
                 {
                     model: Clientes,
                     as: 'cliente'
+                },
+                {
+                    model: Empleados,
+                    as: 'empleado'
                 }
             ]
         });
@@ -317,6 +342,60 @@ export const anularFactura = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("Error al anular factura", error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message
+        });
+    }
+};
+
+// Obtener facturas de un cliente específico
+export const getFacturasByCliente = async (req: Request, res: Response) => {
+    try {
+        const { clienteId } = req.params;
+
+        const facturas = await Factura.findAll({
+            where: {
+                cliente_id: clienteId,
+                estado: 'activa'
+            },
+            include: [
+                {
+                    model: DetalleFactura,
+                    as: 'detalles',
+                    include: [
+                        {
+                            model: Productos,
+                            as: 'producto',
+                            attributes: ['id_producto', 'descripcion', 'precio_venta']
+                        }
+                    ]
+                },
+                {
+                    model: Clientes,
+                    as: 'cliente',
+                    attributes: ['id_cliente', 'nombre', 'apellido', 'mail', 'telefono', 'domicilio']
+                }
+            ],
+            order: [['fecha', 'DESC']]
+        });
+
+        res.json({
+            success: true,
+            facturas: facturas.map(factura => ({
+                id: factura.id,
+                numeroFactura: factura.numeroFactura,
+                fecha: factura.fecha,
+                total: factura.total,
+                metodo_pago: factura.metodo_pago,
+                estado: factura.estado,
+                cliente: factura.cliente,
+                detalles: factura.detalles
+            }))
+        });
+
+    } catch (error: any) {
+        console.error("Error al obtener facturas del cliente", error);
         res.status(500).json({
             error: 'Error interno del servidor',
             message: error.message

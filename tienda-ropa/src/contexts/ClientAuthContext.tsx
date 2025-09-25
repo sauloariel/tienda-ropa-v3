@@ -31,23 +31,12 @@ export const ClientAuthProvider: React.FC<ClientAuthProviderProps> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Verificar si hay un token guardado al cargar la aplicación
+  // Verificar si hay un cliente guardado al cargar la aplicación
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('clientToken');
-      if (token) {
-        try {
-          const result = await clientAuthService.verifyToken(token);
-          if (result.success && result.cliente) {
-            setCliente(result.cliente);
-          } else {
-            localStorage.removeItem('clientToken');
-          }
-        } catch (error) {
-          console.error('Error verificando token:', error);
-          localStorage.removeItem('clientToken');
-        }
-      }
+      // Limpiar cualquier cliente guardado para forzar login explícito
+      localStorage.removeItem('clientEmail');
+      setCliente(null);
       setIsLoading(false);
     };
 
@@ -61,9 +50,9 @@ export const ClientAuthProvider: React.FC<ClientAuthProviderProps> = ({ children
       
       const result = await clientAuthService.login(mail, password);
       
-      if (result.success && result.cliente && result.token) {
+      if (result.success && result.cliente) {
         setCliente(result.cliente);
-        localStorage.setItem('clientToken', result.token);
+        localStorage.setItem('clientEmail', mail);
         return true;
       } else {
         setError(result.message || 'Error al iniciar sesión');
@@ -84,9 +73,9 @@ export const ClientAuthProvider: React.FC<ClientAuthProviderProps> = ({ children
       
       const result = await clientAuthService.register(clienteData);
       
-      if (result.success && result.cliente && result.token) {
+      if (result.success && result.cliente) {
         setCliente(result.cliente);
-        localStorage.setItem('clientToken', result.token);
+        localStorage.setItem('clientEmail', clienteData.mail);
         return true;
       } else {
         setError(result.message || 'Error al registrarse');
@@ -102,7 +91,7 @@ export const ClientAuthProvider: React.FC<ClientAuthProviderProps> = ({ children
 
   const logout = () => {
     setCliente(null);
-    localStorage.removeItem('clientToken');
+    localStorage.removeItem('clientEmail');
     clientAuthService.logout();
   };
 

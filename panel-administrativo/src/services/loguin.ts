@@ -1,4 +1,4 @@
-import { api } from './api';
+import simpleApi from './simpleApi';
 
 export interface LoguinUser {
     id_loguin: number;
@@ -31,7 +31,7 @@ export const loguinAPI = {
     getAll: async () => {
         try {
             console.log('Attempting to fetch loguin users from backend...');
-            const response = await api.get('/loguin');
+            const response = await simpleApi.get('/loguin');
             console.log('Backend loguin users response:', response);
             return response;
         } catch (error: any) {
@@ -96,7 +96,7 @@ export const loguinAPI = {
     create: async (data: LoguinCreate) => {
         try {
             console.log('Attempting to create loguin user in backend...');
-            const response = await api.post('/loguin', data);
+            const response = await simpleApi.post('/loguin', data);
             console.log('Backend create response:', response);
             return response;
         } catch (error: any) {
@@ -132,7 +132,7 @@ export const loguinAPI = {
     // Update loguin user
     update: async (id: number, data: LoguinUpdate) => {
         try {
-            const response = await api.put(`/loguin/${id}`, data);
+            const response = await simpleApi.put(`/loguin/${id}`, data);
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, updating offline data...');
@@ -159,7 +159,7 @@ export const loguinAPI = {
     // Delete loguin user
     delete: async (id: number) => {
         try {
-            const response = await api.delete(`/loguin/${id}`);
+            const response = await simpleApi.delete(`/loguin/${id}`);
             return response;
         } catch (error: any) {
             console.log('Backend unavailable, deleting offline data...');

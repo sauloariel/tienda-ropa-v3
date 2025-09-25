@@ -5,13 +5,14 @@ import multer from 'multer';
 import path from 'path';
 import db from './config/db';
 import authRoutes from './router/auth.routes';
+import simpleAuthRoutes from './router/RouterSimpleAuth';
 import empleadosRoutes from './router/RouterEmpleados';
 import rolesRoutes from './router/RouterRoles';
 import loguinRoutes from './router/RouterLoguin';
 import productosRoutes from './router/RouterProductos';
 import clientesRoutes from './router/RouterCliente';
 import clientAuthRoutes from './router/RouterClientAuth';
-import pedidosRoutes from './router/RouterPedidos';
+import pedidosRoutes from './router/RouterPedidosUnificado';
 // import categoriasRoutes from './router/RouterCategorias'; // Integrado en productos
 import proveedoresRoutes from './router/RouterProveedores';
 import estadisticasRoutes from './router/RouterEstadisticas';
@@ -22,6 +23,8 @@ import coloresRoutes from './router/RouterColor';
 import tallasRoutes from './router/RouterTalla';
 import tipoTalleRoutes from './router/RouterTipoTalle';
 import imagenesRoutes from './router/RouterImagenes';
+import compraIntegradaRoutes from './router/RouterCompraIntegrada';
+import temporadasRoutes from './router/RouterTemporadas';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -86,10 +89,12 @@ app.get('/', (req, res) => {
             colores: '/colores',
             tallas: '/tallas',
             tipoTalle: '/tipo-talle',
+            temporadas: '/temporadas',
             estadisticas: '/estadisticas',
             facturas: '/facturas',
             ventas: '/ventas',
-            marketing: '/marketing'
+            marketing: '/marketing',
+            compraIntegrada: '/compra-integrada'
         }
     });
 });
@@ -101,6 +106,9 @@ app.get('/api/health', (req, res) => {
 
 // Rutas de autenticación
 app.use('/api/auth', authRoutes);
+
+// Rutas de autenticación simplificada
+app.use('/api/loguin', simpleAuthRoutes);
 
 // Rutas de empleados
 app.use('/api/empleados', empleadosRoutes);
@@ -120,7 +128,7 @@ app.use('/api/clientes', clientesRoutes);
 // Rutas de autenticación de clientes
 app.use('/api/clientes/auth', clientAuthRoutes);
 
-// Rutas de pedidos
+// Rutas de pedidos (unificadas para web y panel administrativo)
 app.use('/api/pedidos', pedidosRoutes);
 
 // Rutas de categorías (integradas en productos)
@@ -152,5 +160,13 @@ app.use('/api/tipo-talle', tipoTalleRoutes);
 
 // Rutas de imágenes
 app.use('/api/imagenes', imagenesRoutes);
+
+// Rutas de compra integrada
+app.use('/api/compra-integrada', compraIntegradaRoutes);
+
+// Rutas de temporadas
+app.use('/api/temporadas', temporadasRoutes);
+
+// Rutas de configuraciones
 
 export default app;
