@@ -87,7 +87,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         horario_recepcion: formData.horarioRecepcion || undefined,
         descripcion_pedido: formData.descripcion || undefined,
         observaciones: formData.observaciones || undefined,
-        metodo_pago: 'transferencia', // Método por defecto para compras web
+        metodo_pago: 'cbu', // Método por defecto para compras web
         items: items.map(item => ({
           id_producto: item.producto.id_producto,
           cantidad: item.cantidad,

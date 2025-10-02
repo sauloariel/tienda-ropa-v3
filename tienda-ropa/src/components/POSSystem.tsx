@@ -480,7 +480,8 @@ const POSSystem: React.FC = () => {
               
               <div className="space-y-3 mb-6">
                 {[
-                  { value: 'efectivo', label: 'Efectivo', icon: DollarSign, color: 'bg-green-100 text-green-700', description: 'Pago al entregarse el producto' }
+                  { value: 'efectivo', label: 'Efectivo', icon: DollarSign, color: 'bg-green-100 text-green-700', description: 'Pago al entregarse el producto' },
+                  { value: 'cbu', label: 'CBU', icon: Banknote, color: 'bg-purple-100 text-purple-700', description: 'Transferencia bancaria' }
                 ].map((method) => (
                   <label key={method.value} className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
                     <input

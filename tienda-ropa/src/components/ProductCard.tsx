@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, ShoppingCart, Star, Eye } from 'lucide-react';
 import type { Producto } from '../types/productos.types';
+import PromocionesProducto from './PromocionesProducto';
 
 interface ProductCardProps {
   producto: Producto;
@@ -152,6 +153,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ producto, onAddToCart }) => {
         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
           {producto.descripcion}
         </h3>
+
+        {/* Promociones */}
+        <PromocionesProducto 
+          productoId={producto.id_producto} 
+          precioOriginal={Number(producto.precio_venta)} 
+        />
 
         {/* Precio y calificación */}
         <div className="flex items-center justify-between">

@@ -1,0 +1,20 @@
+# Configuración de EmailJS para Verificación de Emails
+# Copia este contenido en un archivo .env.local en la raíz de tienda-ropa
+
+# EmailJS Configuration
+# 1. Crea una cuenta en https://www.emailjs.com/
+# 2. Conecta tu email (Gmail recomendado)
+# 3. Crea un template de email
+# 4. Copia tus credenciales aquí
+
+VITE_EMAILJS_SERVICE_ID=service_xxxxxx
+VITE_EMAILJS_TEMPLATE_ID=template_xxxxxx
+VITE_EMAILJS_PUBLIC_KEY=your_public_key_here
+
+# Ejemplo con credenciales reales:
+# VITE_EMAILJS_SERVICE_ID=service_abc123
+# VITE_EMAILJS_TEMPLATE_ID=template_xyz456
+# VITE_EMAILJS_PUBLIC_KEY=AbCdEfGhIjKlMnOp123456
+
+# ℹ️ INSTRUCCIONES COMPLETAS en: EMAILJS-CONFIG-GUIDE.md
+

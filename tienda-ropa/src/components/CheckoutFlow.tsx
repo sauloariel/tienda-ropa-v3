@@ -57,7 +57,8 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     numeroTarjeta: '',
     vencimiento: '',
     cvv: '',
-    nombreTitular: ''
+    nombreTitular: '',
+    comprobanteCbu: null as File | null
   });
 
   const handleAuthInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +74,11 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
   const handlePaymentInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setPaymentForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setPaymentForm(prev => ({ ...prev, comprobanteCbu: file }));
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -117,6 +123,13 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         throw new Error('Cliente no autenticado');
       }
 
+      // Validar comprobante CBU si es necesario
+      if (paymentForm.metodo === 'cbu' && !paymentForm.comprobanteCbu) {
+        alert('Por favor, sube el comprobante de transferencia para continuar.');
+        setIsProcessing(false);
+        return;
+      }
+
       // Preparar datos de la compra
       const compraData = {
         cliente_id: cliente.id_cliente,
@@ -127,6 +140,7 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         horario_recepcion: shippingForm.horarioRecepcion || undefined,
         observaciones: shippingForm.notas || undefined,
         metodo_pago: paymentForm.metodo,
+        comprobante_cbu: paymentForm.comprobanteCbu, // Incluir el archivo del comprobante
         items: items.map(item => ({
           id_producto: item.producto.id_producto,
           cantidad: item.cantidad,
@@ -169,7 +183,8 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
           numeroTarjeta: '',
           vencimiento: '',
           cvv: '',
-          nombreTitular: ''
+          nombreTitular: '',
+          comprobanteCbu: null
         });
       }, 2000);
       
@@ -546,9 +561,7 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
               <div className="space-y-4">
                 {[
                   { value: 'efectivo', label: 'Efectivo', icon: '💵' },
-                  { value: 'tarjeta', label: 'Tarjeta de Crédito/Débito', icon: '💳' },
-                  { value: 'transferencia', label: 'Transferencia Bancaria', icon: '🏦' },
-                  { value: 'mercadopago', label: 'MercadoPago', icon: '🛒' }
+                  { value: 'cbu', label: 'CBU', icon: '🏦' }
                 ].map((method) => (
                   <label key={method.value} className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
                     <input
@@ -621,6 +634,70 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Como aparece en la tarjeta"
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Información CBU y comprobante */}
+              {paymentForm.metodo === 'cbu' && (
+                <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-center">
+                    <h4 className="text-lg font-semibold text-blue-900 mb-2">🏦 Transferencia Bancaria</h4>
+                    <p className="text-sm text-blue-700 mb-4">
+                      Realiza la transferencia al siguiente CBU y sube el comprobante
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-blue-300">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-2">CBU para transferencia:</p>
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <p className="text-lg font-mono font-bold text-gray-800">
+                          0070000000000000000001
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Banco: Banco de la Nación Argentina
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subir Comprobante de Transferencia *
+                    </label>
+                    <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="comprobante-cbu"
+                        required={paymentForm.metodo === 'cbu'}
+                      />
+                      <label htmlFor="comprobante-cbu" className="cursor-pointer">
+                        <div className="text-blue-500 mb-2">
+                          <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {paymentForm.comprobanteCbu 
+                            ? `Archivo seleccionado: ${paymentForm.comprobanteCbu.name}`
+                            : 'Haz clic para seleccionar comprobante (JPG, PNG, PDF)'
+                          }
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Máximo 5MB
+                        </p>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ <strong>Importante:</strong> Tu pedido será procesado una vez que confirmemos la transferencia.
+                    </p>
                   </div>
                 </div>
               )}

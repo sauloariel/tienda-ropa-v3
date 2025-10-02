@@ -66,6 +66,19 @@ export const clientAuthService = {
         } catch (error: any) {
             console.error('Error en logout:', error);
         }
+    },
+
+    // Reenviar email de verificación
+    resendVerificationEmail: async (email: string): Promise<{ success: boolean; message?: string }> => {
+        try {
+            const response = await clientAuthAPI.post('/api/clientes/auth/resend-verification', {
+                email
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error reenviando email de verificación:', error);
+            throw new Error(error.response?.data?.message || 'Error reenviando email de verificación');
+        }
     }
 };
 

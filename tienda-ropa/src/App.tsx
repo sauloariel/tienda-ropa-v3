@@ -17,6 +17,7 @@ import Pagination from './components/Pagination';
 import CartModal from './components/CartModal';
 import { usePagination } from './hooks/usePagination';
 import { useURLFilters } from './hooks/useURLFilters';
+import { useEscapeKey } from './hooks/useEscapeKey';
 import { ClientAuthProvider, useClientAuth } from './contexts/ClientAuthContext';
 
 interface CartItem {
@@ -27,7 +28,7 @@ interface CartItem {
 
 // Componente interno que usa el contexto de autenticación
 function AppContent() {
-  const { isAuthenticated, isLoading: authLoading } = useClientAuth();
+  const { isAuthenticated, isLoading: authLoading, cliente, logout } = useClientAuth();
   const [currentView, setCurrentView] = useState<'tienda' | 'pos' | 'seguimiento'>('tienda');
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategoria] = useState<Categoria[]>([]);
@@ -81,6 +82,15 @@ function AppContent() {
     loadData();
   }, []);
 
+  // Manejar tecla Escape para ir a la página principal
+  useEscapeKey(() => {
+    console.log('🔙 Tecla Escape presionada - yendo a página principal');
+    handleViewChange('tienda');
+    // Limpiar cualquier modal o estado abierto
+    setShowCheckout(false);
+    setShowCartModal(false);
+  });
+
   // Filtrar productos por categoría, búsqueda y estado activo
   const filteredProductos = productos.filter(producto => {
     // Filtrar por categoría
@@ -128,6 +138,11 @@ function AppContent() {
 
   const handleViewChange = (view: 'tienda' | 'pos' | 'seguimiento') => {
     setCurrentView(view);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setCurrentView('tienda');
   };
 
   // Función para parsear precios
@@ -242,6 +257,7 @@ function AppContent() {
       );
     }
 
+
     return (
       <div className="min-h-screen relative">
         {/* Imagen de fondo */}
@@ -260,18 +276,17 @@ function AppContent() {
         <div className="relative z-10 bg-white/80 backdrop-blur-sm min-h-screen">
           <Header 
             onLoginClick={() => handleViewChange('pos')}
+            onLogoutClick={handleLogout}
             onViewChange={handleViewChange}
             currentView={currentView}
             isAuthenticated={isAuthenticated}
-            userInfo={isAuthenticated ? { nombre: 'Usuario', apellido: 'Cliente' } : undefined}
+            userInfo={isAuthenticated && cliente ? { nombre: cliente.nombre, apellido: cliente.apellido } : undefined}
             onSearch={handleSearch}
             categorias={categorias}
             onCategoryChange={handleCategoryChange}
             selectedCategory={selectedCategory}
             cartItems={cartItems}
             onCartClick={() => setShowCartModal(true)}
-            favoritesCount={favoritesCount}
-            onFavoritesClick={() => console.log('Favoritos clickeado')}
           />
           
           <main className="container mx-auto px-4 py-8">

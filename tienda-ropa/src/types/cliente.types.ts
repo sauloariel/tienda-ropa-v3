@@ -30,4 +30,5 @@ export interface RegisterRequest {
     apellido: string;
     telefono?: string;
     domicilio?: string;
+    // dni y cuit_cuil son generados automáticamente por el backend
 }

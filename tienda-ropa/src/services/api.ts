@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { Producto, Categoria } from '../types/productos.types';
 import { API_CONFIG } from '../config/api';
+import { sendOrderStatusNotification, isOrderEmailConfigured } from './orderEmailService';
 
 // Configuración base de la API unificada
 const api = axios.create({
@@ -97,6 +98,49 @@ export const pedidosAPI = {
     getHistorial: async (idPedido: number) => {
         const response = await api.get(`/pedidos/${idPedido}/historial`);
         return response.data;
+    },
+
+    // Cambiar estado del pedido y enviar notificación por email
+    changeStatus: async (idPedido: number, nuevoEstado: string, pedidoData?: any) => {
+        try {
+            // Cambiar estado en el backend
+            const response = await api.put(`/pedidos/${idPedido}/estado`, { estado: nuevoEstado });
+
+            // Si tenemos datos del pedido y EmailJS está configurado, enviar notificación
+            if (pedidoData && isOrderEmailConfigured() && pedidoData.cliente?.mail) {
+                try {
+                    const emailEnviado = await sendOrderStatusNotification(
+                        pedidoData.cliente.mail,
+                        `${pedidoData.cliente.nombre} ${pedidoData.cliente.apellido}`,
+                        idPedido,
+                        pedidoData.estado || 'desconocido',
+                        nuevoEstado,
+                        new Date(pedidoData.fecha_pedido || Date.now()),
+                        pedidoData.importe || 0
+                    );
+
+                    console.log('📧 Notificación de pedido enviada:', emailEnviado);
+
+                    // Agregar información del email a la respuesta
+                    return {
+                        ...response.data,
+                        email_enviado: emailEnviado
+                    };
+                } catch (emailError) {
+                    console.warn('⚠️ No se pudo enviar notificación de pedido:', emailError);
+                    return {
+                        ...response.data,
+                        email_enviado: false,
+                        email_error: emailError.message
+                    };
+                }
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error cambiando estado del pedido:', error);
+            throw error;
+        }
     }
 };
 

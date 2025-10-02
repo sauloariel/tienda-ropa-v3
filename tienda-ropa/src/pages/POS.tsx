@@ -577,9 +577,7 @@ const POS: React.FC = () => {
               <div className="space-y-3 mb-6">
                 {[
                   { value: 'efectivo', label: 'Efectivo', icon: DollarSign, color: 'bg-green-100 text-green-700' },
-                  { value: 'tarjeta', label: 'Tarjeta', icon: CreditCard, color: 'bg-blue-100 text-blue-700' },
-                  { value: 'transferencia', label: 'Transferencia', icon: Banknote, color: 'bg-purple-100 text-purple-700' },
-                  { value: 'qr', label: 'QR/Pago Móvil', icon: QrCode, color: 'bg-orange-100 text-orange-700' }
+                  { value: 'cbu', label: 'CBU', icon: Banknote, color: 'bg-purple-100 text-purple-700' }
                 ].map((method) => (
                   <label key={method.value} className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
                     <input

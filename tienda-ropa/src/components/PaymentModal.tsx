@@ -106,9 +106,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'efectivo', label: '💵 Efectivo', icon: '💵' },
-                { id: 'tarjeta', label: '💳 Tarjeta', icon: '💳' },
-                { id: 'transferencia', label: '🏦 Transferencia', icon: '🏦' },
-                { id: 'qr', label: '📱 QR/Pago Móvil', icon: '📱' }
+                { id: 'cbu', label: '🏦 CBU', icon: '🏦' }
               ].map((method) => (
                 <button
                   key={method.id}

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ShoppingBag, Search, Menu, X, User, Heart, ShoppingCart, Globe, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShoppingBag, Search, Menu, X, User, ShoppingCart, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   onLoginClick?: () => void;
+  onLogoutClick?: () => void;
   onViewChange?: (view: 'tienda' | 'pos' | 'seguimiento') => void;
   currentView?: 'tienda' | 'pos' | 'seguimiento';
   isAuthenticated?: boolean;
@@ -23,12 +24,11 @@ interface HeaderProps {
     precioUnitario: number;
   }>;
   onCartClick?: () => void;
-  favoritesCount?: number;
-  onFavoritesClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   onLoginClick, 
+  onLogoutClick,
   onViewChange, 
   currentView = 'tienda', 
   isAuthenticated = false, 
@@ -38,13 +38,27 @@ const Header: React.FC<HeaderProps> = ({
   onCategoryChange,
   selectedCategory,
   cartItems = [],
-  onCartClick,
-  favoritesCount = 0,
-  onFavoritesClick
+  onCartClick
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCategories, setShowCategories] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar dropdown cuando se hace clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +83,7 @@ const Header: React.FC<HeaderProps> = ({
             <div 
               className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => onViewChange?.('tienda')}
-              title="Ir a la página principal"
+              title="Ir a la página principal (también presiona Escape)"
             >
               <ShoppingBag className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">MaruchiModa</span>
@@ -98,13 +112,53 @@ const Header: React.FC<HeaderProps> = ({
             {/* Iconos de usuario - Derecha */}
             <div className="flex items-center space-x-2">
               {/* Usuario */}
-              <button 
-                onClick={() => onViewChange?.('pos')}
-                className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-                title="Iniciar Sesión"
-              >
-                <User className="h-5 w-5" />
-              </button>
+              {isAuthenticated ? (
+                <div className="relative" ref={userDropdownRef}>
+                  <button 
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    className="p-2 text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-1"
+                    title="Mi cuenta"
+                  >
+                    <User className="h-5 w-5" />
+                    <span className="text-sm font-medium">
+                      {userInfo ? `${userInfo.nombre} ${userInfo.apellido}` : 'Usuario'}
+                    </span>
+                  </button>
+                  
+                  {/* Dropdown del usuario */}
+                  {showUserDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                      <div className="p-2">
+                        <div className="px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
+                          <div className="font-medium">
+                            {userInfo ? `${userInfo.nombre} ${userInfo.apellido}` : 'Usuario'}
+                          </div>
+                          <div className="text-xs text-gray-500">Mi cuenta</div>
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            onLogoutClick?.();
+                            setShowUserDropdown(false);
+                          }}
+                          className="w-full flex items-center px-3 py-2 text-sm text-red-600 rounded-md hover:bg-red-50 transition-colors duration-200 mt-1"
+                        >
+                          <LogOut className="h-4 w-4 mr-3" />
+                          Cerrar Sesión
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button 
+                  onClick={() => onViewChange?.('pos')}
+                  className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+                  title="Iniciar Sesión"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+              )}
               
               {/* Carrito */}
               <button 
@@ -118,30 +172,6 @@ const Header: React.FC<HeaderProps> = ({
                     {cartItemsCount}
                   </span>
                 )}
-              </button>
-              
-              {/* Favoritos */}
-              <button 
-                onClick={onFavoritesClick}
-                className="p-2 text-gray-600 hover:text-blue-600 transition-colors relative"
-                title="Ver favoritos"
-              >
-                <Heart className="h-5 w-5" />
-                {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {favoritesCount}
-                  </span>
-                )}
-              </button>
-              
-              {/* Chat */}
-              <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
-                <MessageCircle className="h-5 w-5" />
-              </button>
-              
-              {/* Idioma */}
-              <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
-                <Globe className="h-5 w-5" />
               </button>
 
               {/* Botón de menú móvil */}

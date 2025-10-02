@@ -506,8 +506,8 @@ const ClientPanel: React.FC<ClientPanelProps> = ({
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">Productos</h4>
                   <div className="space-y-2">
-                    {selectedPedido.items.map((item) => (
-                      <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    {selectedPedido.items.map((item, index) => (
+                      <div key={`${item.id_producto}-${index}`} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div>
                           <p className="font-medium">{item.producto.descripcion}</p>
                           <p className="text-sm text-gray-600">Cantidad: {item.cantidad}</p>
