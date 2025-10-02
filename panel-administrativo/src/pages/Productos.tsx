@@ -5,7 +5,6 @@ import {
   Trash2, 
   Search,
   Package,
-  DollarSign,
   CheckCircle,
   XCircle,
   Image,
@@ -83,6 +82,7 @@ const Productos: React.FC = () => {
   const [seasonFilter, setSeasonFilter] = useState<'all' | 'verano' | 'invierno' | 'otono' | 'primavera' | 'todas-las-temporadas'>('all')
   const [showVariantsModal, setShowVariantsModal] = useState(false)
   const [selectedProductVariants, setSelectedProductVariants] = useState<Producto | null>(null)
+  const [variantsSearchTerm, setVariantsSearchTerm] = useState('')
   
   // Estados para gestión de temporadas
   const [temporadas, setTemporadas] = useState<Temporada[]>([])
@@ -280,12 +280,14 @@ const Productos: React.FC = () => {
     setShowAddModal(false)
     setShowEditModal(false)
     setShowEditImagesModal(false)
+    setShowVariantsModal(false)
     setEditingProducto(null)
     setError(null)
     setSuccess(null)
     setVariantes([])
     setImagenes([])
     setImagenesPreview([])
+    setVariantsSearchTerm('')
     
     // Limpiar formulario de agregar producto
     clearAddForm()
@@ -506,7 +508,7 @@ const Productos: React.FC = () => {
       const variantesConTipo: VarianteUI[] = producto.variantes.map(v => {
         console.log('🔍 Mapeando variante:', v)
         return {
-          id_talle: v.id_talle, // Corregido: usar id_talle en lugar de id_talla
+          id_talla: v.id_talla, // Corregido: usar id_talla para coincidir con el backend
           id_color: v.id_color,
           stock: v.stock,
           precio_venta: v.precio_venta || producto.precio_venta, // Usar precio del producto si no hay precio en variante
@@ -581,7 +583,7 @@ const Productos: React.FC = () => {
   // Funciones para manejar variantes
   const addVariante = useCallback(() => {
     const nuevaVariante: VarianteUI = {
-      id_talle: 0,
+      id_talla: 0,
       id_color: 0,
       stock: 0,
       precio_venta: 0,
@@ -600,7 +602,7 @@ const Productos: React.FC = () => {
         ? { 
             ...variante, 
             [field]: value,
-            ...(field === 'id_tipo_talle' ? { id_talle: 0 } : {})
+            ...(field === 'id_tipo_talle' ? { id_talla: 0 } : {})
           }
         : variante
     ))
@@ -614,7 +616,7 @@ const Productos: React.FC = () => {
 
   // Validaciones de variantes
   const isVarianteValida = useCallback((variante: VarianteUI): boolean => {
-    return variante.id_talle > 0 && 
+    return variante.id_talla > 0 && 
            variante.id_color > 0 && 
            toNum(variante.stock) > 0
   }, [])
@@ -626,10 +628,10 @@ const Productos: React.FC = () => {
   const hasDupVariantes = useCallback((): boolean => {
     const validas = getVariantesValidas()
     
-    // Filtrar variantes que tengan id_talle e id_color válidos (mayores a 0)
-    const variantesValidas = validas.filter(v => v.id_talle > 0 && v.id_color > 0)
+    // Filtrar variantes que tengan id_talla e id_color válidos (mayores a 0)
+    const variantesValidas = validas.filter(v => v.id_talla > 0 && v.id_color > 0)
     
-    const keys = variantesValidas.map(v => `${v.id_talle}-${v.id_color}`)
+    const keys = variantesValidas.map(v => `${v.id_talla}-${v.id_color}`)
     const hasDuplicates = new Set(keys).size !== keys.length
     
     // Debug logging
@@ -744,12 +746,29 @@ const Productos: React.FC = () => {
     }
   }
 
-  // Valor total del inventario
-  const valorTotalInventario = useMemo(() => {
-    return formatPrice(
-      productos.reduce((sum, p) => sum + (toNum(p.precio_venta) * toNum(p.stock)), 0)
-    )
-  }, [productos])
+  // Función para filtrar productos en el modal de variantes
+  const getFilteredProducts = useCallback(() => {
+    if (!selectedProductVariants?.variantes || !Array.isArray(selectedProductVariants.variantes)) {
+      return []
+    }
+
+    if (!variantsSearchTerm.trim()) {
+      return selectedProductVariants.variantes
+    }
+
+    const searchLower = variantsSearchTerm.toLowerCase()
+    return selectedProductVariants.variantes.filter((producto: any) => {
+      const nombre = (producto.descripcion || producto.nombre || '').toLowerCase()
+      const categoria = (producto.categoria?.nombre_categoria || '').toLowerCase()
+      const proveedor = (producto.proveedor?.nombre || '').toLowerCase()
+      const id = producto.id_producto?.toString() || ''
+
+      return nombre.includes(searchLower) || 
+             categoria.includes(searchLower) || 
+             proveedor.includes(searchLower) ||
+             id.includes(searchLower)
+    })
+  }, [selectedProductVariants, variantsSearchTerm])
 
   // Función para mostrar listado completo de productos con variantes
   const handleShowCompleteList = async () => {
@@ -764,28 +783,54 @@ const Productos: React.FC = () => {
       
       const todosLosProductos = await response.json()
       
-      // Crear un producto virtual que contenga todas las variantes de todos los productos
-      const allVariants = todosLosProductos.flatMap((producto: any) => 
-        producto.variantes?.map((variante: any) => ({
-          ...variante,
-          producto_descripcion: producto.descripcion,
-          producto_id: producto.id_producto,
-          categoria: producto.categoria?.nombre_categoria,
-          proveedor: producto.proveedor?.nombre,
-          // Asegurar que las variantes tengan precios del producto si no los tienen
-          precio_venta: variante.precio_venta || producto.precio_venta || 0,
-          precio_compra: variante.precio_compra || producto.precio_compra || 0
-        })) || []
-      )
+      // Procesar productos con variantes reales de la base de datos
+      const productosConVariantes = todosLosProductos
+        .map((producto: any) => {
+          // Si el producto no tiene variantes, crear una estructura vacía
+          if (!producto.variantes || producto.variantes.length === 0) {
+            return {
+              ...producto,
+              variantesReales: [],
+              stockTotal: producto.stock || 0,
+              nombre: producto.descripcion || producto.nombre || 'Producto sin nombre'
+            }
+          }
+
+          // Crear un objeto con las variantes reales de la base de datos
+          const variantesReales = producto.variantes.map((variante: any) => ({
+            id_variante: variante.id_variante,
+            id_talla: variante.id_talla,
+            id_color: variante.id_color,
+            stock: variante.stock || 0,
+            precio_venta: variante.precio_venta || producto.precio_venta || 0,
+            precio_compra: variante.precio_compra || producto.precio_compra || 0,
+            talla: variante.talla,
+            color: variante.color,
+            margen: variante.precio_compra > 0 
+              ? (((variante.precio_venta || producto.precio_venta) - (variante.precio_compra || producto.precio_compra)) / (variante.precio_compra || producto.precio_compra) * 100).toFixed(1)
+              : '0.0'
+          }))
+
+          // Calcular stock total
+          const stockTotal = variantesReales.reduce((sum: number, variante: any) => sum + variante.stock, 0)
+
+          return {
+            ...producto,
+            variantesReales,
+            stockTotal,
+            // Asegurar que el nombre del producto esté disponible
+            nombre: producto.descripcion || producto.nombre || 'Producto sin nombre'
+          }
+        })
       
       console.log('🔍 Productos totales:', todosLosProductos.length)
-      console.log('🔍 Productos con variantes:', todosLosProductos.filter((p: any) => p.variantes && p.variantes.length > 0).length)
-      console.log('🔍 Variantes totales encontradas:', allVariants.length)
+      console.log('🔍 Productos con variantes:', productosConVariantes.length)
+      console.log('🔍 Productos con variantes reales:', productosConVariantes)
 
       const virtualProduct: any = {
         id_producto: 0,
-        descripcion: 'Listado Completo de Variantes',
-        variantes: allVariants,
+        descripcion: 'Listado Completo de Productos',
+        variantes: productosConVariantes,
         categoria: { nombre_categoria: 'Todas las categorías' },
         proveedor: { nombre: 'Todos los proveedores' }
       }
@@ -968,28 +1013,6 @@ const Productos: React.FC = () => {
           </div>
         </div>
       )}
-
-
-      {/* Valor Total del Inventario */}
-      <div className="card">
-        <div className="flex items-center justify-center">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <DollarSign className="h-12 w-12 text-purple-600" />
-            </div>
-            <div className="ml-6">
-              <dl>
-                <dt className="text-lg font-medium text-gray-500">
-                  Valor Total del Inventario
-                </dt>
-                <dd className="text-3xl font-bold text-gray-900">
-                  {valorTotalInventario}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Search */}
       <div className="card">
@@ -1308,7 +1331,7 @@ const Productos: React.FC = () => {
                   stock_seguridad: toNum(formData.get('stock_seguridad')),
                   estado: toEstado(formData.get('estado') as string),
                   variantes: variantesValidas.length > 0 ? variantesValidas.map(v => ({
-                    id_talle: v.id_talle,
+                    id_talla: v.id_talla,
                     id_color: v.id_color,
                     stock: v.stock,
                     precio_venta: v.precio_venta
@@ -1538,8 +1561,8 @@ const Productos: React.FC = () => {
                               <label className="block text-sm font-medium text-gray-700 mb-2">Talla</label>
                               <select
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                value={variante.id_talle}
-                                onChange={(e) => updateVariante(index, 'id_talle', toNum(e.target.value))}
+                                value={variante.id_talla}
+                                onChange={(e) => updateVariante(index, 'id_talla', toNum(e.target.value))}
                                 required
                               >
                                 <option value={0}>Seleccionar talla</option>
@@ -1975,8 +1998,8 @@ const Productos: React.FC = () => {
                                 Talla
                               </label>
                               <select
-                                value={variante.id_talle}
-                                onChange={(e) => updateVariante(index, 'id_talle', +e.target.value)}
+                                value={variante.id_talla}
+                                onChange={(e) => updateVariante(index, 'id_talla', +e.target.value)}
                                 className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               >
                                 <option value={0}>Seleccionar</option>
@@ -2537,21 +2560,21 @@ const Productos: React.FC = () => {
                     // Listado completo
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <h4 className="font-medium text-gray-900">Total de Variantes</h4>
+                        <h4 className="font-medium text-gray-900">Total de Productos</h4>
                         <p className="text-2xl font-bold text-blue-600">{selectedProductVariants.variantes?.length || 0}</p>
-                        <p className="text-sm text-gray-600">Todas las variantes del inventario</p>
+                        <p className="text-sm text-gray-600">Todos los productos del inventario</p>
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">Productos con Variantes</h4>
                         <p className="text-2xl font-bold text-green-600">
-                          {new Set(selectedProductVariants.variantes?.map((v: any) => v.producto_id) || []).size}
+                          {selectedProductVariants.variantes?.filter((p: any) => p.variantesReales && p.variantesReales.length > 0).length || 0}
                         </p>
-                        <p className="text-sm text-gray-600">Productos únicos</p>
+                        <p className="text-sm text-gray-600">Productos con tallas y colores</p>
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">Stock Total</h4>
                         <p className="text-2xl font-bold text-purple-600">
-                          {selectedProductVariants.variantes?.reduce((sum, v: any) => sum + toNum(v.stock), 0) || 0}
+                          {selectedProductVariants.variantes?.reduce((sum, p: any) => sum + (p.stockTotal || 0), 0) || 0}
                         </p>
                         <p className="text-sm text-gray-600">Suma de todos los stocks</p>
                       </div>
@@ -2573,68 +2596,127 @@ const Productos: React.FC = () => {
                   )}
                 </div>
 
-                {/* Lista de variantes */}
+                {/* Lista de productos agrupados */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-4">Variantes por Talle y Color</h4>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-md font-medium text-gray-900">
+                      {selectedProductVariants.id_producto === 0 ? 'Productos con Variantes por Talla' : 'Variantes por Talle y Color'}
+                    </h4>
+                    {selectedProductVariants.id_producto === 0 && (
+                      <div className="flex items-center space-x-2">
+                        <Search className="h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Buscar producto..."
+                          value={variantsSearchTerm}
+                          onChange={(e) => setVariantsSearchTerm(e.target.value)}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Contador de resultados */}
+                  {selectedProductVariants.id_producto === 0 && variantsSearchTerm && (
+                    <div className="mb-4 text-sm text-gray-600">
+                      Mostrando {getFilteredProducts().length} de {selectedProductVariants.variantes?.length || 0} productos
+                    </div>
+                  )}
+                  
                   {selectedProductVariants.variantes && selectedProductVariants.variantes.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {selectedProductVariants.variantes.map((variante: any, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
-                          {selectedProductVariants.id_producto === 0 && (
-                            <div className="mb-3 pb-2 border-b border-gray-100">
-                              <div className="text-sm font-medium text-gray-900 truncate" title={variante.producto_descripcion}>
-                                {variante.producto_descripcion}
+                    <>
+                      {getFilteredProducts().length > 0 ? (
+                        <div className="space-y-6">
+                          {getFilteredProducts().map((producto: any, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-6 bg-white">
+                          {/* Información del producto */}
+                          <div className="mb-4 pb-3 border-b border-gray-100">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h5 className="text-lg font-semibold text-gray-900 mb-1">
+                                  {producto.descripcion || producto.nombre || 'Producto sin nombre'}
+                                </h5>
+                                <div className="text-sm text-gray-600 space-y-1">
+                                  <p>ID: {producto.id_producto} | {producto.categoria?.nombre_categoria} | {producto.proveedor?.nombre}</p>
+                                  <p>Stock Total: <span className="font-semibold text-blue-600">{producto.stockTotal || 0} unidades</span></p>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                ID: {variante.producto_id} | {variante.categoria} | {variante.proveedor}
+                              <div className="text-right text-sm text-gray-500">
+                                <p>Precio Venta: <span className="font-medium text-green-600">{formatPrice(toNum(producto.precio_venta))}</span></p>
+                                <p>Precio Compra: <span className="font-medium text-blue-600">{formatPrice(toNum(producto.precio_compra))}</span></p>
                               </div>
                             </div>
-                          )}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-                                {variante.talla?.nombre || 'Sin talle'}
-                              </span>
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
-                                {variante.color?.nombre || 'Sin color'}
-                              </span>
-                            </div>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              selectedProductVariants.id_producto === 0 
-                                ? (toNum(variante.stock) <= 5 ? 'bg-red-100 text-red-800' : toNum(variante.stock) <= 10 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800')
-                                : (toNum(variante.stock) <= toNum(selectedProductVariants.stock_seguridad)
-                                  ? 'bg-red-100 text-red-800'
-                                  : toNum(variante.stock) <= (toNum(selectedProductVariants.stock_seguridad) * 2)
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-green-100 text-green-800')
-                            }`}>
-                              {toNum(variante.stock)} unidades
-                            </span>
                           </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Precio Venta:</span>
-                              <span className="font-medium text-green-600">
-                                {formatPrice(toNum(variante.precio_venta))}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Precio Compra:</span>
-                              <span className="font-medium text-blue-600">
-                                {formatPrice(toNum(variante.precio_compra || 0))}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Margen:</span>
-                              <span className="font-medium text-purple-600">
-                                {variante.precio_compra ? ((toNum(variante.precio_venta) - toNum(variante.precio_compra)) / toNum(variante.precio_compra) * 100).toFixed(1) : '0.0'}%
-                              </span>
-                            </div>
+
+                          {/* Variantes reales de la base de datos */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {producto.variantesReales && producto.variantesReales.length > 0 ? (
+                              producto.variantesReales.map((variante: any, varianteIndex: number) => (
+                                <div key={varianteIndex} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                                        {variante.talla?.nombre || 'Sin talle'}
+                                      </span>
+                                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                                        {variante.color?.nombre || 'Sin color'}
+                                      </span>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                      variante.stock <= 5 ? 'bg-red-100 text-red-800' : 
+                                      variante.stock <= 10 ? 'bg-yellow-100 text-yellow-800' : 
+                                      'bg-green-100 text-green-800'
+                                    }`}>
+                                      {variante.stock} unidades
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Precio Venta:</span>
+                                      <span className="font-medium text-green-600">
+                                        {formatPrice(toNum(variante.precio_venta))}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Precio Compra:</span>
+                                      <span className="font-medium text-blue-600">
+                                        {formatPrice(toNum(variante.precio_compra))}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Margen:</span>
+                                      <span className="font-medium text-purple-600">
+                                        {variante.margen}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              // Producto sin variantes
+                              <div className="col-span-full bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                                <div className="flex items-center space-x-2">
+                                  <Package className="h-5 w-5 text-yellow-600" />
+                                  <div>
+                                    <p className="text-sm font-medium text-yellow-800">Producto sin variantes</p>
+                                    <p className="text-xs text-yellow-600">Este producto no tiene tallas y colores configurados</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
-                    </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Search className="mx-auto h-12 w-12 text-gray-400" />
+                          <h3 className="mt-2 text-sm font-medium text-gray-900">No se encontraron productos</h3>
+                          <p className="mt-1 text-sm text-gray-500">No hay productos que coincidan con "{variantsSearchTerm}"</p>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="text-center py-8">
                       <Package className="mx-auto h-12 w-12 text-gray-400" />

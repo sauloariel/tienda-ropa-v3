@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Percent, DollarSign, Gift, Target, Hash, Users, Clock } from 'lucide-react';
+import { X, Calendar, Percent, DollarSign, Gift, Target, Hash, Users, Clock, Package, Search } from 'lucide-react';
 import { PromocionResponse } from '../../types/marketing.types';
 
 interface ModalPromocionProps {
@@ -8,6 +8,13 @@ interface ModalPromocionProps {
     onSave: (data: any) => void;
     promocion?: PromocionResponse | null;
     loading?: boolean;
+}
+
+interface Producto {
+    id_producto: number;
+    descripcion: string;
+    precio_venta: number;
+    stock: number;
 }
 
 export const ModalPromocion: React.FC<ModalPromocionProps> = ({
@@ -27,10 +34,33 @@ export const ModalPromocion: React.FC<ModalPromocionProps> = ({
         fecha_fin: '',
         minimo_compra: '',
         uso_maximo: '',
-        estado: 'ACTIVA' as 'ACTIVA' | 'INACTIVA' | 'EXPIRADA'
+        estado: 'ACTIVA' as 'ACTIVA' | 'INACTIVA' | 'EXPIRADA',
+        productos: [] as number[]
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [productosDisponibles, setProductosDisponibles] = useState<Producto[]>([]);
+    const [productosSeleccionados, setProductosSeleccionados] = useState<Producto[]>([]);
+    const [busquedaProducto, setBusquedaProducto] = useState('');
+
+    // Cargar productos disponibles
+    useEffect(() => {
+        const cargarProductos = async () => {
+            try {
+                const response = await fetch('http://localhost:4000/api/marketing/productos-disponibles');
+                if (response.ok) {
+                    const productos = await response.json();
+                    setProductosDisponibles(productos);
+                }
+            } catch (error) {
+                console.error('Error cargando productos:', error);
+            }
+        };
+
+        if (isOpen) {
+            cargarProductos();
+        }
+    }, [isOpen]);
 
     // Cargar datos de la promoción si está editando
     useEffect(() => {
@@ -45,8 +75,14 @@ export const ModalPromocion: React.FC<ModalPromocionProps> = ({
                 fecha_fin: promocion.fecha_fin.split('T')[0],
                 minimo_compra: promocion.minimo_compra?.toString() || '',
                 uso_maximo: promocion.uso_maximo?.toString() || '',
-                estado: promocion.estado
+                estado: promocion.estado,
+                productos: promocion.productos?.map((p: any) => p.id_producto) || []
             });
+            
+            // Cargar productos seleccionados si existen
+            if (promocion.productos) {
+                setProductosSeleccionados(promocion.productos);
+            }
         } else {
             // Resetear formulario para nueva promoción
             setFormData({
@@ -59,8 +95,10 @@ export const ModalPromocion: React.FC<ModalPromocionProps> = ({
                 fecha_fin: '',
                 minimo_compra: '',
                 uso_maximo: '',
-                estado: 'ACTIVA'
+                estado: 'ACTIVA',
+                productos: []
             });
+            setProductosSeleccionados([]);
         }
         setErrors({});
     }, [promocion, isOpen]);
@@ -80,6 +118,31 @@ export const ModalPromocion: React.FC<ModalPromocionProps> = ({
             }));
         }
     };
+
+    const agregarProducto = (producto: Producto) => {
+        if (!productosSeleccionados.find(p => p.id_producto === producto.id_producto)) {
+            const nuevosSeleccionados = [...productosSeleccionados, producto];
+            setProductosSeleccionados(nuevosSeleccionados);
+            setFormData(prev => ({
+                ...prev,
+                productos: nuevosSeleccionados.map(p => p.id_producto)
+            }));
+        }
+    };
+
+    const quitarProducto = (idProducto: number) => {
+        const nuevosSeleccionados = productosSeleccionados.filter(p => p.id_producto !== idProducto);
+        setProductosSeleccionados(nuevosSeleccionados);
+        setFormData(prev => ({
+            ...prev,
+            productos: nuevosSeleccionados.map(p => p.id_producto)
+        }));
+    };
+
+    const productosFiltrados = productosDisponibles.filter(producto =>
+        producto.descripcion.toLowerCase().includes(busquedaProducto.toLowerCase()) &&
+        !productosSeleccionados.find(p => p.id_producto === producto.id_producto)
+    );
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -332,6 +395,77 @@ export const ModalPromocion: React.FC<ModalPromocionProps> = ({
                                 </div>
                                 {errors.fecha_fin && <p className="text-red-500 text-sm mt-1">{errors.fecha_fin}</p>}
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Selección de productos */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900">Productos de la Promoción</h3>
+                        
+                        {/* Productos seleccionados */}
+                        {productosSeleccionados.length > 0 && (
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Productos seleccionados ({productosSeleccionados.length})
+                                </label>
+                                <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                                    {productosSeleccionados.map((producto) => (
+                                        <div key={producto.id_producto} className="flex items-center justify-between bg-blue-50 p-2 rounded-md">
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium text-gray-900">{producto.descripcion}</span>
+                                                <span className="text-xs text-gray-500 ml-2">${producto.precio_venta}</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => quitarProducto(producto.id_producto)}
+                                                className="text-red-500 hover:text-red-700 text-sm"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Búsqueda de productos */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Agregar productos
+                            </label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <input
+                                    type="text"
+                                    value={busquedaProducto}
+                                    onChange={(e) => setBusquedaProducto(e.target.value)}
+                                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Buscar productos..."
+                                />
+                            </div>
+                            
+                            {/* Lista de productos disponibles */}
+                            {busquedaProducto && productosFiltrados.length > 0 && (
+                                <div className="border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                                    {productosFiltrados.slice(0, 10).map((producto) => (
+                                        <div
+                                            key={producto.id_producto}
+                                            className="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer"
+                                            onClick={() => agregarProducto(producto)}
+                                        >
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium text-gray-900">{producto.descripcion}</span>
+                                                <span className="text-xs text-gray-500 ml-2">${producto.precio_venta} - Stock: {producto.stock}</span>
+                                            </div>
+                                            <Package className="h-4 w-4 text-gray-400" />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {busquedaProducto && productosFiltrados.length === 0 && (
+                                <p className="text-sm text-gray-500 text-center py-2">No se encontraron productos</p>
+                            )}
                         </div>
                     </div>
 

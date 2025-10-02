@@ -25,7 +25,7 @@ export class Pedidos extends Model {
   @Column(DataType.INTEGER)
   id_empleados!: number;
 
-  @BelongsTo(() => Empleados, 'id_empleados')
+  @BelongsTo(() => Empleados, { foreignKey: 'id_empleados', targetKey: 'id_empleado' })
   empleado!: Empleados;
 
   @Column(DataType.DATE)
@@ -46,26 +46,27 @@ export class Pedidos extends Model {
   @Column(DataType.STRING(255))
   payment_id?: string;
 
-  @Column(DataType.TEXT)
-  direccion_entrega?: string;
+  // Campos opcionales que pueden no existir en la base de datos
+  // @Column(DataType.TEXT)
+  // direccion_entrega?: string;
 
-  @Column(DataType.STRING(100))
-  horario_recepcion?: string;
+  // @Column(DataType.STRING(100))
+  // horario_recepcion?: string;
 
-  @Column(DataType.TEXT)
-  descripcion_pedido?: string;
+  // @Column(DataType.TEXT)
+  // descripcion_pedido?: string;
 
-  @Column(DataType.DECIMAL(10, 8))
-  latitud?: number;
+  // @Column(DataType.DECIMAL(10, 8))
+  // latitud?: number;
 
-  @Column(DataType.DECIMAL(11, 8))
-  longitud?: number;
+  // @Column(DataType.DECIMAL(11, 8))
+  // longitud?: number;
 
-  @Column(DataType.STRING(255))
-  telefono_contacto?: string;
+  // @Column(DataType.STRING(255))
+  // telefono_contacto?: string;
 
-  @Column(DataType.TEXT)
-  notas_entrega?: string;
+  // @Column(DataType.TEXT)
+  // notas_entrega?: string;
 
   @HasMany(() => DetallePedidos)
   detalle!: DetallePedidos[];

@@ -1,4 +1,5 @@
 import simpleApi from './simpleApi'
+import { sendOrderStatusNotification, isOrderEmailConfigured } from './orderEmailService'
 
 export interface Pedido {
     id_pedido: number
@@ -170,8 +171,44 @@ export const pedidosService = {
     // Cambiar estado del pedido
     cambiarEstado: async (id: number, estado: string): Promise<any> => {
         try {
-            const response = await pedidosAPI.cambiarEstado(id, estado)
-            return response.data
+            // Primero obtener los datos del pedido para el email
+            const pedidoResponse = await pedidosAPI.getById(id);
+            const pedidoData = pedidoResponse.data;
+
+            // Cambiar estado en el backend
+            const response = await pedidosAPI.cambiarEstado(id, estado);
+
+            // Enviar notificación por email si está configurado
+            if (isOrderEmailConfigured() && pedidoData.cliente?.mail) {
+                try {
+                    const emailEnviado = await sendOrderStatusNotification(
+                        pedidoData.cliente.mail,
+                        `${pedidoData.cliente.nombre} ${pedidoData.cliente.apellido}`,
+                        id,
+                        pedidoData.estado || 'desconocido',
+                        estado,
+                        new Date(pedidoData.fecha_pedido || Date.now()),
+                        pedidoData.importe || 0
+                    );
+
+                    console.log('📧 Notificación de pedido enviada:', emailEnviado);
+
+                    // Agregar información del email a la respuesta
+                    return {
+                        ...response.data,
+                        email_enviado: emailEnviado
+                    };
+                } catch (emailError) {
+                    console.warn('⚠️ No se pudo enviar notificación de pedido:', emailError);
+                    return {
+                        ...response.data,
+                        email_enviado: false,
+                        email_error: emailError.message
+                    };
+                }
+            }
+
+            return response.data;
         } catch (error) {
             console.error('Error cambiando estado del pedido:', error)
             throw error

@@ -4,6 +4,7 @@ import { DetallePedidos } from "../models/DetallePedidos.model";
 import { Clientes } from "../models/Clientes.model";
 import { Productos } from "../models/Productos.model";
 import { Op } from "sequelize";
+import { sendOrderStatusNotification, isOrderEmailConfigured } from "../services/orderEmailService";
 
 // Interfaz para crear pedido
 interface PedidoCreate {
@@ -248,10 +249,22 @@ export const cambiarEstadoPedido = async (req: Request, res: Response) => {
             });
         }
 
-        const pedido = await Pedidos.findByPk(id);
+        const pedido = await Pedidos.findByPk(id, {
+            include: [
+                {
+                    model: Clientes,
+                    as: 'cliente',
+                    attributes: ['id_cliente', 'nombre', 'apellido', 'mail']
+                }
+            ]
+        });
+
         if (!pedido) {
             return res.status(404).json({ error: "Pedido no encontrado" });
         }
+
+        // Guardar el estado anterior
+        const estadoAnterior = pedido.estado;
 
         // Actualizar el estado
         pedido.estado = estado;
@@ -259,13 +272,36 @@ export const cambiarEstadoPedido = async (req: Request, res: Response) => {
 
         console.log(`✅ Estado del pedido ${id} cambiado a: ${estado}`);
 
+        // Enviar notificación por email si está configurado
+        let emailEnviado = false;
+        if (isOrderEmailConfigured() && pedido.cliente?.mail) {
+            try {
+                emailEnviado = await sendOrderStatusNotification(
+                    pedido.cliente.mail,
+                    `${pedido.cliente.nombre} ${pedido.cliente.apellido}`,
+                    pedido.id_pedido,
+                    estadoAnterior,
+                    estado,
+                    pedido.fecha_pedido,
+                    pedido.importe
+                );
+                console.log('📧 Notificación de pedido enviada al cliente');
+            } catch (emailError) {
+                console.warn('⚠️ No se pudo enviar notificación de pedido:', emailError);
+            }
+        } else {
+            console.warn('⚠️ EmailJS no configurado o cliente sin email. Notificación no enviada.');
+        }
+
         res.status(200).json({
             message: `Estado del pedido #${id} cambiado a: ${estado}`,
             pedido: {
                 id_pedido: pedido.id_pedido,
                 estado: pedido.estado,
-                fecha_pedido: pedido.fecha_pedido
-            }
+                fecha_pedido: pedido.fecha_pedido,
+                cliente: pedido.cliente?.nombre + ' ' + pedido.cliente?.apellido
+            },
+            email_enviado: emailEnviado
         });
     } catch (error: any) {
         console.error("Error al cambiar estado del pedido:", error);
@@ -525,8 +561,8 @@ export const getPedidoByNumber = async (req: Request, res: Response) => {
                 estado: pedido.estado,
                 fecha_pedido: pedido.fecha_pedido,
                 importe: pedido.importe,
-                direccion_entrega: pedido.direccion_entrega,
-                horario_recepcion: pedido.horario_recepcion,
+                // direccion_entrega: pedido.direccion_entrega,
+                // horario_recepcion: pedido.horario_recepcion,
                 cliente: pedido.cliente,
                 items: pedido.detalle,
                 historial: historial

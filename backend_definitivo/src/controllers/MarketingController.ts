@@ -5,26 +5,6 @@ import db from '../config/db';
 // Obtener todas las promociones
 export const getPromociones = async (req: Request, res: Response) => {
     try {
-        const { estado, tipo, search } = req.query;
-
-        let whereConditions = '1=1';
-        const replacements: any = {};
-
-        if (estado && estado !== 'TODOS') {
-            whereConditions += ' AND estado = :estado';
-            replacements.estado = estado;
-        }
-
-        if (tipo && tipo !== 'TODOS') {
-            whereConditions += ' AND tipo = :tipo';
-            replacements.tipo = tipo;
-        }
-
-        if (search) {
-            whereConditions += ' AND (nombre ILIKE :search OR descripcion ILIKE :search OR codigo_descuento ILIKE :search)';
-            replacements.search = `%${search}%`;
-        }
-
         const query = `
             SELECT 
                 id_promocion,
@@ -38,16 +18,12 @@ export const getPromociones = async (req: Request, res: Response) => {
                 minimo_compra,
                 uso_maximo,
                 uso_actual,
-                estado,
-                created_at,
-                updated_at
+                estado
             FROM promociones 
-            WHERE ${whereConditions}
             ORDER BY fecha_inicio DESC
         `;
 
         const promociones = await db.query(query, {
-            replacements,
             type: QueryTypes.SELECT
         });
 
@@ -58,29 +34,41 @@ export const getPromociones = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener promoción por ID
+// Obtener promoción por ID con productos
 export const getPromocionById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
         const query = `
             SELECT 
-                id_promocion,
-                nombre,
-                descripcion,
-                tipo,
-                valor,
-                codigo_descuento,
-                fecha_inicio,
-                fecha_fin,
-                minimo_compra,
-                uso_maximo,
-                uso_actual,
-                estado,
-                created_at,
-                updated_at
-            FROM promociones 
-            WHERE id_promocion = :id
+                p.id_promocion,
+                p.nombre,
+                p.descripcion,
+                p.tipo,
+                p.valor,
+                p.codigo_descuento,
+                p.fecha_inicio,
+                p.fecha_fin,
+                p.minimo_compra,
+                p.uso_maximo,
+                p.uso_actual,
+                p.estado,
+                COALESCE(
+                    JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'id_producto', pr.id_producto,
+                            'descripcion', pr.descripcion,
+                            'precio_venta', pr.precio_venta,
+                            'stock', pr.stock
+                        )
+                    ) FILTER (WHERE pr.id_producto IS NOT NULL), 
+                    '[]'::json
+                ) as productos
+            FROM promociones p
+            LEFT JOIN promociones_productos pp ON p.id_promocion = pp.id_promocion
+            LEFT JOIN productos pr ON pp.id_producto = pr.id_producto
+            WHERE p.id_promocion = :id
+            GROUP BY p.id_promocion
         `;
 
         const promociones = await db.query(query, {
@@ -112,7 +100,8 @@ export const createPromocion = async (req: Request, res: Response) => {
             fecha_fin,
             minimo_compra,
             uso_maximo,
-            estado = 'ACTIVA'
+            estado = 'ACTIVA',
+            productos = []
         } = req.body;
 
         // Validaciones básicas
@@ -149,11 +138,11 @@ export const createPromocion = async (req: Request, res: Response) => {
             INSERT INTO promociones (
                 nombre, descripcion, tipo, valor, codigo_descuento,
                 fecha_inicio, fecha_fin, minimo_compra, uso_maximo,
-                uso_actual, estado, created_at, updated_at
+                uso_actual, estado
             ) VALUES (
                 :nombre, :descripcion, :tipo, :valor, :codigo_descuento,
                 :fecha_inicio, :fecha_fin, :minimo_compra, :uso_maximo,
-                0, :estado, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                0, :estado
             ) RETURNING *
         `;
 
@@ -173,7 +162,25 @@ export const createPromocion = async (req: Request, res: Response) => {
             type: QueryTypes.INSERT
         });
 
-        res.status(201).json(result[0][0]);
+        const nuevaPromocion = (result as any)[0][0];
+
+        // Si se especificaron productos, crear las relaciones
+        if (productos && productos.length > 0) {
+            for (const productoId of productos) {
+                await db.query(
+                    'INSERT INTO promociones_productos (id_promocion, id_producto) VALUES (:id_promocion, :id_producto)',
+                    {
+                        replacements: {
+                            id_promocion: nuevaPromocion.id_promocion,
+                            id_producto: productoId
+                        },
+                        type: QueryTypes.INSERT
+                    }
+                );
+            }
+        }
+
+        res.status(201).json(nuevaPromocion);
     } catch (error) {
         console.error('Error creando promoción:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -234,7 +241,7 @@ export const updatePromocion = async (req: Request, res: Response) => {
         const replacements: any = { id };
 
         Object.keys(updateData).forEach(key => {
-            if (updateData[key] !== undefined) {
+            if (updateData[key] !== undefined && key !== 'productos') {
                 updateFields.push(`${key} = :${key}`);
                 replacements[key] = updateData[key];
             }
@@ -243,8 +250,6 @@ export const updatePromocion = async (req: Request, res: Response) => {
         if (updateFields.length === 0) {
             return res.status(400).json({ error: 'No hay campos para actualizar' });
         }
-
-        updateFields.push('updated_at = CURRENT_TIMESTAMP');
 
         const updateQuery = `
             UPDATE promociones 
@@ -258,7 +263,35 @@ export const updatePromocion = async (req: Request, res: Response) => {
             type: QueryTypes.UPDATE
         });
 
-        res.json((result as any)[0][0]);
+        const promocionActualizada = (result as any)[0][0];
+
+        // Si se especificaron productos, actualizar las relaciones
+        if (updateData.productos && Array.isArray(updateData.productos)) {
+            // Eliminar relaciones existentes
+            await db.query(
+                'DELETE FROM promociones_productos WHERE id_promocion = :id',
+                {
+                    replacements: { id },
+                    type: QueryTypes.DELETE
+                }
+            );
+
+            // Agregar nuevas relaciones
+            for (const productoId of updateData.productos) {
+                await db.query(
+                    'INSERT INTO promociones_productos (id_promocion, id_producto) VALUES (:id_promocion, :id_producto)',
+                    {
+                        replacements: {
+                            id_promocion: id,
+                            id_producto: productoId
+                        },
+                        type: QueryTypes.INSERT
+                    }
+                );
+            }
+        }
+
+        res.json(promocionActualizada);
     } catch (error) {
         console.error('Error actualizando promoción:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
@@ -452,6 +485,119 @@ export const validateCodigoDescuento = async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Error validando código de descuento:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+// Obtener productos disponibles para promociones
+export const getProductosDisponibles = async (req: Request, res: Response) => {
+    try {
+        const query = `
+            SELECT 
+                id_producto,
+                descripcion,
+                precio_venta,
+                stock,
+                estado
+            FROM productos 
+            WHERE estado = 'ACTIVO' AND stock > 0
+            ORDER BY descripcion
+        `;
+
+        const productos = await db.query(query, {
+            type: QueryTypes.SELECT
+        });
+
+        res.json(productos);
+    } catch (error) {
+        console.error('Error obteniendo productos disponibles:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+// Agregar productos a una promoción
+export const agregarProductosPromocion = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { productos } = req.body;
+
+        if (!productos || !Array.isArray(productos)) {
+            return res.status(400).json({ error: 'Se requiere un array de productos' });
+        }
+
+        // Eliminar relaciones existentes
+        await db.query(
+            'DELETE FROM promociones_productos WHERE id_promocion = :id',
+            {
+                replacements: { id },
+                type: QueryTypes.DELETE
+            }
+        );
+
+        // Agregar nuevas relaciones
+        for (const productoId of productos) {
+            await db.query(
+                'INSERT INTO promociones_productos (id_promocion, id_producto) VALUES (:id_promocion, :id_producto)',
+                {
+                    replacements: {
+                        id_promocion: id,
+                        id_producto: productoId
+                    },
+                    type: QueryTypes.INSERT
+                }
+            );
+        }
+
+        res.json({ message: 'Productos agregados exitosamente' });
+    } catch (error) {
+        console.error('Error agregando productos a promoción:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+// Obtener promociones activas para productos específicos
+export const getPromocionesActivasProductos = async (req: Request, res: Response) => {
+    try {
+        const { productos } = req.query;
+
+        if (!productos) {
+            return res.status(400).json({ error: 'Se requiere especificar productos' });
+        }
+
+        const productosArray = Array.isArray(productos) ? productos.map(Number) : [Number(productos)];
+
+        const query = `
+            SELECT DISTINCT
+                p.id_promocion,
+                p.nombre,
+                p.descripcion,
+                p.tipo,
+                p.valor,
+                p.codigo_descuento,
+                p.fecha_inicio,
+                p.fecha_fin,
+                p.minimo_compra,
+                pr.id_producto,
+                pr.descripcion as producto_descripcion,
+                pr.precio_venta
+            FROM promociones p
+            INNER JOIN promociones_productos pp ON p.id_promocion = pp.id_promocion
+            INNER JOIN productos pr ON pp.id_producto = pr.id_producto
+            WHERE p.estado = 'ACTIVA'
+            AND p.fecha_inicio <= NOW()
+            AND p.fecha_fin >= NOW()
+            AND pr.id_producto IN (:productos)
+            ORDER BY p.fecha_fin ASC
+        `;
+
+        const promociones = await db.query(query, {
+            replacements: { productos: productosArray },
+            type: QueryTypes.SELECT
+        });
+
+        res.json(promociones);
+    } catch (error) {
+        console.error('Error obteniendo promociones activas:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };

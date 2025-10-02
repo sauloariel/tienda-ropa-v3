@@ -1,18 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Calendar, Eye, X, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, X, FileText } from 'lucide-react';
 import { facturasAPI, type Factura } from '../services/facturas';
 
 
-interface VentaDetalle {
-  id_detalle_venta: number;
-  id_producto: number;
-  cantidad: number;
-  precio_unitario: number;
-  subtotal: number;
-  producto?: {
-    descripcion: string;
-  };
-}
 
 const Ventas = () => {
   const [facturas, setFacturas] = useState<Factura[]>([]);
@@ -20,7 +10,7 @@ const Ventas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [filterPayment, setFilterPayment] = useState<string>('todos');
-  const [selectedFactura, setSelectedFactura] = useState<Factura | null>(null);
+  const [selectedFactura] = useState<Factura | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +23,7 @@ const Ventas = () => {
         const response = await facturasAPI.getFacturas();
         
         // La API devuelve { success: true, facturas: [...] }
-        const data = response?.facturas || response;
+        const data = (response as any)?.facturas || response;
         
         // Asegurar que siempre tengamos un array
         if (Array.isArray(data)) {
@@ -68,18 +58,6 @@ const Ventas = () => {
     return matchesSearch && matchesStatus && matchesPayment;
   }) : [];
 
-  // Calcular estadísticas
-  const totalVentas = Array.isArray(facturas) ? facturas.length : 0;
-  const totalIngresos = Array.isArray(facturas) ? facturas
-    .filter(f => f.estado === 'activa' || f.estado === 'pagada')
-    .reduce((sum, f) => {
-      const total = typeof f.total === 'number' ? f.total : parseFloat(f.total) || 0;
-      console.log('💰 Procesando factura:', f.numeroFactura, 'total:', f.total, 'tipo:', typeof f.total, 'convertido:', total);
-      return sum + total;
-    }, 0) : 0;
-  const ventasAnuladas = Array.isArray(facturas) ? facturas.filter(f => f.estado === 'anulada').length : 0;
-  
-  console.log('📊 Estadísticas calculadas:', { totalVentas, totalIngresos, ventasAnuladas, tipoTotalIngresos: typeof totalIngresos });
 
   // Formatear fecha
   const formatDate = (dateString: string) => {
@@ -107,12 +85,8 @@ const Ventas = () => {
     switch (metodo) {
       case 'efectivo':
         return 'bg-green-100 text-green-800';
-      case 'tarjeta':
-        return 'bg-blue-100 text-blue-800';
-      case 'transferencia':
+      case 'cbu':
         return 'bg-purple-100 text-purple-800';
-      case 'qr':
-        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -146,52 +120,6 @@ const Ventas = () => {
         </div>
       )}
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">📈</span>
-              </div>
-              <div className="ml-4 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Ventas</dt>
-                  <dd className="text-lg font-semibold text-gray-900">{totalVentas}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">💰</span>
-              </div>
-              <div className="ml-4 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Ingresos Totales</dt>
-                  <dd className="text-lg font-semibold text-gray-900">
-                    ${(typeof totalIngresos === 'number' ? totalIngresos : 0).toFixed(2)}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">❌</span>
-              </div>
-              <div className="ml-4 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Ventas Anuladas</dt>
-                  <dd className="text-lg font-semibold text-gray-900">{ventasAnuladas}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Filtros y búsqueda */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6 z-30">
@@ -249,9 +177,7 @@ const Ventas = () => {
                 >
                   <option value="todos">💳 Todos los métodos</option>
                   <option value="efectivo">💵 Efectivo</option>
-                  <option value="tarjeta">💳 Tarjeta</option>
-                  <option value="transferencia">🏦 Transferencia</option>
-                  <option value="qr">📱 QR</option>
+                  <option value="cbu">🏦 CBU</option>
                 </select>
               </div>
             </div>
@@ -308,8 +234,8 @@ const Ventas = () => {
                           <div className="text-sm font-medium text-gray-900 truncate" title={factura.cliente ? `${factura.cliente.nombre} ${factura.cliente.apellido}` : 'Cliente N/A'}>
                             {factura.cliente ? `${factura.cliente.nombre} ${factura.cliente.apellido}` : 'Cliente N/A'}
                           </div>
-                          <div className="text-xs text-gray-500 truncate" title={factura.cliente?.mail || 'Email N/A'}>
-                            {factura.cliente?.mail || 'Email N/A'}
+                          <div className="text-xs text-gray-500 truncate" title={(factura.cliente as any)?.mail || 'Email N/A'}>
+                            {(factura.cliente as any)?.mail || 'Email N/A'}
                           </div>
                         </div>
                       </td>
@@ -454,7 +380,7 @@ const Ventas = () => {
                                         <div class="client-info">
                                           <h3>Cliente:</h3>
                                           <p><strong>${factura.cliente ? (factura.cliente.nombre || '') + ' ' + (factura.cliente.apellido || '') : 'Cliente General'}</strong></p>
-                                          ${factura.cliente && factura.cliente.email ? `<p>Email: ${factura.cliente.email}</p>` : ''}
+                                          ${factura.cliente && (factura.cliente as any).email ? `<p>Email: ${(factura.cliente as any).email}</p>` : ''}
                                         </div>
                                         <div class="invoice-info">
                                           <h3>Datos de la Factura:</h3>
@@ -481,8 +407,8 @@ const Ventas = () => {
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          ${factura.detalles && factura.detalles.length > 0 ? 
-                                            factura.detalles.map(detalle => {
+                                          ${(factura as any).detalles && (factura as any).detalles.length > 0 ? 
+                                            (factura as any).detalles.map((detalle: any) => {
                                               const subtotal = parseFloat(detalle.subtotal) || 0;
                                               const cantidad = parseFloat(detalle.cantidad) || 0;
                                               const precioUnitario = cantidad > 0 ? subtotal / cantidad : 0;
@@ -525,7 +451,7 @@ const Ventas = () => {
                                 }
                               } catch (error) {
                                 console.error('Error al abrir la factura:', error);
-                                alert('Error al abrir la factura: ' + error.message);
+                                alert('Error al abrir la factura: ' + (error as Error).message);
                               }
                             }}
                             className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"

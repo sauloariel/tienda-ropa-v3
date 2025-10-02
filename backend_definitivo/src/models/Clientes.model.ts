@@ -37,6 +37,15 @@ export class Clientes extends Model {
   @Column(DataType.STRING(255))
   password?: string;
 
+  @Column(DataType.BOOLEAN)
+  email_verificado?: boolean;
+
+  @Column(DataType.STRING(255))
+  token_verificacion?: string;
+
+  @Column(DataType.DATE)
+  fecha_token_verificacion?: Date;
+
   @HasMany(() => Pedidos)
   pedidos!: Pedidos[];
 }

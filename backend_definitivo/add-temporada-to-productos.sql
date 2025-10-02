@@ -25,3 +25,5 @@ SELECT id_producto, descripcion, temporada FROM productos LIMIT 10;
 
 
 
+
+

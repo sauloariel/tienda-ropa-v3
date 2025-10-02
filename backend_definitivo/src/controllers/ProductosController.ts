@@ -33,7 +33,12 @@ export const createProducto = async (req: Request, res: Response) => {
       for (const variante of variantes) {
         console.log('📏 Creando variante:', variante);
 
-        const varianteData = {
+        const varianteData: {
+          id_producto: number;
+          id_color: number;
+          stock: number;
+          id_talla?: number;
+        } = {
           id_producto: producto.id_producto,
           id_color: parseInt(variante.id_color),
           stock: parseInt(variante.stock)
@@ -221,7 +226,12 @@ export const updateProducto = async (req: Request, res: Response) => {
         for (const variante of variantes) {
           console.log('📏 Creando variante:', variante);
 
-          const varianteData = {
+          const varianteData: {
+            id_producto: number;
+            id_color: number;
+            stock: number;
+            id_talla?: number;
+          } = {
             id_producto: producto.id_producto,
             id_color: parseInt(variante.id_color),
             stock: parseInt(variante.stock)

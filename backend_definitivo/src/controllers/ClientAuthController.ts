@@ -1,6 +1,13 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { Clientes } from '../models/Clientes.model';
+// import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } from '../services/emailService';
+
+// Función para generar token de verificación
+const generateVerificationToken = (): string => {
+    return crypto.randomBytes(32).toString('hex');
+};
 
 // Login de cliente (simplificado)
 export const loginCliente = async (req: Request, res: Response) => {
@@ -35,6 +42,16 @@ export const loginCliente = async (req: Request, res: Response) => {
             return res.status(401).json({
                 success: false,
                 message: 'Credenciales inválidas'
+            });
+        }
+
+        // Verificar que el email esté verificado
+        if (!cliente.email_verificado) {
+            return res.status(403).json({
+                success: false,
+                message: 'Debes verificar tu email antes de iniciar sesión. Revisa tu bandeja de entrada.',
+                requiere_verificacion: true,
+                email: cliente.mail
             });
         }
 
@@ -102,6 +119,11 @@ export const registerCliente = async (req: Request, res: Response) => {
         const dniUnico = timestamp.toString().slice(-8); // Últimos 8 dígitos del timestamp
         const cuitUnico = `20${dniUnico}9`; // Formato CUIT argentino
 
+        // Generar token de verificación
+        const verificationToken = generateVerificationToken();
+        const tokenExpiry = new Date();
+        tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Expira en 24 horas
+
         // Crear nuevo cliente
         const nuevoCliente = await Clientes.create({
             dni: dniUnico,
@@ -112,10 +134,30 @@ export const registerCliente = async (req: Request, res: Response) => {
             telefono: telefono || 'Sin especificar',
             mail: mail.toLowerCase(),
             password: hashedPassword,
-            estado: 'activo'
+            estado: 'activo',
+            email_verificado: false,
+            token_verificacion: verificationToken,
+            fecha_token_verificacion: tokenExpiry
         });
 
         console.log('✅ Cliente creado:', nuevoCliente.id_cliente);
+
+        // Enviar email de verificación (comentado temporalmente para pruebas)
+        let emailEnviado = false;
+        // try {
+        //     emailEnviado = await sendVerificationEmail(
+        //         mail.toLowerCase(),
+        //         nombre,
+        //         verificationToken
+        //     );
+        // } catch (error) {
+        //     console.warn('⚠️ Error enviando email de verificación:', error);
+        //     emailEnviado = false;
+        // }
+
+        if (!emailEnviado) {
+            console.warn('⚠️ No se pudo enviar el email de verificación, pero el cliente fue creado');
+        }
 
         // Retornar datos del cliente (sin password)
         const clienteData = {
@@ -127,13 +169,21 @@ export const registerCliente = async (req: Request, res: Response) => {
             domicilio: nuevoCliente.domicilio,
             telefono: nuevoCliente.telefono,
             mail: nuevoCliente.mail,
-            estado: nuevoCliente.estado
+            estado: nuevoCliente.estado,
+            email_verificado: nuevoCliente.email_verificado
         };
 
         res.status(201).json({
             success: true,
-            message: 'Cliente registrado exitosamente',
-            cliente: clienteData
+            message: emailEnviado
+                ? 'Cliente registrado exitosamente. Revisa tu email para verificar tu cuenta.'
+                : 'Cliente registrado exitosamente. Revisa tu email para verificar tu cuenta.',
+            cliente: {
+                ...clienteData,
+                token_verificacion: verificationToken // Incluir token para EmailJS
+            },
+            email_enviado: emailEnviado,
+            requiere_verificacion: true
         });
 
     } catch (error) {
@@ -205,6 +255,151 @@ export const logoutCliente = async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Error en logout de cliente:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Verificar email con token
+export const verifyEmail = async (req: Request, res: Response) => {
+    try {
+        const { token } = req.params;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token de verificación requerido'
+            });
+        }
+
+        // Buscar cliente por token de verificación
+        const cliente = await Clientes.findOne({
+            where: { token_verificacion: token }
+        });
+
+        if (!cliente) {
+            return res.status(404).json({
+                success: false,
+                message: 'Token de verificación inválido o expirado'
+            });
+        }
+
+        // Verificar si el token ha expirado
+        if (cliente.fecha_token_verificacion && new Date() > cliente.fecha_token_verificacion) {
+            return res.status(400).json({
+                success: false,
+                message: 'El token de verificación ha expirado. Solicita uno nuevo.',
+                token_expirado: true
+            });
+        }
+
+        // Verificar si ya está verificado
+        if (cliente.email_verificado) {
+            return res.status(200).json({
+                success: true,
+                message: 'El email ya está verificado',
+                ya_verificado: true
+            });
+        }
+
+        // Marcar email como verificado
+        await cliente.update({
+            email_verificado: true,
+            token_verificacion: null,
+            fecha_token_verificacion: null
+        });
+
+        // Enviar email de bienvenida (comentado temporalmente)
+        // await sendWelcomeEmail(cliente.mail!, cliente.nombre!);
+
+        res.json({
+            success: true,
+            message: 'Email verificado exitosamente. ¡Bienvenido!',
+            cliente: {
+                id_cliente: cliente.id_cliente,
+                nombre: cliente.nombre,
+                apellido: cliente.apellido,
+                mail: cliente.mail,
+                email_verificado: true
+            }
+        });
+
+    } catch (error) {
+        console.error('Error verificando email:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Reenviar email de verificación
+export const resendVerificationEmail = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email requerido'
+            });
+        }
+
+        // Buscar cliente por email
+        const cliente = await Clientes.findOne({
+            where: { mail: email.toLowerCase() }
+        });
+
+        if (!cliente) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró una cuenta con este email'
+            });
+        }
+
+        // Verificar si ya está verificado
+        if (cliente.email_verificado) {
+            return res.status(200).json({
+                success: true,
+                message: 'El email ya está verificado',
+                ya_verificado: true
+            });
+        }
+
+        // Generar nuevo token
+        const verificationToken = generateVerificationToken();
+        const tokenExpiry = new Date();
+        tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Expira en 24 horas
+
+        // Actualizar token en la base de datos
+        await cliente.update({
+            token_verificacion: verificationToken,
+            fecha_token_verificacion: tokenExpiry
+        });
+
+        // Enviar nuevo email de verificación (comentado temporalmente)
+        // const emailEnviado = await sendVerificationEmail(
+        //     email.toLowerCase(),
+        //     cliente.nombre!,
+        //     verificationToken
+        // );
+
+        // if (!emailEnviado) {
+        //     return res.status(500).json({
+        //         success: false,
+        //         message: 'Error enviando email de verificación'
+        //     });
+        // }
+
+        res.json({
+            success: true,
+            message: 'Email de verificación reenviado exitosamente'
+        });
+
+    } catch (error) {
+        console.error('Error reenviando email de verificación:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor'

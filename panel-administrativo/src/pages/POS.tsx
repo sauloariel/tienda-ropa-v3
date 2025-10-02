@@ -3,7 +3,9 @@ import {
   Search, 
   CheckCircle,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import { crearFactura } from '../services/factura'
 import { FacturaRequest } from '../types/factura.types'
@@ -37,6 +39,13 @@ const POS: React.FC = () => {
   const [clienteSearchTerm, setClienteSearchTerm] = useState('')
   const [showClienteSearch, setShowClienteSearch] = useState(false)
   const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([])
+  
+  // Estado para modo pantalla completa
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  
+  // Estados para paginación de productos
+  const [currentPage, setCurrentPage] = useState(1)
+  const [productsPerPage] = useState(5)
 
   // Hook para obtener número de factura estable
   const { value: numeroFactura, loading: loadingNumero, error: errorNumero, refresh: refreshNumeroFactura } = useStableInvoiceNumber()
@@ -45,6 +54,11 @@ const POS: React.FC = () => {
   useEffect(() => {
     cargarDatos()
   }, [])
+
+  // Resetear paginación cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedCategory])
 
   const cargarDatos = async () => {
     setLoading(true)
@@ -85,26 +99,19 @@ const POS: React.FC = () => {
   }
 
   // Filtrar productos por búsqueda y categoría
-  const filteredProducts = productos.filter(producto => {
+  const allFilteredProducts = productos.filter(producto => {
     const matchesSearch = producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (producto.categoria?.nombre_categoria || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === null || producto.id_categoria === selectedCategory
     // Incluir productos activos o sin estado definido (para compatibilidad)
     const isActive = !producto.estado || producto.estado === 'ACTIVO'
     
-    // Debug logs
-    if (searchTerm && producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) {
-      console.log('🔍 POS - Producto encontrado:', {
-        descripcion: producto.descripcion,
-        estado: producto.estado,
-        isActive,
-        matchesSearch,
-        matchesCategory
-      })
-    }
-    
     return matchesSearch && matchesCategory && isActive
   })
+
+  // Obtener productos paginados
+  const filteredProducts = allFilteredProducts.slice(0, currentPage * productsPerPage)
+
   
   // Debug: mostrar información del filtrado
   console.log('🔍 POS - Filtrado:', {
@@ -598,71 +605,79 @@ const POS: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`h-screen bg-gray-50 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
       {/* Error Display */}
       {error && (
-        <div className="bg-amber-50 border-l-4 border-amber-400 p-4">
+        <div className="bg-amber-50 border-l-4 border-amber-400 p-3">
           <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-amber-400" />
-            <div className="ml-3">
-              <p className="text-sm text-amber-700">{error}</p>
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            <div className="ml-2">
+              <p className="text-xs text-amber-700">{error}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className={`${isFullscreen ? 'h-full' : 'h-full'} ${isFullscreen ? 'p-4' : 'p-3'}`}>
+        <div className={`grid gap-4 ${isFullscreen ? 'grid-cols-1 xl:grid-cols-2 h-full' : 'grid-cols-1 lg:grid-cols-3 max-w-none h-full'}`}>
           {/* Factura Card - 2/3 del espacio */}
-          <section className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <section className={`${isFullscreen ? 'xl:col-span-1' : 'lg:col-span-2'} bg-white border border-gray-200 rounded-xl p-4 shadow-sm ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
           {/* Toolbar */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="brand">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div className="brand flex-shrink-0">
               <h2 className="text-lg font-bold text-gray-900">MARUCHI MODA</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs text-gray-500">
                 CUIT 20-12345678-9 · Calle Falsa 123, Posadas · 3764-123456
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <button
                 onClick={() => {
                   setCart([])
                 }}
-                className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100"
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 whitespace-nowrap transition-colors"
               >
-                🧹 Nueva factura
+                ✓ Nueva factura
               </button>
               <button
                 onClick={() => imprimirFactura()}
-                className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 whitespace-nowrap transition-colors flex items-center gap-1"
               >
                 🖨️ Imprimir / PDF
+              </button>
+              <button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-full hover:bg-gray-100 whitespace-nowrap flex items-center gap-1 transition-colors"
+                title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+              >
+                {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+                {isFullscreen ? "Salir" : "Pantalla completa"}
               </button>
             </div>
           </div>
 
           {/* Header Factura */}
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4">
             <div className="flex flex-col">
-              <div className="inline-block px-3 py-1 text-xs font-bold text-blue-600 bg-blue-100 rounded-lg">
+              <div className="inline-block px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-100 rounded-full">
                 FACTURA
               </div>
               
               {/* Cliente justo debajo de FACTURA */}
               <div className="flex items-center gap-2 relative mt-2">
-                <span>Cliente:</span>
+                <span className="text-xs font-medium text-gray-700">Cliente:</span>
                 <div className="relative flex-1 max-w-xs cliente-search-container">
                   <input
                     type="text"
-                    placeholder="Buscar cliente por nombre, DNI o email..."
+                    placeholder="Buscar cliente por nombre"
                     value={clienteSearchTerm}
                     onChange={(e) => {
                       setClienteSearchTerm(e.target.value)
                       setShowClienteSearch(true)
                     }}
                     onFocus={() => setShowClienteSearch(true)}
-                    className="h-7 px-2 text-xs border border-gray-300 rounded w-full"
+                    className="h-7 px-2 text-xs border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   
                   {/* Mostrar cliente seleccionado */}
@@ -725,7 +740,7 @@ const POS: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setShowClienteModal(true)}
-                  className="h-7 px-2 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="h-7 px-2 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   + Nuevo
                 </button>
@@ -733,10 +748,10 @@ const POS: React.FC = () => {
             </div>
             
             {/* Información del lado derecho */}
-            <div className="text-right text-sm text-gray-500">
-              <div className="flex items-center justify-end gap-2">
-                <span>N.º F-{loadingNumero ? (
-                  <span className="inline-block w-16 h-4 bg-gray-200 rounded animate-pulse"></span>
+            <div className="text-xs text-gray-600 lg:text-right">
+              <div className="flex items-center gap-2 lg:justify-end mb-1">
+                <span className="font-medium">N.° F-{loadingNumero ? (
+                  <span className="inline-block w-16 h-3 bg-gray-200 rounded animate-pulse"></span>
                 ) : errorNumero ? (
                   <span className="text-red-500">Error</span>
                 ) : (
@@ -751,20 +766,18 @@ const POS: React.FC = () => {
                   <RefreshCw className={`w-3 h-3 ${loadingNumero ? 'animate-spin' : ''}`} />
                 </button>
               </div>
-              <div>Fecha: {new Date().toLocaleString('es-AR')}</div>
+              <div className="mb-1">Fecha: {new Date().toLocaleString('es-AR')}</div>
               
-              {/* Pago a la derecha */}
-              <div className="flex items-center gap-2 mt-1">
-                <span>Pago:</span>
+              {/* Pago */}
+              <div className="flex items-center gap-2 lg:justify-end">
+                <span className="font-medium">Pago:</span>
                 <select
                   value={selectedPaymentMethod}
                   onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                  className="h-7 px-2 text-xs border border-gray-300 rounded"
+                  className="h-6 px-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="efectivo">💵 Efectivo</option>
-                  <option value="tarjeta">💳 Tarjeta</option>
-                  <option value="transferencia">🏦 Transferencia</option>
-                  <option value="qr">📱 QR / Pago móvil</option>
+                  <option value="cbu">🏦 CBU</option>
                 </select>
               </div>
             </div>
@@ -772,107 +785,124 @@ const POS: React.FC = () => {
 
 
           {/* Tabla de Factura - Principal */}
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Producto</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Cant.</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">P. Unit.</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Subtotal</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cart.length === 0 ? (
+          <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col ${isFullscreen ? 'flex-1 min-h-0' : 'flex-1'}`}>
+            {/* Tabla fija sin scroll */}
+            <div className="flex-1 overflow-hidden">
+              <table className="w-full border-collapse">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
-                    <td colSpan={5} className="text-center py-12 text-gray-500">
-                      <div className="flex flex-col items-center">
-                        <div className="text-4xl mb-2">📄</div>
-                        <p className="text-lg font-medium mb-1">Factura vacía</p>
-                        <p className="text-sm">Hacé clic en "Buscar productos" para agregar ítems</p>
-                      </div>
-                    </td>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-gray-900">Producto</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-900">Cant.</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-900">P. Unit.</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-900">Subtotal</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-900">Acciones</th>
                   </tr>
-                ) : (
-                  cart.map((item) => (
-                    <tr key={item.product.id_producto} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div>
-                          <div className="font-medium text-gray-900">{item.product.descripcion}</div>
-                          <div className="text-xs text-gray-500">
-                            {item.product.categoria?.nombre_categoria || 'Sin categoría'}
-                          </div>
+                </thead>
+                <tbody>
+                  {cart.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8 text-gray-500">
+                        <div className="flex flex-col items-center">
+                          <div className="text-2xl mb-1">📄</div>
+                          <p className="text-sm font-medium mb-1">Factura vacía</p>
+                          <p className="text-xs">Hacé clic en "Buscar productos" para agregar ítems</p>
                         </div>
-                      </td>
-                      <td className="text-right py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => updateQuantity(item.product.id_producto, item.quantity - 1)}
-                            className="w-7 h-7 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 flex items-center justify-center"
-                          >
-                            −
-                          </button>
-                          <span className="w-10 text-center font-medium">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.product.id_producto, item.quantity + 1)}
-                            disabled={item.quantity >= Number(item.product.stock)}
-                            className="w-7 h-7 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-                      <td className="text-right py-3 px-4 text-sm font-medium">${Number(item.product.precio_venta).toFixed(2)}</td>
-                      <td className="text-right py-3 px-4 text-sm font-semibold">${(Number(item.product.precio_venta) * item.quantity).toFixed(2)}</td>
-                      <td className="text-right py-3 px-4">
-                        <button
-                          onClick={() => removeFromCart(item.product.id_producto)}
-                          className="w-8 h-8 rounded-lg border border-red-200 text-red-500 text-sm hover:bg-red-50 flex items-center justify-center"
-                        >
-                          🗑
-                        </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td colSpan={3} className="text-right py-3 px-4 text-sm text-gray-600">Subtotal (sin IVA)</td>
-                  <td className="text-right py-3 px-4 text-sm font-semibold">${getTotal().toFixed(2)}</td>
-                  <td></td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className="text-right py-3 px-4 text-sm text-gray-600">IVA 21%</td>
-                  <td className="text-right py-3 px-4 text-sm font-semibold">${getIVA().toFixed(2)}</td>
-                  <td></td>
-                </tr>
-                <tr className="border-t-2 border-gray-300">
-                  <td colSpan={3} className="text-right py-4 px-4 text-lg font-bold text-gray-900">TOTAL</td>
-                  <td className="text-right py-4 px-4 text-xl font-bold text-blue-600">${getTotalConIVA().toFixed(2)}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+                  ) : (
+                    cart.slice(0, 5).map((item) => (
+                      <tr key={item.product.id_producto} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-2 px-3">
+                          <div>
+                            <div className="font-medium text-xs text-gray-900">{item.product.descripcion}</div>
+                            <div className="text-xs text-gray-500">
+                              {item.product.categoria?.nombre_categoria || 'Sin categoría'}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="text-right py-2 px-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => updateQuantity(item.product.id_producto, item.quantity - 1)}
+                              className="w-6 h-6 rounded-lg border border-gray-300 text-xs hover:bg-gray-50 flex items-center justify-center transition-colors"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center font-medium text-xs">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.product.id_producto, item.quantity + 1)}
+                              disabled={item.quantity >= Number(item.product.stock)}
+                              className="w-6 h-6 rounded-lg border border-gray-300 text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+                        <td className="text-right py-2 px-3 text-xs font-medium">${Number(item.product.precio_venta).toFixed(2)}</td>
+                        <td className="text-right py-2 px-3 text-xs font-semibold">${(Number(item.product.precio_venta) * item.quantity).toFixed(2)}</td>
+                        <td className="text-right py-2 px-3">
+                          <button
+                            onClick={() => removeFromCart(item.product.id_producto)}
+                            className="w-6 h-6 rounded-lg border border-red-200 text-red-500 text-xs hover:bg-red-50 flex items-center justify-center transition-colors"
+                          >
+                            🗑
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                  {/* Indicador de productos adicionales */}
+                  {cart.length > 5 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-2 px-3 bg-blue-50 text-blue-600 text-xs font-medium">
+                        +{cart.length - 5} productos más en la factura
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Totales fijos en la parte inferior */}
+            <div className="border-t border-gray-200 bg-gray-50">
+              <table className="w-full border-collapse">
+                <tbody>
+                  <tr>
+                    <td colSpan={3} className="text-right py-2 px-3 text-xs text-gray-600">Subtotal (sin IVA)</td>
+                    <td className="text-right py-2 px-3 text-xs font-semibold">${getTotal().toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td colSpan={3} className="text-right py-2 px-3 text-xs text-gray-600">IVA 21%</td>
+                    <td className="text-right py-2 px-3 text-xs font-semibold">${getIVA().toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                  <tr className="border-t-2 border-gray-300">
+                    <td colSpan={3} className="text-right py-3 px-3 text-sm font-bold text-gray-900">TOTAL</td>
+                    <td className="text-right py-3 px-3 text-lg font-bold text-blue-600">${getTotalConIVA().toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Botón Finalizar */}
           {cart.length > 0 && (
-            <div className="mt-8 text-center">
+            <div className={`text-center ${isFullscreen ? 'mt-2' : 'mt-3'}`}>
               <button
                 onClick={handleCheckout}
                 disabled={processingFactura}
-                className="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
+                className="px-6 py-3 bg-green-600 text-white font-bold text-sm rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
               >
                 {processingFactura ? (
                   <>
-                    <div className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                    <div className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Procesando factura...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="inline w-6 h-6 mr-3" />
+                    <CheckCircle className="w-4 h-4" />
                     💰 Finalizar Venta y Facturar
                   </>
                 )}
@@ -882,18 +912,18 @@ const POS: React.FC = () => {
           </section>
 
           {/* Panel Lateral de Búsqueda - 1/3 del espacio */}
-          <aside className="lg:col-span-1">
-            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm sticky top-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Buscar Productos</h3>
+          <aside className={`${isFullscreen ? 'xl:col-span-1' : 'lg:col-span-1'} ${isFullscreen ? 'h-full' : ''}`}>
+            <div className={`bg-white border border-gray-200 rounded-xl p-4 shadow-sm ${isFullscreen ? 'h-full flex flex-col' : 'sticky top-4'}`}>
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Buscar Productos</h3>
               
               {/* Buscador */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
                   <input
                     type="search"
                     placeholder="Buscar por nombre o categoría…"
-                    className="w-full h-10 pl-9 pr-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-8 pl-7 pr-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -902,7 +932,7 @@ const POS: React.FC = () => {
                 <select
                   value={selectedCategory || ''}
                   onChange={(e) => setSelectedCategory(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full h-10 px-3 text-sm border border-gray-300 rounded-lg"
+                  className="w-full h-8 px-2 text-xs border border-gray-300 rounded-lg"
                 >
                   <option value="">Todas las categorías</option>
                   {categorias.map(categoria => (
@@ -926,16 +956,16 @@ const POS: React.FC = () => {
               </div>
 
               {/* Lista de Productos */}
-              <div className="mt-6">
+              <div className={`mt-4 ${isFullscreen ? 'flex-1 flex flex-col' : ''}`}>
                 {filteredProducts.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {filteredProducts.map((producto) => (
+                  <div className={`space-y-2 overflow-hidden ${isFullscreen ? 'flex-1' : ''}`}>
+                    {filteredProducts.slice(0, 6).map((producto) => (
                       <div
                         key={producto.id_producto}
-                        className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900 truncate">
+                          <div className="font-medium text-xs text-gray-900 truncate">
                             {producto.descripcion}
                           </div>
                           <div className="text-xs text-gray-500">
@@ -948,13 +978,13 @@ const POS: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <div className="font-bold text-blue-600 text-sm">
+                          <div className="font-bold text-blue-600 text-xs">
                             ${Number(producto.precio_venta).toFixed(2)}
                           </div>
                           <button
                             onClick={() => addToCart(producto)}
                             disabled={Number(producto.stock) <= 0}
-                            className={`w-8 h-8 rounded-lg border text-xs font-medium ${
+                            className={`w-6 h-6 rounded-lg border text-xs font-medium transition-colors ${
                               Number(producto.stock) <= 0
                                 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                 : 'bg-white text-gray-600 border-gray-300 hover:bg-blue-50 hover:border-blue-300'
@@ -965,11 +995,18 @@ const POS: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Indicador de productos adicionales */}
+                    {filteredProducts.length > 6 && (
+                      <div className="text-center py-2 px-3 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg">
+                        +{filteredProducts.length - 6} productos más disponibles
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <div className="text-4xl mb-2">🔍</div>
-                    <p className="text-sm">Busca productos para agregar a la factura</p>
+                  <div className="text-center py-4 text-gray-500">
+                    <div className="text-xl mb-1">🔍</div>
+                    <p className="text-xs">Busca productos para agregar a la factura</p>
                   </div>
                 )}
               </div>

@@ -34,3 +34,5 @@ PRAGMA table_info(productos);
 
 
 
+
+

@@ -3,7 +3,9 @@ import {
     loginCliente,
     registerCliente,
     verifyClienteToken,
-    logoutCliente
+    logoutCliente,
+    verifyEmail,
+    resendVerificationEmail
 } from '../controllers/ClientAuthController';
 
 const router = Router();
@@ -14,11 +16,11 @@ router.post('/register', registerCliente);
 router.post('/verify', verifyClienteToken);
 router.post('/logout', logoutCliente);
 
+// Rutas de verificación de email
+router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerificationEmail);
+
 export default router;
-
-
-
-
 
 
 

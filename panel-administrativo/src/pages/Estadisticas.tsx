@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { 
   Calendar,
-  RefreshCw
+  RefreshCw,
+  DollarSign
 } from 'lucide-react'
 import { estadisticasAPI } from '../services/estadisticas'
 import type { 
@@ -9,6 +10,7 @@ import type {
   ProductoTopVentas, 
   CategoriaTopVentas
 } from '../services/estadisticas'
+import { productosAPI, Producto } from '../services/productos'
 import Chart from '../components/Chart'
 
 
@@ -18,6 +20,7 @@ const Estadisticas: React.FC = () => {
   const [ventasMensuales, setVentasMensuales] = useState<VentasPorMes[]>([])
   const [productosTop, setProductosTop] = useState<ProductoTopVentas[]>([])
   const [categoriasTop, setCategoriasTop] = useState<CategoriaTopVentas[]>([])
+  const [productos, setProductos] = useState<Producto[]>([])
   const [conexionDB, setConexionDB] = useState<'conectado' | 'desconectado' | 'verificando'>('verificando')
 
   // Cargar estadísticas para los 3 gráficos de barras
@@ -28,17 +31,20 @@ const Estadisticas: React.FC = () => {
       console.log('🔄 Cargando estadísticas para gráficos de barras...')
       const [
         ventas,
-        productos,
-        categorias
+        productosTopVentas,
+        categorias,
+        productosData
       ] = await Promise.all([
         estadisticasAPI.getVentasPorMes(12),
         estadisticasAPI.getProductosTopVentas(10),
-        estadisticasAPI.getCategoriasTopVentas(5)
+        estadisticasAPI.getCategoriasTopVentas(5),
+        productosAPI.getProductos()
       ])
 
       setVentasMensuales(ventas)
-      setProductosTop(productos)
+      setProductosTop(productosTopVentas)
       setCategoriasTop(categorias)
+      setProductos(productosData)
       setConexionDB('conectado')
       console.log('✅ Estadísticas cargadas exitosamente')
     } catch (error) {
@@ -52,6 +58,51 @@ const Estadisticas: React.FC = () => {
   useEffect(() => {
     cargarEstadisticas()
   }, [periodo])
+
+  // Cálculo del valor total del inventario
+  const toNum = (v: any, d = 0): number => {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : d
+  }
+
+  const formatPrice = (price: number): string => 
+    new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
+
+  const valorTotalInventario = useMemo(() => {
+    const total = productos.reduce((sum, p) => sum + (toNum(p.precio_venta) * toNum(p.stock)), 0)
+    return { valor: total, texto: formatPrice(total) }
+  }, [productos])
+
+  // Preparar datos para el gráfico de torta del inventario por categoría
+  const datosInventarioPorCategoria = useMemo(() => {
+    const inventarioPorCategoria: { [key: string]: number } = {}
+    
+    productos.forEach(producto => {
+      const categoria = producto.categoria?.nombre_categoria || 'Sin categoría'
+      const valorProducto = toNum(producto.precio_venta) * toNum(producto.stock)
+      
+      if (inventarioPorCategoria[categoria]) {
+        inventarioPorCategoria[categoria] += valorProducto
+      } else {
+        inventarioPorCategoria[categoria] = valorProducto
+      }
+    })
+
+    const colores = [
+      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500',
+      'bg-indigo-500', 'bg-red-500', 'bg-yellow-500', 'bg-teal-500', 'bg-cyan-500'
+    ]
+
+    return Object.entries(inventarioPorCategoria)
+      .map(([categoria, valor], index) => ({
+        label: categoria,
+        value: valor,
+        color: colores[index % colores.length],
+        porcentaje: valorTotalInventario.valor > 0 ? (valor / valorTotalInventario.valor) * 100 : 0,
+        valorTexto: formatPrice(valor)
+      }))
+      .sort((a, b) => b.value - a.value)
+  }, [productos, valorTotalInventario.valor])
 
   // Preparar datos para gráficos
   const datosVentasMensuales = ventasMensuales.map(item => ({
@@ -141,9 +192,39 @@ const Estadisticas: React.FC = () => {
         </div>
       </div>
 
-      
+      {/* Valor Total del Inventario - Card Grande */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <DollarSign className="h-16 w-16 text-purple-600" />
+            </div>
+            <div className="ml-8">
+              <dl>
+                <dt className="text-2xl font-medium text-gray-500">
+                  Valor Total del Inventario
+                </dt>
+                <dd className="text-5xl font-bold text-gray-900 mt-2">
+                  {valorTotalInventario.texto}
+                </dd>
+                <dd className="text-sm text-gray-500 mt-2">
+                  Calculado en base a {productos.length} productos
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      
+      {/* Gráfico de Torta del Inventario por Categoría */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <Chart
+          data={datosInventarioPorCategoria}
+          title="📦 Distribución del Inventario por Categoría"
+          type="pie"
+          height={400}
+        />
+      </div>
 
       {/* 3 Gráficos de Barras Principales */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

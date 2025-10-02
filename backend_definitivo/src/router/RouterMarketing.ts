@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { basicAuthMarketing } from '../middleware/basicAuthMarketing';
 import {
     getPromociones,
     getPromocionById,
@@ -10,10 +11,16 @@ import {
     getPromocionesPorVencer,
     getPromocionesExpiradas,
     validateCodigoDescuento,
-    usarCodigoDescuento
+    usarCodigoDescuento,
+    getProductosDisponibles,
+    agregarProductosPromocion,
+    getPromocionesActivasProductos
 } from '../controllers/MarketingController';
 
 const router = Router();
+
+// Aplicar middleware de autenticación básica a todas las rutas
+router.use(basicAuthMarketing);
 
 // Ruta raíz de marketing
 router.get('/', (req, res) => {
@@ -62,6 +69,15 @@ router.post('/validate-codigo', validateCodigoDescuento);
 
 // Usar código de descuento
 router.post('/usar-codigo', usarCodigoDescuento);
+
+// Obtener productos disponibles para promociones
+router.get('/productos-disponibles', getProductosDisponibles);
+
+// Agregar productos a una promoción
+router.post('/promociones/:id/productos', agregarProductosPromocion);
+
+// Obtener promociones activas para productos específicos
+router.get('/promociones-activas', getPromocionesActivasProductos);
 
 export default router;
 

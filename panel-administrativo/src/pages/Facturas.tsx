@@ -450,10 +450,8 @@ const FacturaModal: React.FC<FacturaModalProps> = ({ factura, onSubmit, onClose,
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="cheque">Cheque</option>
+              <option value="efectivo">💵 Efectivo</option>
+              <option value="cbu">🏦 CBU</option>
             </select>
           </div>
 

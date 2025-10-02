@@ -43,7 +43,7 @@ export interface VentaData {
     total: number
     fecha_venta: string
     estado: 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA'
-    metodo_pago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA'
+    metodo_pago: 'EFECTIVO' | 'CBU'
 }
 
 export interface VentaResponse {

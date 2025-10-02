@@ -1,0 +1,13 @@
+# Configuración de Email para Verificación de Cuentas
+# Configura estas variables en tu archivo .env
+
+# Configuración SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu-email@gmail.com
+SMTP_PASS=tu-contraseña-de-aplicacion
+
+# URLs de la aplicación
+FRONTEND_URL=http://localhost:3000
+APP_NAME=Tienda de Ropa
+

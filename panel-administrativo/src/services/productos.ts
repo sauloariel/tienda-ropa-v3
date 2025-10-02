@@ -53,7 +53,7 @@ export interface Talla {
 export interface ProductoVariante {
     id_variante: number
     id_producto: number
-    id_talle: number
+    id_talla: number
     id_color: number
     stock: number
     precio_venta: number
@@ -84,7 +84,7 @@ export interface ProductoCreate {
 }
 
 export interface ProductoVarianteCreate {
-    id_talle: number
+    id_talla: number
     id_color: number
     stock: number
     precio_venta?: number
