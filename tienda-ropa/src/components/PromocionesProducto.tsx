@@ -144,3 +144,7 @@ export const PromocionesProducto: React.FC<PromocionesProductoProps> = ({ produc
 
 export default PromocionesProducto;
 
+
+
+
+

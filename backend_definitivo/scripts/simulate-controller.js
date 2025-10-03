@@ -140,3 +140,7 @@ async function simularControladorRegistro() {
 // Ejecutar la función
 simularControladorRegistro();
 
+
+
+
+

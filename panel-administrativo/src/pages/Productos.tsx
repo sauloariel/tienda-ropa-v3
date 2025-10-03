@@ -274,6 +274,8 @@ const Productos: React.FC = () => {
   }
 
   const handleCloseModals = () => {
+    console.log('🚪 Cerrando modales...')
+    
     // Limpiar URLs de imágenes
     imagenesPreview.forEach(url => URL.revokeObjectURL(url))
     
@@ -291,6 +293,8 @@ const Productos: React.FC = () => {
     
     // Limpiar formulario de agregar producto
     clearAddForm()
+    
+    console.log('✅ Modales cerrados y estado limpiado')
   }
 
   // ==================== FUNCIONES DE CATEGORÍAS ====================
@@ -548,6 +552,13 @@ const Productos: React.FC = () => {
   const handleUpdate = async (productoData: ProductoUpdate) => {
     if (!editingProducto) return
 
+    console.log('🔄 Iniciando actualización de producto:', {
+      productoId: editingProducto.id_producto,
+      productoData,
+      variantesActuales: variantes,
+      variantesValidas: getVariantesValidas()
+    })
+
     try {
       // Validar duplicados de variantes
       if (hasDupVariantes()) {
@@ -564,6 +575,7 @@ const Productos: React.FC = () => {
       // Recargar la lista de productos
       await cargarDatos()
     } catch (error: any) {
+      console.error('❌ Error actualizando producto:', error)
       setError(error.response?.data?.error || 'Error al actualizar el producto')
     }
   }
@@ -597,16 +609,25 @@ const Productos: React.FC = () => {
   }, [])
 
   const updateVariante = useCallback((index: number, field: keyof VarianteUI, value: any) => {
-    setVariantes(prev => prev.map((variante, idx) => 
-      idx === index 
-        ? { 
-            ...variante, 
-            [field]: value,
-            ...(field === 'id_tipo_talle' ? { id_talla: 0 } : {})
+    setVariantes(prev => prev.map((variante, idx) => {
+      if (idx === index) {
+        const updatedVariante = { ...variante, [field]: value }
+        
+        // Si se cambia el tipo de talla, verificar si la talla actual es válida para el nuevo tipo
+        if (field === 'id_tipo_talle') {
+          const tallasDisponibles = tallas.filter(talla => talla.id_tipo_talle === value)
+          const tallaActualValida = tallasDisponibles.some(talla => talla.id_talla === variante.id_talla)
+          
+          if (!tallaActualValida) {
+            updatedVariante.id_talla = 0
           }
-        : variante
-    ))
-  }, [])
+        }
+        
+        return updatedVariante
+      }
+      return variante
+    }))
+  }, [tallas])
 
   const getTallasPorVariante = useCallback((variante: VarianteUI) => {
     return variante.id_tipo_talle 
@@ -616,13 +637,29 @@ const Productos: React.FC = () => {
 
   // Validaciones de variantes
   const isVarianteValida = useCallback((variante: VarianteUI): boolean => {
-    return variante.id_talla > 0 && 
+    const isValid = variante.id_talla > 0 && 
            variante.id_color > 0 && 
            toNum(variante.stock) > 0
+    
+    console.log('🔍 Validando variante:', {
+      variante,
+      id_talla: variante.id_talla,
+      id_color: variante.id_color,
+      stock: variante.stock,
+      isValid
+    })
+    
+    return isValid
   }, [])
 
   const getVariantesValidas = useCallback((): VarianteUI[] => {
-    return variantes.filter(isVarianteValida)
+    const validas = variantes.filter(isVarianteValida)
+    console.log('🔍 getVariantesValidas:', {
+      totalVariantes: variantes.length,
+      variantesValidas: validas.length,
+      variantes: variantes
+    })
+    return validas
   }, [variantes, isVarianteValida])
 
   const hasDupVariantes = useCallback((): boolean => {

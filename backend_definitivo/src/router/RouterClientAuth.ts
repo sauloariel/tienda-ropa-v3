@@ -5,7 +5,10 @@ import {
     verifyClienteToken,
     logoutCliente,
     verifyEmail,
-    resendVerificationEmail
+    resendVerificationEmail,
+    solicitarRecuperacionPasswordCliente,
+    verificarTokenRecuperacionCliente,
+    cambiarPasswordConTokenCliente
 } from '../controllers/ClientAuthController';
 
 const router = Router();
@@ -19,6 +22,11 @@ router.post('/logout', logoutCliente);
 // Rutas de verificación de email
 router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);
+
+// Rutas de recuperación de contraseña
+router.post('/forgot-password', solicitarRecuperacionPasswordCliente);
+router.get('/reset-password/:resetToken', verificarTokenRecuperacionCliente);
+router.post('/reset-password', cambiarPasswordConTokenCliente);
 
 export default router;
 

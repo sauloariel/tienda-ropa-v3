@@ -55,3 +55,7 @@ JWT_SECRET=tu-jwt-secret-aqui
 # 4. Usa esa contraseña en SMTP_PASS (no tu contraseña normal)
 # 5. Asegúrate de que SMTP_USER sea tu email completo de Gmail
 
+
+
+
+

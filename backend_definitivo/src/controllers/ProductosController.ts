@@ -45,8 +45,8 @@ export const createProducto = async (req: Request, res: Response) => {
         };
 
         // Solo agregar id_talla si existe en la variante
-        if (variante.id_talle && variante.id_talle > 0) {
-          varianteData.id_talla = parseInt(variante.id_talle);
+        if (variante.id_talla && variante.id_talla > 0) {
+          varianteData.id_talla = parseInt(variante.id_talla);
         }
 
         console.log('📊 Datos de variante a crear:', varianteData);
@@ -83,6 +83,14 @@ export const createProducto = async (req: Request, res: Response) => {
       include: [
         { model: Categorias, as: 'categoria' },
         { model: Proveedores, as: 'proveedor' },
+        {
+          model: ProductoVariante,
+          as: 'variantes',
+          include: [
+            { model: Colores, as: 'color' },
+            { model: Tallas, as: 'talla' }
+          ]
+        },
         { model: Imagenes, as: 'imagenes' }
       ]
     });
@@ -238,8 +246,8 @@ export const updateProducto = async (req: Request, res: Response) => {
           };
 
           // Solo agregar id_talla si existe en la variante
-          if (variante.id_talle && variante.id_talle > 0) {
-            varianteData.id_talla = parseInt(variante.id_talle);
+          if (variante.id_talla && variante.id_talla > 0) {
+            varianteData.id_talla = parseInt(variante.id_talla);
           }
 
           console.log('📊 Datos de variante a crear:', varianteData);

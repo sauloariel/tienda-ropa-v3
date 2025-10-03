@@ -131,3 +131,7 @@ cat tienda-ropa/EMAILJS-QUICK-START.md
 
 Solo necesitas configurar EmailJS (5 minutos) o desactivar la verificación si prefieres.
 
+
+
+
+

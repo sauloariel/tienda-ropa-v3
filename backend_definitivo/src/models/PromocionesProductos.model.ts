@@ -32,3 +32,7 @@ export class PromocionesProductos extends Model {
 
 export default PromocionesProductos;
 
+
+
+
+

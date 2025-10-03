@@ -27,3 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_promociones_productos_producto ON promociones_pro
 SELECT 'Tabla promociones_productos creada exitosamente' as mensaje;
 SELECT COUNT(*) as total_relaciones FROM promociones_productos;
 
+
+
+
+

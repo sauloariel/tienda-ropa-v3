@@ -4,6 +4,9 @@ import crypto from 'crypto';
 import { Clientes } from '../models/Clientes.model';
 // import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } from '../services/emailService';
 
+// Almacenamiento temporal de tokens de recuperación (en producción usar Redis)
+const passwordResetTokens = new Map<string, { userId: number; expires: Date }>();
+
 // Función para generar token de verificación
 const generateVerificationToken = (): string => {
     return crypto.randomBytes(32).toString('hex');
@@ -400,6 +403,184 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('Error reenviando email de verificación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Solicitar recuperación de contraseña para cliente
+export const solicitarRecuperacionPasswordCliente = async (req: Request, res: Response) => {
+    try {
+        console.log('🔍 Solicitud de recuperación de contraseña:', req.body);
+
+        const { mail } = req.body;
+
+        if (!mail) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email es requerido'
+            });
+        }
+
+        // Buscar cliente por email
+        const cliente = await Clientes.findOne({
+            where: { mail: mail.toLowerCase() }
+        });
+
+        if (!cliente) {
+            return res.status(404).json({
+                success: false,
+                message: 'No existe un cliente con este email'
+            });
+        }
+
+        if (cliente.estado !== 'activo') {
+            return res.status(400).json({
+                success: false,
+                message: 'Tu cuenta está inactiva. Contacta al administrador.'
+            });
+        }
+
+        // Generar token de recuperación único
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
+
+        // Guardar token en memoria (en producción usar Redis)
+        passwordResetTokens.set(resetToken, {
+            userId: cliente.id_cliente,
+            expires: expiresAt
+        });
+
+        console.log(`✅ Token de recuperación generado para ${mail}: ${resetToken}`);
+        console.log(`⏰ Expira en: ${expiresAt.toISOString()}`);
+
+        res.json({
+            success: true,
+            message: 'Se ha enviado un enlace de recuperación a tu email',
+            resetToken, // Solo para desarrollo - en producción no enviar
+            expiresAt,
+            cliente: {
+                id_cliente: cliente.id_cliente,
+                nombre: cliente.nombre,
+                apellido: cliente.apellido,
+                mail: cliente.mail
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error al solicitar recuperación de contraseña:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Verificar token de recuperación de cliente
+export const verificarTokenRecuperacionCliente = async (req: Request, res: Response) => {
+    try {
+        const { resetToken } = req.params;
+
+        const tokenData = passwordResetTokens.get(resetToken);
+
+        if (!tokenData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token de recuperación inválido'
+            });
+        }
+
+        if (new Date() > tokenData.expires) {
+            // Limpiar token expirado
+            passwordResetTokens.delete(resetToken);
+            return res.status(400).json({
+                success: false,
+                message: 'Token de recuperación expirado'
+            });
+        }
+
+        // Obtener datos del cliente
+        const cliente = await Clientes.findByPk(tokenData.userId, {
+            attributes: ['id_cliente', 'nombre', 'apellido', 'mail']
+        });
+
+        res.json({
+            success: true,
+            message: 'Token válido',
+            cliente: cliente
+        });
+
+    } catch (error) {
+        console.error('❌ Error al verificar token de recuperación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Cambiar contraseña con token de recuperación para cliente
+export const cambiarPasswordConTokenCliente = async (req: Request, res: Response) => {
+    try {
+        const { resetToken, nuevaPassword } = req.body;
+
+        if (!resetToken || !nuevaPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token y nueva contraseña son requeridos'
+            });
+        }
+
+        if (nuevaPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'La contraseña debe tener al menos 6 caracteres'
+            });
+        }
+
+        const tokenData = passwordResetTokens.get(resetToken);
+
+        if (!tokenData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token de recuperación inválido'
+            });
+        }
+
+        if (new Date() > tokenData.expires) {
+            passwordResetTokens.delete(resetToken);
+            return res.status(400).json({
+                success: false,
+                message: 'Token de recuperación expirado'
+            });
+        }
+
+        // Encriptar nueva contraseña
+        const saltRounds = 10;
+        const passwordEncriptado = await bcrypt.hash(nuevaPassword, saltRounds);
+
+        // Actualizar contraseña del cliente
+        await Clientes.update(
+            {
+                password: passwordEncriptado
+            },
+            { where: { id_cliente: tokenData.userId } }
+        );
+
+        // Limpiar token usado
+        passwordResetTokens.delete(resetToken);
+
+        console.log(`✅ Contraseña actualizada para cliente ID: ${tokenData.userId}`);
+
+        res.json({
+            success: true,
+            message: 'Contraseña actualizada exitosamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error al cambiar contraseña:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor'

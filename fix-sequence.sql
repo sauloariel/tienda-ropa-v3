@@ -22,3 +22,7 @@ SELECT nextval('pedidos_id_pedido_seq') as next_id;
 
 
 
+
+
+
+

@@ -28,3 +28,7 @@ ORDER BY column_name;
 -- Mostrar mensaje de confirmación
 SELECT 'Campos de verificación de email agregados exitosamente a la tabla clientes' as mensaje;
 
+
+
+
+

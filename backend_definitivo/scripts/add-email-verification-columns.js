@@ -82,3 +82,7 @@ async function agregarColumnasVerificacion() {
 // Ejecutar la función
 agregarColumnasVerificacion();
 
+
+
+
+

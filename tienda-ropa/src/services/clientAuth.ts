@@ -79,6 +79,44 @@ export const clientAuthService = {
             console.error('Error reenviando email de verificación:', error);
             throw new Error(error.response?.data?.message || 'Error reenviando email de verificación');
         }
+    },
+
+    // Solicitar recuperación de contraseña
+    forgotPassword: async (mail: string): Promise<{ success: boolean; message?: string; resetToken?: string; cliente?: any }> => {
+        try {
+            const response = await clientAuthAPI.post('/api/clientes/auth/forgot-password', {
+                mail
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error solicitando recuperación de contraseña:', error);
+            throw new Error(error.response?.data?.message || 'Error solicitando recuperación de contraseña');
+        }
+    },
+
+    // Verificar token de recuperación
+    verifyResetToken: async (resetToken: string): Promise<{ success: boolean; message?: string; cliente?: any }> => {
+        try {
+            const response = await clientAuthAPI.get(`/api/clientes/auth/reset-password/${resetToken}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error verificando token de recuperación:', error);
+            throw new Error(error.response?.data?.message || 'Error verificando token de recuperación');
+        }
+    },
+
+    // Cambiar contraseña con token
+    resetPassword: async (resetToken: string, nuevaPassword: string): Promise<{ success: boolean; message?: string }> => {
+        try {
+            const response = await clientAuthAPI.post('/api/clientes/auth/reset-password', {
+                resetToken,
+                nuevaPassword
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error cambiando contraseña:', error);
+            throw new Error(error.response?.data?.message || 'Error cambiando contraseña');
+        }
     }
 };
 

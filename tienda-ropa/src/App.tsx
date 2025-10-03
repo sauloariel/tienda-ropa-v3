@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { productosAPI, categoriasAPI } from './services/api';
 import type { Producto, Categoria } from './types/productos.types';
 import { parsePrice } from './utils/priceUtils';
@@ -15,6 +16,8 @@ import ProductDebug from './components/ProductDebug';
 import ClientPanel from './components/ClientPanel';
 import Pagination from './components/Pagination';
 import CartModal from './components/CartModal';
+import ResetPassword from './components/ResetPassword';
+import EmailVerification from './components/EmailVerification';
 import { usePagination } from './hooks/usePagination';
 import { useURLFilters } from './hooks/useURLFilters';
 import { useEscapeKey } from './hooks/useEscapeKey';
@@ -483,7 +486,11 @@ function AppContent() {
 function App() {
   return (
     <ClientAuthProvider>
-      <AppContent />
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<EmailVerification />} />
+        <Route path="/*" element={<AppContent />} />
+      </Routes>
     </ClientAuthProvider>
   );
 }
